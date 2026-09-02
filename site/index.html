@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Puy du Fou — Programmes &amp; Statistiques (non officiel)</title>
+<meta name="description" content="Projet communautaire non officiel : programme quotidien et statistiques historiques des spectacles du Puy du Fou.">
+<script>(function(){try{var t=localStorage.getItem("pdf-programmes-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);}}catch(e){}})();</script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="index">
+
+<header id="site-header"></header>
+
+<main>
+  <div class="container">
+    <section class="page-hero">
+      <h1>🏰 Programme &amp; statistiques du Puy du Fou</h1>
+      <p class="lede">
+        Consultez le programme du jour, la liste des spectacles et des statistiques
+        historiques, construits à partir des données publiques du programme officiel.
+      </p>
+    </section>
+
+    <div id="status-banner-slot"></div>
+
+    <section class="section" id="today-summary">
+      <div class="flex-between">
+        <h2 id="today-title">Aujourd'hui</h2>
+        <span class="text-muted" id="today-updated"></span>
+      </div>
+
+      <div class="stat-grid" id="today-stats">
+        <div class="stat-tile"><div class="skeleton" style="height:2.4rem;"></div></div>
+        <div class="stat-tile"><div class="skeleton" style="height:2.4rem;"></div></div>
+        <div class="stat-tile"><div class="skeleton" style="height:2.4rem;"></div></div>
+      </div>
+
+      <div class="card-grid" id="today-highlights"></div>
+
+      <p class="text-muted" id="source-line"></p>
+    </section>
+
+    <div class="decorative-rule">⚜ ⚜ ⚜</div>
+
+    <section class="section">
+      <h2>Explorer le site</h2>
+      <div class="card-grid">
+        <a class="card nav-card" href="programme.html">
+          <span class="nav-card-icon" aria-hidden="true">📜</span>
+          <h3>Programme du jour</h3>
+          <p>Toutes les représentations d'aujourd'hui, triées par heure, avec recherche et filtres.</p>
+        </a>
+        <a class="card nav-card" href="spectacles.html">
+          <span class="nav-card-icon" aria-hidden="true">🎭</span>
+          <h3>Spectacles</h3>
+          <p>La liste complète des spectacles avec leurs statistiques et leur historique.</p>
+        </a>
+        <a class="card nav-card" href="statistiques.html">
+          <span class="nav-card-icon" aria-hidden="true">📊</span>
+          <h3>Statistiques</h3>
+          <p>Graphiques et chiffres clés sur l'ensemble de la saison et des saisons passées.</p>
+        </a>
+        <a class="card nav-card" href="historique.html">
+          <span class="nav-card-icon" aria-hidden="true">📅</span>
+          <h3>Historique</h3>
+          <p>Un calendrier pour retrouver le programme d'une date passée et comparer deux jours.</p>
+        </a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="js/app.js"></script>
+<script>
+  (function () {
+    "use strict";
+    var PDF = window.PDF;
+
+    function renderStats(today) {
+      var el = document.getElementById("today-stats");
+      el.innerHTML =
+        '<div class="stat-tile"><div class="stat-label">Spectacles au programme</div>' +
+        '<div class="stat-value">' + (today.spectacle_count != null ? today.spectacle_count : "—") + "</div></div>" +
+        '<div class="stat-tile"><div class="stat-label">Représentations</div>' +
+        '<div class="stat-value">' + (today.representation_count != null ? today.representation_count : "—") + "</div></div>" +
+        '<div class="stat-tile"><div class="stat-label">Saison</div>' +
+        '<div class="stat-value">' + PDF.escapeHtml((today.season && today.season.name) || "—") + "</div></div>";
+    }
+
+    function highlightCard(icon, label, item) {
+      if (!item) {
+        return (
+          '<div class="card nav-card" style="cursor:default;">' +
+          '<span class="nav-card-icon" aria-hidden="true">' + icon + "</span>" +
+          "<h3>" + label + "</h3><p>Aucune information disponible pour le moment.</p></div>"
+        );
+      }
+      return (
+        '<a class="card nav-card" href="programme.html">' +
+        '<span class="nav-card-icon" aria-hidden="true">' + icon + "</span>" +
+        "<h3>" + label + "</h3>" +
+        "<p><strong>" + PDF.escapeHtml(item.name) + "</strong> — " + PDF.formatTimeFR(item.start) + "</p></a>"
+      );
+    }
+
+    function renderHighlights(today, isToday) {
+      var el = document.getElementById("today-highlights");
+      if (!isToday) {
+        // today.json n'est pas daté d'aujourd'hui (horloge réelle du
+        // navigateur) : impossible de dire quel est le spectacle nocturne
+        // du jour sans mentir. On l'indique clairement plutôt que
+        // d'afficher un horaire figé au moment de la dernière collecte.
+        var message = today.status === "out_of_season"
+          ? (today.next_opening
+              ? "Parc fermé pour la saison — réouverture prévue le " + PDF.formatDateFR(today.next_opening) + "."
+              : "Parc fermé pour la saison — date de réouverture pas encore annoncée.")
+          : "Indisponible : les dernières données connues datent du " + PDF.formatDateFR(today.date) + ", pas d'aujourd'hui.";
+        el.innerHTML =
+          '<div class="card nav-card" style="cursor:default;">' +
+          '<span class="nav-card-icon" aria-hidden="true">🕰️</span>' +
+          "<h3>Spectacle nocturne</h3><p>" + PDF.escapeHtml(message) + "</p></div>";
+        return;
+      }
+      // Calculé à partir de l'heure réelle du navigateur (voir
+      // PDF.computeUpcoming), pas du champ "nocturne" du JSON qui est figé
+      // au moment de la dernière collecte automatique.
+      var upcoming = PDF.computeUpcoming(today);
+      el.innerHTML = highlightCard("🌙", "Spectacle nocturne", upcoming.nocturne);
+    }
+
+    PDF.fetchJSON("today.json")
+      .then(function (today) {
+        var isToday = PDF.isDataForToday(today.date);
+        document.getElementById("today-title").textContent = isToday
+          ? "Aujourd'hui — " + PDF.formatDateLongFR(today.date)
+          : "Dernières données disponibles — " + PDF.formatDateLongFR(today.date);
+        document.getElementById("today-updated").textContent =
+          "Mis à jour le " + PDF.formatDateTimeFR(today.updated_at);
+        document.getElementById("status-banner-slot").innerHTML =
+          PDF.seasonClosedBannerHtml(today) ||
+          PDF.statusBannerHtml(today.status, today.date, (today.representation_count || 0) > 0, true);
+        renderStats(today);
+        renderHighlights(today, isToday);
+        var src = today.source || {};
+        document.getElementById("source-line").textContent = src.retrieved_at
+          ? "Source : programme officiel du Puy du Fou — récupéré le " + PDF.formatDateTimeFR(src.retrieved_at)
+          : "";
+      })
+      .catch(function (err) {
+        PDF.renderErrorMessage(
+          document.getElementById("today-summary"),
+          "Impossible de charger le programme du jour (" + err.message + "). Réessayez plus tard."
+        );
+      });
+  })();
+</script>
+</body>
+</html>

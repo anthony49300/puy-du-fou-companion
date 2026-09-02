@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Statistiques — Puy du Fou (non officiel)</title>
+<meta name="description" content="Statistiques et graphiques sur les représentations du Puy du Fou : par spectacle, par jour, par saison et par horaire.">
+<script>(function(){try{var t=localStorage.getItem("pdf-programmes-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);}}catch(e){}})();</script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="statistiques">
+
+<header id="site-header"></header>
+
+<main>
+  <div class="container">
+    <section class="page-hero">
+      <h1>📊 Statistiques</h1>
+      <p class="lede">Vue d'ensemble chiffrée du programme : volumes de représentations, répartition horaire et comparaison entre saisons.</p>
+    </section>
+
+    <div id="stats-error-slot"></div>
+
+    <div class="stat-grid" id="global-stats">
+      <div class="stat-tile"><div class="skeleton" style="height:2.4rem;"></div></div>
+      <div class="stat-tile"><div class="skeleton" style="height:2.4rem;"></div></div>
+      <div class="stat-tile"><div class="skeleton" style="height:2.4rem;"></div></div>
+    </div>
+
+    <section class="section">
+      <div class="flex-between">
+        <h2>Comparaison des saisons</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="season-table">
+          <thead>
+            <tr><th>Saison</th><th>Spectacles</th><th>Représentations</th><th>Jours collectés</th></tr>
+          </thead>
+          <tbody><tr><td colspan="4" class="text-muted">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="flex-between">
+        <h2>Graphiques</h2>
+        <div class="chip-row" id="period-filter" role="group" aria-label="Période affichée (graphiques par jour)">
+          <button type="button" class="chip active" data-days="30">30 jours</button>
+          <button type="button" class="chip" data-days="90">90 jours</button>
+          <button type="button" class="chip" data-days="0">Toute la saison</button>
+        </div>
+      </div>
+      <p class="text-muted" style="margin-top:-0.5rem">La période ne s'applique qu'aux deux graphiques par jour.</p>
+      <div class="charts-grid" id="charts-grid">
+        <!-- injecté par statistiques.js -->
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="js/app.js"></script>
+<script src="js/statistiques.js"></script>
+</body>
+</html>

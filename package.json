@@ -1,0 +1,11 @@
+{
+  "name": "puy-du-fou-companion-frontend",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test tests/frontend"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
+  }
+}

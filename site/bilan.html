@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bilan de saison — Puy du Fou (non officiel)</title>
+<meta name="description" content="Bilan chiffré d'une saison complète du Puy du Fou : spectacles, représentations, palmarès.">
+<script>(function(){try{var t=localStorage.getItem("pdf-programmes-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);}}catch(e){}})();</script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="bilan">
+
+<header id="site-header"></header>
+
+<main>
+  <div class="container">
+    <section class="page-hero">
+      <h1>🏆 Bilan de saison</h1>
+      <p class="lede">Le résumé chiffré d'une saison complète, généré une fois celle-ci terminée.</p>
+    </section>
+
+    <div id="bilan-error-slot"></div>
+
+    <div class="chip-row" id="bilan-year-select"></div>
+
+    <div id="bilan-content">
+      <div class="empty-state"><div class="skeleton" style="height:2rem;"></div></div>
+    </div>
+  </div>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="js/app.js"></script>
+<script src="js/bilan.js"></script>
+</body>
+</html>

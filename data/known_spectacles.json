@@ -1,0 +1,85 @@
+{
+  "_comment": "Fichier de configuration des spectacles connus du Puy du Fou. Chaque clé est le slug canonique du spectacle. 'name' est le nom d'affichage officiel. 'category' doit être une des catégories définies dans src/config.py (CATEGORIES). 'aliases' liste toutes les variantes de graphie rencontrées dans les programmes officiels (casse différente, orthographe alternative, abréviations...) qui doivent être résolues vers ce spectacle. Ajoutez librement de nouvelles entrées ou de nouveaux alias sans modifier le code Python.",
+
+  "les-vikings": {
+    "name": "Les Vikings",
+    "category": "spectacle",
+    "aliases": ["Les Vikings", "Les vikings", "LES VIKINGS", "Vikings"]
+  },
+  "le-signe-du-triomphe": {
+    "name": "Le Signe du Triomphe",
+    "category": "spectacle",
+    "aliases": ["Le Signe du Triomphe", "Signe du Triomphe", "LE SIGNE DU TRIOMPHE","SDT"]
+  },
+  "le-dernier-panache": {
+    "name": "Le Dernier Panache",
+    "category": "spectacle",
+    "aliases": ["Le Dernier Panache", "Dernier Panache", "DP"]
+  },
+  "le-secret-de-la-lance": {
+    "name": "Le Secret de la Lance",
+    "category": "spectacle",
+    "aliases": ["Le Secret de la Lance", "Secret de la Lance", "SDL"]
+  },
+  "le-mime-et-letoile": {
+    "name": "Le Mime et l'Étoile",
+    "category": "spectacle",
+    "aliases": ["Le Mime et l'Étoile", "Le Mime et l'Etoile", "Mime et l'Étoile", "MIMO"]
+  },
+  "le-bal-des-oiseaux-fantomes": {
+    "name": "Le Bal des Oiseaux Fantômes",
+    "category": "spectacle",
+    "aliases": ["Le Bal des Oiseaux Fantômes", "Bal des Oiseaux Fantômes", "Le Bal des Oiseaux Fantomes", "BAL"]
+  },
+  "la-renaissance-du-chateau": {
+    "name": "La Renaissance du Château",
+    "category": "spectacle_immersif",
+    "aliases": ["La Renaissance du Château", "Renaissance du Château", "La Renaissance du Chateau"]
+  },
+
+  "mousquetaire-de-richelieu": {
+    "name": "Mousquetaire de Richelieu",
+    "category": "spectacle",
+    "aliases": ["Mousquetaire de Richelieu", "MOUSQUETAIRE DE RICHELIEU", "MDR"]
+  },
+  "lepee-du-roi-arthur": {
+    "name": "L'Épée du Roi Arthur",
+    "category": "spectacle",
+    "aliases": ["L'Épée du Roi Arthur", "L'Epee du Roi Arthur", "Epée du Roi Arthur", "L'ÉPÉE DU ROI ARTHUR", "ERA"]
+  },
+  "le-premier-royaume": {
+    "name": "Le Premier Royaume",
+    "category": "spectacle_immersif",
+    "aliases": ["Le Premier Royaume", "LE PREMIER ROYAUME"]
+  },
+  "les-automates-musiciens": {
+    "name": "Les Automates Musiciens",
+    "category": "spectacle",
+    "aliases": ["Les Automates Musiciens", "LES AUTOMATES MUSICIENS"]
+  },
+  "le-grand-carillon": {
+    "name": "Le Grand Carillon",
+    "category": "spectacle",
+    "aliases": ["Le Grand Carillon", "LE GRAND CARILLON"]
+  },
+  "les-grandes-eaux": {
+    "name": "Les Grandes Eaux",
+    "category": "spectacle",
+    "aliases": ["Les Grandes Eaux", "LES GRANDES EAUX"]
+  },
+  "le-mystere-de-la-perouse": {
+    "name": "Le Mystère de la Pérouse",
+    "category": "spectacle_immersif",
+    "aliases": ["Le Mystère de la Pérouse", "Le Mystere de la Perouse", "LE MYSTÈRE DE LA PÉROUSE"]
+  },
+  "les-amoureux-de-verdun": {
+    "name": "Les Amoureux de Verdun",
+    "category": "spectacle_immersif",
+    "aliases": ["Les Amoureux de Verdun", "LES AMOUREUX DE VERDUN"]
+  },
+  "les-noces-de-feu": {
+    "name": "Les Noces de Feu",
+    "category": "spectacle_nocturne",
+    "aliases": ["Les Noces de Feu", "LES NOCES DE FEU"]
+  }
+}

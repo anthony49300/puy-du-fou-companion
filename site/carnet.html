@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon carnet — Puy du Fou (non officiel)</title>
+<meta name="description" content="Planifiez votre journée de visite, gardez le carnet des spectacles déjà vus, et calculez la rentabilité de votre pass — tout reste dans votre navigateur.">
+<script>(function(){try{var t=localStorage.getItem("pdf-programmes-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);}}catch(e){}})();</script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="carnet">
+
+<header id="site-header"></header>
+
+<main>
+  <div class="container">
+    <section class="page-hero">
+      <h1>🗂️ Mon carnet</h1>
+      <p class="lede">Composez votre journée, gardez le carnet des spectacles vus au fil de vos visites, et suivez la rentabilité de votre pass. Tout reste enregistré dans <strong>ce navigateur uniquement</strong> — rien n'est envoyé ni stocké sur le serveur.</p>
+    </section>
+
+    <div class="status-banner status-ok no-print">
+      <span aria-hidden="true">🔒</span>
+      <span>Données 100% locales : elles ne quittent jamais votre appareil. Pensez à <strong>exporter</strong> une sauvegarde de temps en temps (bouton en bas de page) si vous changez de navigateur ou d'appareil.</span>
+    </div>
+
+    <div class="chip-row" role="tablist" id="carnet-tabs">
+      <button type="button" class="chip active" role="tab" data-tab="jour" aria-selected="true">Journée</button>
+      <button type="button" class="chip" role="tab" data-tab="visites" aria-selected="false">Visites</button>
+      <button type="button" class="chip" role="tab" data-tab="bilan" aria-selected="false">Bilan</button>
+      <button type="button" class="chip" role="tab" data-tab="pass" aria-selected="false">Pass</button>
+    </div>
+
+    <!-- ========== Onglet Journée ========== -->
+    <section class="tabpane" id="tab-jour">
+      <div class="card">
+        <div class="flex-between">
+          <h2 class="mt-0">Composer la journée</h2>
+        </div>
+        <div class="season-select-row">
+          <label for="planDate">Date
+            <br><input type="date" id="planDate" list="planDates">
+            <datalist id="planDates"></datalist>
+          </label>
+          <label for="planGate">Portes ouvertes (min. avant)
+            <br><input type="number" id="planGate" min="0" max="90" step="5" style="width:5rem">
+          </label>
+          <label for="planMoment">Formule
+            <br><select id="planMoment"><option>Jour</option><option>Après-midi</option><option>Soirée</option></select>
+          </label>
+          <button type="button" class="btn btn-outline" id="btnLoadReal">Charger le programme officiel de cette date</button>
+          <button type="button" class="btn btn-outline" id="btnClearDay">Vider la journée</button>
+        </div>
+        <p class="text-muted" id="planDatesHint" style="margin:0.5rem 0 0"></p>
+        <p class="text-muted" id="planHint" style="margin-bottom:0"></p>
+      </div>
+
+      <div class="card" style="margin-top:1.25rem">
+        <h3 class="mt-0">Ajouter un spectacle</h3>
+        <div id="addFromRealWrap" class="season-select-row" hidden>
+          <label for="addRealSelect">Depuis le programme officiel de cette date
+            <br><select id="addRealSelect" style="min-width:280px"></select>
+          </label>
+          <button type="button" class="btn" id="btnAddReal">Ajouter</button>
+        </div>
+        <details id="addManualWrap">
+          <summary class="text-muted" style="cursor:pointer">Ou ajouter manuellement (ex : Cinéscénie, spectacle non couvert par la collecte)</summary>
+          <div class="season-select-row" style="margin-top:0.75rem">
+            <label for="addManualName">Nom
+              <br><input type="text" id="addManualName" placeholder="Cinéscénie" style="min-width:180px">
+            </label>
+            <label for="addManualStart">Début
+              <br><input type="time" id="addManualStart" value="22:00">
+            </label>
+            <label for="addManualEnd">Fin
+              <br><input type="time" id="addManualEnd" value="23:40">
+            </label>
+            <button type="button" class="btn btn-outline" id="btnAddManual">Ajouter</button>
+          </div>
+        </details>
+      </div>
+
+      <div class="card" style="margin-top:1.25rem" id="jourAlertesWrap" hidden>
+        <div id="jourAlertes"></div>
+      </div>
+
+      <div id="jourTimeline"></div>
+
+      <div class="season-select-row no-print" style="margin-top:1rem">
+        <button type="button" class="btn" id="btnSaveVisit">Enregistrer comme visite effectuée</button>
+        <button type="button" class="btn btn-outline" id="btnPrintDay">Imprimer cette journée</button>
+      </div>
+    </section>
+
+    <!-- ========== Onglet Visites ========== -->
+    <section class="tabpane" id="tab-visites" hidden>
+      <div class="flex-between">
+        <h2>Mes visites</h2>
+        <button type="button" class="btn btn-outline" id="btnAddVisit">Ajouter une visite</button>
+      </div>
+      <p class="text-muted">Un clic marque un spectacle vu, un deuxième le compte deux fois, un troisième l'efface.</p>
+      <div class="visit-grid-wrap"><table class="visit-grid" id="tblVisites"></table></div>
+    </section>
+
+    <!-- ========== Onglet Bilan ========== -->
+    <section class="tabpane" id="tab-bilan" hidden>
+      <h2>Ma saison en chiffres</h2>
+      <div class="stat-grid" id="bilanKpis"></div>
+
+      <div class="card" style="margin-top:1.25rem">
+        <h3 class="mt-0">Spectacles les plus vus</h3>
+        <div id="bilanPalmares"></div>
+      </div>
+
+      <div class="charts-grid" style="margin-top:1.25rem">
+        <div class="card chart-card">
+          <h3>Rythme par mois</h3>
+          <div id="bilanParMois"></div>
+        </div>
+        <div class="card chart-card">
+          <h3>Formule de visite</h3>
+          <div id="bilanParMoment"></div>
+        </div>
+        <div class="card chart-card">
+          <h3>Jamais vus</h3>
+          <div class="chip-row" id="bilanJamaisVus"></div>
+          <h3 style="margin-top:1.25rem">Meilleure journée</h3>
+          <p class="text-muted mt-0" id="bilanMeilleureJournee"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== Onglet Pass ========== -->
+    <section class="tabpane" id="tab-pass" hidden>
+      <h2>Pass &amp; budget</h2>
+      <p class="text-muted">Tarifs à ajuster selon votre situation — rien n'est officiel ni mis à jour automatiquement ici.</p>
+      <div class="season-select-row">
+        <label for="prixPass">Prix du pass (€)
+          <br><input type="number" id="prixPass" min="0" step="1" style="width:7rem">
+        </label>
+        <label for="prixBillet">Billet 1 jour (€)
+          <br><input type="number" id="prixBillet" min="0" step="1" style="width:7rem">
+        </label>
+        <label for="prixCine">Billet Cinéscénie (€)
+          <br><input type="number" id="prixCine" min="0" step="1" style="width:7rem">
+        </label>
+        <label for="fraisVisite">Frais par visite (€)
+          <br><input type="number" id="fraisVisite" min="0" step="1" style="width:7rem">
+        </label>
+      </div>
+      <p class="text-muted">Frais par visite : trajet, repas, parking — ce qui s'ajoute au pass à chaque venue.</p>
+
+      <div class="stat-grid" id="passKpis"></div>
+
+      <div class="card" style="margin-top:1.25rem">
+        <div id="passRenta"></div>
+      </div>
+
+      <div class="card" style="margin-top:1.25rem">
+        <h3 class="mt-0">Coût du pass, visite après visite</h3>
+        <div id="passAmorti"></div>
+      </div>
+    </section>
+
+    <div class="decorative-rule">⚜ ⚜ ⚜</div>
+
+    <section class="section no-print">
+      <h2>Sauvegarde</h2>
+      <p class="text-muted">Vos données restent dans ce navigateur : changer d'appareil, vider le cache, ou naviguer en mode privé les effacerait. Exportez régulièrement une sauvegarde.</p>
+      <div class="season-select-row">
+        <button type="button" class="btn btn-outline" id="btnExport">Exporter mes données</button>
+        <button type="button" class="btn btn-outline" id="btnImport">Importer une sauvegarde</button>
+        <input type="file" id="fileImport" accept="application/json" hidden>
+        <button type="button" class="btn" style="background:var(--color-error)" id="btnResetAll">Vider le carnet</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="js/app.js"></script>
+<script src="js/carnet.js"></script>
+</body>
+</html>

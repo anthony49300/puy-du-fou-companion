@@ -1,0 +1,82 @@
+{
+  "year": 2026,
+  "season_name": "Saison 2026",
+  "start_date": "2026-04-04",
+  "end_date": "2027-01-03",
+  "final": false,
+  "as_of_date": "2026-09-02",
+  "generated_at": "2026-09-02T16:05:43",
+  "days_collected": 144,
+  "representations_by_category": {
+    "spectacle_immersif": 711,
+    "spectacle": 6254,
+    "spectacle_nocturne": 112
+  },
+  "total_spectacles": 16,
+  "total_representations": 7077,
+  "avg_per_day": 49.15,
+  "min_per_day": {
+    "date": "2026-08-31",
+    "count": 27
+  },
+  "max_per_day": {
+    "date": "2026-05-15",
+    "count": 75
+  },
+  "most_represented": [
+    {
+      "slug": "lepee-du-roi-arthur",
+      "name": "L'Épée du Roi Arthur",
+      "count": 837
+    },
+    {
+      "slug": "les-automates-musiciens",
+      "name": "Les Automates Musiciens",
+      "count": 774
+    },
+    {
+      "slug": "le-mime-et-letoile",
+      "name": "Le Mime et l'Étoile",
+      "count": 689
+    },
+    {
+      "slug": "le-grand-carillon",
+      "name": "Le Grand Carillon",
+      "count": 676
+    },
+    {
+      "slug": "le-dernier-panache",
+      "name": "Le Dernier Panache",
+      "count": 666
+    }
+  ],
+  "least_represented": [
+    {
+      "slug": "les-noces-de-feu",
+      "name": "Les Noces de Feu",
+      "count": 112
+    },
+    {
+      "slug": "le-mystere-de-la-perouse",
+      "name": "Le Mystère de la Pérouse",
+      "count": 144
+    },
+    {
+      "slug": "le-premier-royaume",
+      "name": "Le Premier Royaume",
+      "count": 144
+    },
+    {
+      "slug": "les-amoureux-de-verdun",
+      "name": "Les Amoureux de Verdun",
+      "count": 151
+    },
+    {
+      "slug": "le-signe-du-triomphe",
+      "name": "Le Signe du Triomphe",
+      "count": 269
+    }
+  ],
+  "continuous_count": 711,
+  "nocturnal_count": 117
+}

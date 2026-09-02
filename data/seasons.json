@@ -1,0 +1,8 @@
+{
+  "_comment": "Dates d'ouverture/fermeture de chaque saison du Puy du Fou. Clé = année (string), sert juste d'identifiant/nom pour la saison : la clé n'a pas besoin de correspondre à l'année calendaire de ses dates (une saison peut chevaucher le nouvel an, ex: 'Noël au Puy du Fou' qui se termine début janvier — la recherche se fait par plage de dates, pas par année). 'start_date'/'end_date' au format YYYY-MM-DD (toujours entre guillemets, ce sont des chaînes), ou null si pas encore officiellement connu. Modifiable directement ici, sans commande Python : ces valeurs sont resynchronisées en base à chaque collecte/export (voir src/season_config.py). Tant qu'une année n'a pas de dates renseignées (absente du fichier, ou start_date/end_date à null), la collecte se comporte comme avant : aucune notion d'ouverture/fermeture, pas de régression.",
+
+  "2026": {
+    "start_date": "2026-04-04",
+    "end_date": "2027-01-03"
+  }
+}

@@ -1,0 +1,74 @@
+name: Déploiement GitHub Pages
+
+# Déclenché explicitement par update-programme.yml après une collecte
+# réussie, ou manuellement, ou sur un push qui touche le site ou les données
+# exportées (filet de sécurité si le déclenchement explicite échoue).
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "data/json/**"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout du dépôt
+        uses: actions/checkout@v4
+
+      - name: Préparer le répertoire de publication
+        run: |
+          mkdir -p _site
+          # On reproduit la même structure relative que dans le dépôt
+          # (site/ et data/json/ côte à côte) pour que les chemins relatifs
+          # utilisés par le frontend (ex: ../data/json/today.json) fonctionnent
+          # à l'identique en local et une fois déployés.
+          cp -r site _site/site
+          mkdir -p _site/data
+          cp -r data/json _site/data/json
+
+          # Redirection depuis la racine du site déployé vers site/index.html,
+          # pour que l'URL de la Page GitHub ouvre directement l'application.
+          cat > _site/index.html <<'EOF'
+          <!doctype html>
+          <html lang="fr">
+            <head>
+              <meta charset="utf-8" />
+              <meta http-equiv="refresh" content="0; url=site/index.html" />
+              <title>Puy du Fou — Programmes</title>
+            </head>
+            <body>
+              <p>Redirection vers <a href="site/index.html">le site</a>…</p>
+            </body>
+          </html>
+          EOF
+
+      - name: Configurer GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Uploader l'artefact Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Déployer sur GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

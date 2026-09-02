@@ -1,0 +1,1013 @@
+{
+  "updated_at": "2026-09-02T14:47:24",
+  "dates": [
+    {
+      "date": "2026-04-04",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 58
+    },
+    {
+      "date": "2026-04-05",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 58
+    },
+    {
+      "date": "2026-04-06",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 40
+    },
+    {
+      "date": "2026-04-07",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-04-08",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 40
+    },
+    {
+      "date": "2026-04-09",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 40
+    },
+    {
+      "date": "2026-04-10",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-04-11",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-04-12",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 40
+    },
+    {
+      "date": "2026-04-13",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-04-14",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 54
+    },
+    {
+      "date": "2026-04-15",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-04-16",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 53
+    },
+    {
+      "date": "2026-04-17",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 40
+    },
+    {
+      "date": "2026-04-18",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-04-19",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-04-20",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-04-21",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 58
+    },
+    {
+      "date": "2026-04-22",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 54
+    },
+    {
+      "date": "2026-04-23",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 54
+    },
+    {
+      "date": "2026-04-24",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-04-25",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-04-26",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-04-27",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-04-28",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 40
+    },
+    {
+      "date": "2026-04-29",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 40
+    },
+    {
+      "date": "2026-04-30",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-05-01",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 66
+    },
+    {
+      "date": "2026-05-02",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 67
+    },
+    {
+      "date": "2026-05-03",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-05-04",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-05-05",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 40
+    },
+    {
+      "date": "2026-05-06",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-05-07",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 29
+    },
+    {
+      "date": "2026-05-08",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 72
+    },
+    {
+      "date": "2026-05-09",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 68
+    },
+    {
+      "date": "2026-05-10",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-05-13",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-05-14",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 62
+    },
+    {
+      "date": "2026-05-15",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 75
+    },
+    {
+      "date": "2026-05-16",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 68
+    },
+    {
+      "date": "2026-05-17",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 29
+    },
+    {
+      "date": "2026-05-21",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 38
+    },
+    {
+      "date": "2026-05-22",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 38
+    },
+    {
+      "date": "2026-05-23",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 67
+    },
+    {
+      "date": "2026-05-24",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 67
+    },
+    {
+      "date": "2026-05-25",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-05-28",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 40
+    },
+    {
+      "date": "2026-05-29",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 38
+    },
+    {
+      "date": "2026-05-30",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 54
+    },
+    {
+      "date": "2026-05-31",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-06-01",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 29
+    },
+    {
+      "date": "2026-06-02",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 34
+    },
+    {
+      "date": "2026-06-04",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 34
+    },
+    {
+      "date": "2026-06-05",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 41
+    },
+    {
+      "date": "2026-06-06",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 66
+    },
+    {
+      "date": "2026-06-07",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-06-08",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 29
+    },
+    {
+      "date": "2026-06-09",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 28
+    },
+    {
+      "date": "2026-06-11",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-06-12",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 40
+    },
+    {
+      "date": "2026-06-13",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 66
+    },
+    {
+      "date": "2026-06-14",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-06-15",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-06-16",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-06-17",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-06-18",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-06-19",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 53
+    },
+    {
+      "date": "2026-06-20",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 68
+    },
+    {
+      "date": "2026-06-21",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 41
+    },
+    {
+      "date": "2026-06-22",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 14,
+      "representation_count": 30
+    },
+    {
+      "date": "2026-06-23",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 32
+    },
+    {
+      "date": "2026-06-24",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 32
+    },
+    {
+      "date": "2026-06-25",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 41
+    },
+    {
+      "date": "2026-06-26",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 46
+    },
+    {
+      "date": "2026-06-27",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 66
+    },
+    {
+      "date": "2026-06-28",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-06-29",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 38
+    },
+    {
+      "date": "2026-06-30",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-07-01",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 29
+    },
+    {
+      "date": "2026-07-02",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 40
+    },
+    {
+      "date": "2026-07-03",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 46
+    },
+    {
+      "date": "2026-07-04",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 66
+    },
+    {
+      "date": "2026-07-05",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-07-06",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-07-07",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 35
+    },
+    {
+      "date": "2026-07-08",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 32
+    },
+    {
+      "date": "2026-07-09",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 40
+    },
+    {
+      "date": "2026-07-10",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 44
+    },
+    {
+      "date": "2026-07-11",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 66
+    },
+    {
+      "date": "2026-07-12",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 59
+    },
+    {
+      "date": "2026-07-13",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 46
+    },
+    {
+      "date": "2026-07-14",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 33
+    },
+    {
+      "date": "2026-07-15",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 40
+    },
+    {
+      "date": "2026-07-16",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 58
+    },
+    {
+      "date": "2026-07-17",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 53
+    },
+    {
+      "date": "2026-07-18",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 66
+    },
+    {
+      "date": "2026-07-19",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-07-20",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 40
+    },
+    {
+      "date": "2026-07-21",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-07-22",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-07-23",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 54
+    },
+    {
+      "date": "2026-07-24",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 56
+    },
+    {
+      "date": "2026-07-25",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 66
+    },
+    {
+      "date": "2026-07-26",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 58
+    },
+    {
+      "date": "2026-07-27",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-07-28",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 54
+    },
+    {
+      "date": "2026-07-29",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-07-30",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 58
+    },
+    {
+      "date": "2026-07-31",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 56
+    },
+    {
+      "date": "2026-08-01",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 66
+    },
+    {
+      "date": "2026-08-02",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 58
+    },
+    {
+      "date": "2026-08-03",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 58
+    },
+    {
+      "date": "2026-08-04",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 67
+    },
+    {
+      "date": "2026-08-05",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 67
+    },
+    {
+      "date": "2026-08-06",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 70
+    },
+    {
+      "date": "2026-08-07",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 66
+    },
+    {
+      "date": "2026-08-08",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 66
+    },
+    {
+      "date": "2026-08-09",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 62
+    },
+    {
+      "date": "2026-08-10",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 62
+    },
+    {
+      "date": "2026-08-11",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 69
+    },
+    {
+      "date": "2026-08-12",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 67
+    },
+    {
+      "date": "2026-08-13",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 70
+    },
+    {
+      "date": "2026-08-14",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 66
+    },
+    {
+      "date": "2026-08-15",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 66
+    },
+    {
+      "date": "2026-08-16",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 62
+    },
+    {
+      "date": "2026-08-17",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 62
+    },
+    {
+      "date": "2026-08-18",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 67
+    },
+    {
+      "date": "2026-08-19",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 67
+    },
+    {
+      "date": "2026-08-20",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 69
+    },
+    {
+      "date": "2026-08-21",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 66
+    },
+    {
+      "date": "2026-08-22",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 66
+    },
+    {
+      "date": "2026-08-23",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 54
+    },
+    {
+      "date": "2026-08-24",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 54
+    },
+    {
+      "date": "2026-08-25",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 54
+    },
+    {
+      "date": "2026-08-26",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 54
+    },
+    {
+      "date": "2026-08-27",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 58
+    },
+    {
+      "date": "2026-08-28",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 53
+    },
+    {
+      "date": "2026-08-29",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 66
+    },
+    {
+      "date": "2026-08-30",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 16,
+      "representation_count": 47
+    },
+    {
+      "date": "2026-08-31",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 27
+    },
+    {
+      "date": "2026-09-01",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 27
+    },
+    {
+      "date": "2026-09-02",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 27
+    },
+    {
+      "date": "2026-09-03",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 45
+    }
+  ]
+}

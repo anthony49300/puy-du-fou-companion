@@ -1,0 +1,5 @@
+Ce dossier reçoit les PDF bruts téléchargés lors de chaque collecte
+(nommés "{date}_{hash8}.pdf"). Les fichiers eux-mêmes sont ignorés par Git
+(voir .gitignore) : seul ce fichier assure que le dossier existe après un
+clone. Adaptez .gitignore (et envisagez Git LFS) si vous souhaitez
+conserver ces PDF dans le dépôt.

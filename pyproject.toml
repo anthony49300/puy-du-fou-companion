@@ -1,0 +1,26 @@
+[project]
+name = "puy-du-fou-companion"
+version = "0.1.0"
+description = "Collecte, historisation et analyse des programmes quotidiens du Puy du Fou France (projet communautaire, non officiel)."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dependencies = [
+    "httpx>=0.27",
+    "beautifulsoup4>=4.12",
+    "PyMuPDF>=1.24",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

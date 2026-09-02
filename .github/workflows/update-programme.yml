@@ -1,0 +1,129 @@
+name: Mise à jour quotidienne du programme
+
+# Un seul run par jour, le matin : le programme du jour même est de toute
+# façon déjà publié bien avant 9h (pas d'ambiguïté), et ceux du lendemain
+# et du surlendemain le sont aussi en pratique à cette heure-là (la page
+# SCHEDULE_PAGE_URL — voir src/config.py — publie systématiquement
+# aujourd'hui + demain + après-demain en un seul chargement). `collect-daily`
+# récupère donc les 3 jours (chacun seulement si pas déjà connu) en un seul
+# run, sans dépendre d'un déclenchement précis en fin de journée — en
+# régime stable, seul le nouveau jour de la fenêtre (après-demain)
+# nécessite une vraie collecte chaque matin.
+# workflow_dispatch permet de rejouer la collecte à tout moment (ex: après
+# correction du programme officiel) ; avec une date précisée, seule cette
+# date est recollectée (pas le combo des 3 jours).
+#
+# Minute volontairement décalée (13, pas 0) : GitHub documente que les
+# triggers "schedule" sont best-effort et peuvent être retardés ou sautés
+# en cas de forte charge, en particulier au tout début de chaque heure
+# (énormément de workflows sont programmés pile à :00 sur toute la
+# plateforme). Constaté concrètement le 02/09 : le run de 07h00 n'est
+# jamais parti, rattrapé seulement par un workflow_dispatch manuel.
+on:
+  schedule:
+    - cron: "13 7 * * *"    # ~09h13 Europe/Paris (heure d'été) / 08h13 en hiver
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Date à recollecter (YYYY-MM-DD). Laisser vide pour le combo aujourd'hui+demain+après-demain."
+        required: false
+        default: ""
+      source:
+        description: "Source à utiliser pour une date précise (ignoré si 'date' est vide) : 'json' (page programme-du-jour) ou 'pdf' (repli, ancienne méthode)."
+        required: false
+        type: choice
+        options: ["json", "pdf"]
+        default: "json"
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: update-programme
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    # Runner GitHub hébergé classique. Le site officiel bloque (403, WAF
+    # CloudFront + AWS WAF) systématiquement toute IP d'hébergeur/datacenter,
+    # quel que soit le fournisseur ou le pays (constaté sur les runners
+    # GitHub-hébergés ET sur plusieurs VPS OVH avec IP différentes) : seule
+    # une IP résidentielle passe. La collecte passe donc par un proxy
+    # résidentiel (secret COLLECTOR_PROXY_URL, voir l'étape de collecte
+    # ci-dessous) plutôt que par un runner auto-hébergé — ce qui permet de
+    # revenir à un runner GitHub standard, plus simple à maintenir.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout du dépôt
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Installer les dépendances
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Collecter une date précise (workflow_dispatch avec date)
+        id: collect
+        if: github.event.inputs.date != ''
+        env:
+          COLLECTOR_PROXY_URL: ${{ secrets.COLLECTOR_PROXY_URL }}
+        run: python -m src.main collect --date "${{ github.event.inputs.date }}" --source "${{ github.event.inputs.source || 'json' }}"
+
+      - name: Collecte quotidienne (aujourd'hui si inconnu + demain)
+        id: collect_daily
+        if: github.event.inputs.date == ''
+        continue-on-error: true  # une des deux sous-collectes peut échouer sans bloquer export/commit
+        env:
+          COLLECTOR_PROXY_URL: ${{ secrets.COLLECTOR_PROXY_URL }}
+        run: python -m src.main collect-daily
+
+      - name: Régénérer les fichiers JSON pour le frontend
+        run: python -m src.main export
+
+      - name: Lancer les tests automatisés
+        run: pytest -v
+
+      - name: Résumé de la collecte dans les logs
+        if: always()
+        run: |
+          {
+            echo "## Résumé de la collecte"
+            echo ""
+            echo "- Déclenchement : \`${{ github.event_name }}\`"
+            echo "- Date demandée : \`${{ github.event.inputs.date || 'combo aujourd''hui+demain+après-demain' }}\`"
+            echo "- Source        : \`${{ github.event.inputs.source || 'json' }}\`"
+            echo "- Collecte date précise   : \`${{ steps.collect.outcome }}\`"
+            echo "- Collecte quotidienne    : \`${{ steps.collect_daily.outcome }}\`"
+            echo ""
+            echo "### Derniers logs de collecte (table collection_logs)"
+            echo '```'
+            python -c "from src import database; conn = database.get_connection(); database.init_db(conn); [print(dict(row)) for row in database.list_collection_logs(conn, limit=5)]; conn.close()"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Committer les changements (base + JSON)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/programmes.db data/json
+          if git diff --cached --quiet; then
+            echo "Aucun changement à committer."
+          else
+            git commit -m "chore: mise à jour automatique du programme ($(date -u +'%Y-%m-%dT%H:%M:%SZ'))"
+            git push
+          fi
+
+      - name: Déclencher le déploiement GitHub Pages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run deploy-pages.yml --ref "${{ github.ref_name }}"

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Historique — Puy du Fou (non officiel)</title>
+<meta name="description" content="Calendrier historique des programmes du Puy du Fou : consultez une date passée ou comparez deux dates.">
+<script>(function(){try{var t=localStorage.getItem("pdf-programmes-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);}}catch(e){}})();</script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="historique">
+
+<header id="site-header"></header>
+
+<main>
+  <div class="container">
+    <section class="page-hero">
+      <h1>📅 Historique</h1>
+      <p class="lede">Choisissez une date dans le calendrier pour consulter le programme de ce jour-là, ou comparez deux dates entre elles. Seules les dates disponibles dans les données collectées sont sélectionnables.</p>
+    </section>
+
+    <div id="dates-error-slot"></div>
+
+    <section class="section" style="display:flex; gap:2rem; flex-wrap:wrap; align-items:flex-start;">
+      <div class="calendar-wrap" id="calendar-wrap">
+        <div class="empty-state"><div class="skeleton" style="height:2rem;"></div></div>
+      </div>
+
+      <div style="flex:1; min-width:260px;">
+        <div id="day-detail" class="card">
+          <p class="text-muted">Sélectionnez une date disponible dans le calendrier pour afficher le programme correspondant.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="decorative-rule">⚜ ⚜ ⚜</div>
+
+    <section class="section">
+      <h2>Comparer deux dates</h2>
+      <div class="compare-calendars">
+        <div>
+          <p class="text-muted" style="margin:0 0 0.5rem"><strong>Date A</strong> — <span id="compare-a-label">aucune sélection</span></p>
+          <div class="calendar-wrap" id="compare-cal-a"></div>
+        </div>
+        <div>
+          <p class="text-muted" style="margin:0 0 0.5rem"><strong>Date B</strong> — <span id="compare-b-label">aucune sélection</span></p>
+          <div class="calendar-wrap" id="compare-cal-b"></div>
+        </div>
+      </div>
+      <button type="button" class="btn" id="compare-btn" style="margin-top:1.25rem" disabled>Comparer</button>
+      <div id="compare-result"></div>
+    </section>
+  </div>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="js/app.js"></script>
+<script src="js/historique.js"></script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+const test = require("node:test");
+const assert = require("node:assert");
+const { loadModule } = require("./helpers");
+
+function rep(start, end) {
+  return { start: start, end: end };
+}
+
+test("detecterConflits finds no conflict when shows are well spaced", () => {
+  const carnet = loadModule("carnet.js");
+  const fixes = [rep("10:00", "10:30"), rep("11:00", "11:30")];
+  assert.deepStrictEqual(carnet.detecterConflits(fixes, 30), []);
+});
+
+test("detecterConflits flags a real overlap (chevauchement: true)", () => {
+  const carnet = loadModule("carnet.js");
+  const fixes = [rep("10:00", "11:15"), rep("11:00", "11:30")];
+  const conflits = carnet.detecterConflits(fixes, 30);
+  assert.strictEqual(conflits.length, 1);
+  assert.strictEqual(conflits[0].chevauchement, true);
+});
+
+test("detecterConflits flags a tight-but-not-overlapping gate (chevauchement: false)", () => {
+  const carnet = loadModule("carnet.js");
+  // Fin à 10:50, portes du suivant (11:00 - 30min gate) = 10:30 : 10:50 > 10:30 mais pas > 11:00.
+  const fixes = [rep("10:00", "10:50"), rep("11:00", "11:30")];
+  const conflits = carnet.detecterConflits(fixes, 30);
+  assert.strictEqual(conflits.length, 1);
+  assert.strictEqual(conflits[0].chevauchement, false);
+});
+
+test("planItemExists detects a duplicate by slug + timing", () => {
+  const carnet = loadModule("carnet.js");
+  const plan = { items: [{ slug: "les-vikings", name: "Les Vikings", start: "10:00", end: "10:30", is_continuous: false }] };
+  assert.ok(carnet.planItemExists(plan, { slug: "les-vikings", start: "10:00", end: "10:30", is_continuous: false }));
+  assert.ok(!carnet.planItemExists(plan, { slug: "les-vikings", start: "16:00", end: "16:30", is_continuous: false }));
+});
+
+test("planItemExists falls back to name for manual (slug-less) entries", () => {
+  const carnet = loadModule("carnet.js");
+  const plan = { items: [{ slug: null, name: "Cinéscénie", start: "22:00", end: "23:40", is_continuous: false }] };
+  assert.ok(carnet.planItemExists(plan, { slug: null, name: "Cinéscénie", start: "22:00", end: "23:40", is_continuous: false }));
+});
+
+test("severiteConflit reports the worst severity an item is involved in", () => {
+  const carnet = loadModule("carnet.js");
+  const a = rep("10:00", "11:15");
+  const b = rep("11:00", "11:30");
+  const c = rep("12:00", "12:30");
+  const conflits = [{ a: a, b: b, chevauchement: true }];
+  assert.strictEqual(carnet.severiteConflit(a, conflits), "error");
+  assert.strictEqual(carnet.severiteConflit(b, conflits), "error");
+  assert.strictEqual(carnet.severiteConflit(c, conflits), null);
+});

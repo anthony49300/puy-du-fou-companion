@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# NOTE IMPORTANT : data/programmes.db N'EST PAS ignoré volontairement.
+# C'est la source d'historisation persistante entre deux exécutions de la
+# GitHub Action quotidienne (qui committe la base mise à jour). Voir le
+# README, section "Historisation", pour le détail de ce choix.
+
+# Sources brutes archivées (PDF de l'ancienne collecte, HTML de la source
+# JSON actuelle) : non essentielles au dépôt, le texte structuré extrait
+# est conservé durablement dans SQLite et dans data/json/history/*.json.
+# Adaptez si vous voulez les conserver (Git LFS recommandé dans ce cas).
+data/raw/*.pdf
+data/raw/*.html
+
+# Fichiers temporaires de test
+.tmp/
+*.tmp
+node_modules/
+
+# Scripts ponctuels d'usage strictement local (non destinés à être partagés
+# ni exécutés en CI) : gardés sur disque pour référence personnelle, jamais
+# committés.
+scripts/backfill_avril_aout_2026.py
+
+# OS / éditeurs
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
