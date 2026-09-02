@@ -277,7 +277,7 @@
         // Heure d'ouverture des portes : n'a de sens que pour une séance
         // ponctuelle (file d'attente) — pas pour un accès en continu.
         var gateLabel = (!it.is_continuous && it.start)
-          ? "🚪 portes " + PDF.formatTimeFR(minutesToHHMM(PDF.timeToMinutes(it.start) - S.gate))
+          ? "🚪 Ouverture des portes " + PDF.formatTimeFR(minutesToHHMM(PDF.timeToMinutes(it.start) - S.gate))
           : "";
         var badges = it.slug
           ? PDF.representationBadges({ start: it.start, is_continuous: it.is_continuous, status: it.status || "scheduled" }, it.category)
