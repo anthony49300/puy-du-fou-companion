@@ -15,12 +15,11 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import date as date_cls
 from pathlib import Path
 from typing import Optional
 
 from src import config, database, season_config, statistics
-from src.models import now_iso
+from src.models import now_iso, today_paris
 
 
 # Clés d'horodatage écrites par les fonctions export_* ci-dessous : elles
@@ -199,7 +198,7 @@ def export_today(conn: sqlite3.Connection, *, reference_date: Optional[str] = No
     (parc fermé), le statut le reflète explicitement (`out_of_season`)
     plutôt que de parler d'erreur ou de données périmées.
     """
-    reference_date = reference_date or date_cls.today().isoformat()
+    reference_date = reference_date or today_paris().isoformat()
     row = database.get_active_date(conn, reference_date)
     stale = False
     out_of_season, season_window, next_opening = _out_of_season_info(conn, reference_date)
@@ -279,7 +278,7 @@ def export_season_recap(
     if season is None:
         return None
 
-    reference_date = as_of_date or season["end_date"] or date_cls.today().isoformat()
+    reference_date = as_of_date or season["end_date"] or today_paris().isoformat()
     global_stats = statistics.compute_global_stats(conn, year)
     reps = database.get_all_active_representations(conn, year)
     by_category: dict[str, int] = {}
@@ -308,7 +307,7 @@ def maybe_export_season_recaps(conn: sqlite3.Connection, *, today: Optional[str]
     par mois calendaire tant qu'elle est en cours (instantané "as_of_date",
     voir `export_season_recap`). Retourne les années traitées.
     """
-    today = today or date_cls.today().isoformat()
+    today = today or today_paris().isoformat()
     generated = []
     for season in database.list_seasons(conn):
         if not season["start_date"] or season["start_date"] > today:

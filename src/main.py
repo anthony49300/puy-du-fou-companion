@@ -20,6 +20,7 @@ from datetime import timedelta
 
 from src import config, database, exporter, season_config, statistics
 from src.collector import Collector, PuyDuFouSourceAdapter
+from src.models import today_paris
 
 
 def _print_header(title: str) -> None:
@@ -35,9 +36,9 @@ def cmd_collect(args: argparse.Namespace) -> int:
         # fiable le lendemain (les cron GitHub Actions peuvent être
         # retardés de plusieurs heures), sans requête réseau différente de
         # celle d'aujourd'hui — seule la date ciblée pour le parsing change.
-        target_date = date_cls.today() + timedelta(days=1)
+        target_date = today_paris() + timedelta(days=1)
     else:
-        target_date = date_cls.fromisoformat(args.date) if args.date else date_cls.today()
+        target_date = date_cls.fromisoformat(args.date) if args.date else today_paris()
 
     # --source pdf : repli explicite sur l'ancienne méthode (téléchargement
     # + parsing du PDF officiel), conservée intacte et fonctionnelle pour le
@@ -116,7 +117,7 @@ def cmd_collect_daily(args: argparse.Namespace) -> int:
     manqué) — utilisez `collect --date ...`/`collect --tomorrow`
     manuellement si besoin de forcer une recollecte.
     """
-    today = date_cls.today()
+    today = today_paris()
     tomorrow = today + timedelta(days=1)
     day_after_tomorrow = today + timedelta(days=2)
     with database.connect() as conn:

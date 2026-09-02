@@ -8,8 +8,12 @@ et l'exporteur, sans se passer des dictionnaires "au petit bonheur".
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import date as date_cls
 from datetime import datetime
 from typing import Optional
+from zoneinfo import ZoneInfo
+
+from src import config
 
 
 @dataclass
@@ -110,3 +114,12 @@ class ParseResult:
 def now_iso() -> str:
     """Horodatage ISO 8601 avec secondes, sans dépendre du fuseau système."""
     return datetime.now().isoformat(timespec="seconds")
+
+
+def today_paris() -> date_cls:
+    """Date du jour en heure de Paris — PAS `date.today()` (naïve, fuseau du
+    serveur qui exécute la collecte : UTC sur les runners GitHub Actions).
+    Sans ça, "aujourd'hui" décale d'1-2h par rapport aux visiteurs français
+    en tout début/fin de journée (ex: minuit passé à Paris mais toujours la
+    veille en UTC)."""
+    return datetime.now(ZoneInfo(config.TIMEZONE_NAME)).date()

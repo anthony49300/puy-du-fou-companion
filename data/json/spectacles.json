@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-02T22:28:47",
+  "updated_at": "2026-09-03T00:40:10",
   "categories": [
     "spectacle",
     "spectacle_nocturne",
@@ -13,7 +13,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 3,
+        "today_count": 5,
         "avg_per_day": 5.81,
         "days_present": 145,
         "days_absent": 0,
@@ -1203,7 +1203,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 2,
+        "today_count": 3,
         "avg_per_day": 3.46,
         "days_present": 145,
         "days_absent": 0,
@@ -1798,7 +1798,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 2,
+        "today_count": 4,
         "avg_per_day": 4.62,
         "days_present": 145,
         "days_absent": 0,
@@ -2393,7 +2393,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 3,
+        "today_count": 5,
         "avg_per_day": 4.7,
         "days_present": 145,
         "days_absent": 0,
@@ -2988,7 +2988,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 2,
+        "today_count": 4,
         "avg_per_day": 4.78,
         "days_present": 145,
         "days_absent": 0,
@@ -4773,7 +4773,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 1,
+        "today_count": 3,
         "avg_per_day": 2.91,
         "days_present": 145,
         "days_absent": 0,
@@ -5368,7 +5368,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 1,
+        "today_count": 2,
         "avg_per_day": 1.87,
         "days_present": 145,
         "days_absent": 0,
@@ -6558,7 +6558,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 3,
+        "today_count": 6,
         "avg_per_day": 5.38,
         "days_present": 145,
         "days_absent": 0,
@@ -7153,7 +7153,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 2,
+        "today_count": 3,
         "avg_per_day": 2.97,
         "days_present": 143,
         "days_absent": 2,
@@ -8343,7 +8343,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 2,
+        "today_count": 3,
         "avg_per_day": 3.48,
         "days_present": 145,
         "days_absent": 0,
@@ -8938,7 +8938,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 2,
+        "today_count": 3,
         "avg_per_day": 3.48,
         "days_present": 145,
         "days_absent": 0,

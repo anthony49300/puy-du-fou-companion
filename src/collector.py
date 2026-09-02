@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Optional
 
 from src import config, database, normalizer, pdf_parser, schedule_json_parser, season_config
-from src.models import now_iso
+from src.models import now_iso, today_paris
 
 
 @dataclass
@@ -250,7 +250,7 @@ class Collector:
         self.db_path = db_path
 
     def collect(self, target_date: Optional[date_cls] = None, *, dry_run: bool = False) -> CollectOutcome:
-        target_date = target_date or date_cls.today()
+        target_date = target_date or today_paris()
         date_str = target_date.isoformat()
 
         with database.connect(self.db_path) as conn:

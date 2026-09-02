@@ -4,14 +4,14 @@ CLI avec une branche conditionnelle qui mérite un test dédié (le reste de
 main.py est un fin habillage d'affichage autour de fonctions déjà testées
 ailleurs : Collector, exporter, statistics).
 """
-from datetime import date, timedelta
+from datetime import timedelta
 
 import pytest
 
 from src import config, database, main
 from src.collector import Collector as RealCollector
 from src.collector import SourceAdapter
-from src.models import now_iso
+from src.models import now_iso, today_paris
 
 
 class _RecordingAdapter(SourceAdapter):
@@ -56,7 +56,7 @@ def _seed_date(conn, date_str):
     )
 
 
-TODAY = date.today()
+TODAY = today_paris()  # même horloge que le code testé (voir src.models.today_paris)
 TOMORROW = TODAY + timedelta(days=1)
 DAY_AFTER_TOMORROW = TODAY + timedelta(days=2)
 
