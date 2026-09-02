@@ -52,3 +52,14 @@ test("severiteConflit reports the worst severity an item is involved in", () => 
   assert.strictEqual(carnet.severiteConflit(b, conflits), "error");
   assert.strictEqual(carnet.severiteConflit(c, conflits), null);
 });
+
+test("minutesToHHMM converts minutes-since-midnight back to HH:MM", () => {
+  const carnet = loadModule("carnet.js");
+  assert.strictEqual(carnet.minutesToHHMM(90), "01:30");
+  assert.strictEqual(carnet.minutesToHHMM(645), "10:45");
+});
+
+test("minutesToHHMM wraps around before midnight (defensive edge case)", () => {
+  const carnet = loadModule("carnet.js");
+  assert.strictEqual(carnet.minutesToHHMM(-15), "23:45");
+});

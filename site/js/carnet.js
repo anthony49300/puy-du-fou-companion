@@ -247,6 +247,15 @@
     renderAlertes(tous, conflits);
   }
 
+  // Minutes depuis minuit -> "HH:MM" (inverse de PDF.timeToMinutes), avec
+  // repli circulaire si la marge fait passer avant minuit (cas limite
+  // improbable vu les horaires réels du parc, géré par prudence).
+  function minutesToHHMM(mins) {
+    mins = ((mins % 1440) + 1440) % 1440;
+    var h = Math.floor(mins / 60), m = mins % 60;
+    return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
+  }
+
   function renderTimeline(items, conflits) {
     var el = $("jourTimeline");
     if (!items.length) {
@@ -265,6 +274,11 @@
         var timeLabel = it.is_continuous
           ? "En continu" + (it.end ? " " + PDF.formatTimeFR(it.start) + "–" + PDF.formatTimeFR(it.end) : "")
           : PDF.formatTimeFR(it.start) + (it.end ? "–" + PDF.formatTimeFR(it.end) : "");
+        // Heure d'ouverture des portes : n'a de sens que pour une séance
+        // ponctuelle (file d'attente) — pas pour un accès en continu.
+        var gateLabel = (!it.is_continuous && it.start)
+          ? "🚪 portes " + PDF.formatTimeFR(minutesToHHMM(PDF.timeToMinutes(it.start) - S.gate))
+          : "";
         var badges = it.slug
           ? PDF.representationBadges({ start: it.start, is_continuous: it.is_continuous, status: it.status || "scheduled" }, it.category)
           : '<span class="badge badge-default">Ajout manuel</span>';
@@ -272,7 +286,10 @@
         else if (sev === "warn") badges += '<span class="badge badge-conflict-warn">⚠️ Portes justes</span>';
         return (
           '<div class="' + cls + '">' +
-          '<div class="rep-time">' + PDF.escapeHtml(timeLabel) + "</div>" +
+          '<div class="rep-time">' +
+          '<span class="rep-time-main">' + PDF.escapeHtml(timeLabel) + "</span>" +
+          (gateLabel ? '<span class="rep-time-gate">' + PDF.escapeHtml(gateLabel) + "</span>" : "") +
+          "</div>" +
           '<div class="rep-name">' + PDF.escapeHtml(it.name) + "</div>" +
           '<div class="rep-badges">' + badges + "</div>" +
           '<button type="button" class="btn btn-outline no-print" data-remove="' + it.uid + '" aria-label="Retirer ' + PDF.escapeHtml(it.name) + '" style="padding:0.35rem 0.6rem;">✕</button>' +
@@ -780,6 +797,9 @@
 
   // Exposé pour les tests (tests/frontend/) — no-op dans un navigateur.
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = { detecterConflits: detecterConflits, planItemExists: planItemExists, severiteConflit: severiteConflit };
+    module.exports = {
+      detecterConflits: detecterConflits, planItemExists: planItemExists, severiteConflit: severiteConflit,
+      minutesToHHMM: minutesToHHMM,
+    };
   }
 })();

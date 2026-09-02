@@ -648,6 +648,17 @@ main { flex: 1; }
   font-size: 1.1rem;
   color: var(--text);
   min-width: 4.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+/* Heure d'ouverture des portes (carnet uniquement) : sous-ligne discrète
+   sous l'horaire principal, pas une donnée officielle au même titre. */
+.rep-time-gate {
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Segoe UI", serif;
+  font-weight: 400;
+  font-size: 0.7rem;
+  color: var(--text-soft);
 }
 .rep-name { font-weight: 600; flex: 1 1 180px; }
 .rep-badges { display: flex; gap: 0.35rem; flex-wrap: wrap; }
