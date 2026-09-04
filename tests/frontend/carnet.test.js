@@ -118,3 +118,33 @@ test("buildAutoPlan excludes sold-out ('complet') shows", () => {
   const plan = carnet.buildAutoPlan(slots, 30);
   assert.deepStrictEqual(plan.map((s) => s.name), ["B"]);
 });
+
+test("buildAutoPlan casts aside a conflicting optional show to protect a mandatory one", () => {
+  const carnet = loadModule("carnet.js");
+  const slots = [
+    slot("Immersif", "14:00", "14:45", { slug: "immersif" }),
+    slot("Optionnel gênant", "14:30", "15:00", { slug: "optionnel-genant" }), // chevauche l'immersif
+    slot("Optionnel compatible", "16:00", "16:30", { slug: "optionnel-ok" }),
+  ];
+  const plan = carnet.buildAutoPlan(slots, 30, ["immersif"]);
+  assert.deepStrictEqual(plan.map((s) => s.slug), ["immersif", "optionnel-ok"]);
+});
+
+test("buildAutoPlan guarantees at least one representation of a mandatory show with several per day", () => {
+  const carnet = loadModule("carnet.js");
+  // Un spectacle répété (ex : fontaines) peut apparaître plusieurs fois dans
+  // la proposition, comme n'importe quel spectacle optionnel répété — seule
+  // la présence d'AU MOINS une séance est garantie par le mécanisme "incontournable".
+  const slots = [
+    slot("Fontaines 10h", "10:00", "10:20", { slug: "fontaines" }),
+    slot("Fontaines 15h", "15:00", "15:20", { slug: "fontaines" }),
+  ];
+  const plan = carnet.buildAutoPlan(slots, 30, ["fontaines"]);
+  assert.ok(plan.some((s) => s.slug === "fontaines"));
+});
+
+test("buildAutoPlan without mandatorySlugs behaves exactly as before (backward compatible)", () => {
+  const carnet = loadModule("carnet.js");
+  const slots = [slot("A", "10:00", "11:15"), slot("B", "11:00", "11:30"), slot("C", "12:00", "12:30")];
+  assert.deepStrictEqual(carnet.buildAutoPlan(slots, 30).map((s) => s.name), carnet.buildAutoPlan(slots, 30, []).map((s) => s.name));
+});

@@ -967,6 +967,15 @@ table.visit-grid tfoot td { font-weight: 700; background: var(--bg-elevated); }
 .visit-check-btn.is-seen-twice { background: var(--accent-2-soft); border-color: var(--accent-2); color: var(--badge-complet); }
 .visit-check-name { font-size: 0.92rem; }
 
+/* Liste à cocher (spectacles incontournables avant de générer un planning
+   automatique) : simple case à cocher, contrairement à .visit-check-btn qui
+   cycle un compteur. */
+.pick-list { display: flex; flex-direction: column; gap: 0.1rem; max-height: 20rem; overflow-y: auto; margin-top: 0.5rem; }
+.pick-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.3rem 0.4rem; border-radius: 8px; }
+.pick-item:hover { background: var(--bg-elevated); }
+.pick-item input[type="checkbox"] { width: 1.15rem; height: 1.15rem; flex-shrink: 0; }
+.pick-item .pick-name { font-size: 0.92rem; }
+
 @media (max-width: 640px) {
   .bar { grid-template-columns: 90px 2fr auto; }
 }

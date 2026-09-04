@@ -58,6 +58,7 @@
     realDayCache: {}, // "2026-08-26" -> payload today.json/history, ou null si indisponible
     currentRealSlots: [], // options actuellement proposées dans le select "programme officiel"
     currentVisit: null, // visite actuellement ouverte dans le panneau de détail (onglet Visites)
+    autoPlanSlots: [], // horaires officiels proposés pour le panneau "planning automatique"
   };
 
   function uid() {
@@ -229,22 +230,59 @@
     });
   }
 
+  // Deux séances à heure fixe sont compatibles si l'une se termine avant
+  // l'ouverture des portes de l'autre (marge `gate` incluse) — peu importe
+  // laquelle des deux vient en premier.
+  function seancesCompatibles(a, b, gate) {
+    var avant = a.start <= b.start ? a : b;
+    var apres = avant === a ? b : a;
+    return PDF.timeToMinutes(avant.end) <= PDF.timeToMinutes(apres.start) - gate;
+  }
+
   // Construit une proposition de journée sans conflit à partir des horaires
   // officiels d'une date : toutes les attractions en continu (jamais en
   // conflit entre elles), plus le plus grand nombre possible de séances
-  // ponctuelles compatibles (glouton trié par heure de fin, marge des
-  // portes incluse dans le test de compatibilité — optimal pour maximiser
-  // le nombre de séances casées, même avec cette marge). Les séances
-  // "complet" sont écartées : impossible d'y assister de toute façon.
-  function buildAutoPlan(slots, gate) {
+  // ponctuelles compatibles. Les séances "complet" sont écartées :
+  // impossible d'y assister de toute façon.
+  //
+  // `mandatorySlugs` (optionnel) : spectacles à caser en priorité (ex :
+  // immersifs à capacité limitée, choisis à la main avant de générer). On
+  // leur case d'abord une séance chacun (glouton par heure de fin, une
+  // seule représentation par spectacle), puis on complète avec le plus de
+  // séances optionnelles possible SANS jamais gêner ces incontournables —
+  // toute séance optionnelle qui en gênerait un est écartée avant le second
+  // passage glouton, qui reste donc un glouton classique (trié par fin) sur
+  // le mélange incontournables + optionnels restants.
+  function buildAutoPlan(slots, gate, mandatorySlugs) {
+    var mandatorySet = {};
+    (mandatorySlugs || []).forEach(function (slug) { mandatorySet[slug] = true; });
+
     var continus = slots.filter(function (s) { return s.is_continuous && s.status !== "complet"; });
-    var fixes = slots
-      .filter(function (s) { return !s.is_continuous && s.start && s.end && s.status !== "complet"; })
+    var fixesAll = slots.filter(function (s) { return !s.is_continuous && s.start && s.end && s.status !== "complet"; });
+
+    var incontournables = fixesAll
+      .filter(function (s) { return mandatorySet[s.slug]; })
+      .sort(function (a, b) { return a.end.localeCompare(b.end); });
+    var locked = [];
+    var fulfilled = {};
+    incontournables.forEach(function (s) {
+      if (fulfilled[s.slug]) return; // une seule séance suffit pour ce spectacle
+      var dernier = locked[locked.length - 1];
+      if (!dernier || seancesCompatibles(dernier, s, gate)) {
+        locked.push(s);
+        fulfilled[s.slug] = true;
+      }
+    });
+
+    var optionnels = fixesAll
+      .filter(function (s) { return locked.indexOf(s) === -1; })
+      .filter(function (s) { return locked.every(function (l) { return seancesCompatibles(l, s, gate); }); })
       .sort(function (a, b) { return a.end.localeCompare(b.end); });
 
+    var fusion = locked.concat(optionnels).sort(function (a, b) { return a.end.localeCompare(b.end); });
     var choisis = [];
     var finPrecedente = null;
-    fixes.forEach(function (s) {
+    fusion.forEach(function (s) {
       var portes = PDF.timeToMinutes(s.start) - gate;
       if (finPrecedente == null || PDF.timeToMinutes(finPrecedente) <= portes) {
         choisis.push(s);
@@ -374,10 +412,52 @@
     wrap.hidden = false;
   }
 
+  // Panneau "planning automatique" : laisse choisir, avant de générer, les
+  // spectacles à caser en priorité (immersifs à capacité limitée en tête —
+  // ce sont eux qu'on risque le plus de rater).
+  function openAutoPlanPicker(slots) {
+    state.autoPlanSlots = slots;
+    var vus = {};
+    var distincts = [];
+    // Seuls les spectacles à heure fixe ont un intérêt à cocher : les
+    // attractions en continu (souvent les immersifs, en accès libre sur une
+    // plage horaire) sont de toute façon toujours incluses automatiquement.
+    slots.forEach(function (s) {
+      if (s.is_continuous || !s.slug || vus[s.slug]) return;
+      vus[s.slug] = true;
+      distincts.push({ slug: s.slug, name: s.name, category: s.category });
+    });
+    distincts.sort(function (a, b) {
+      var pa = a.category === "spectacle_immersif" ? 0 : 1;
+      var pb = b.category === "spectacle_immersif" ? 0 : 1;
+      return pa !== pb ? pa - pb : a.name.localeCompare(b.name, "fr");
+    });
+    $("autoPlanChecklist").innerHTML = distincts.length
+      ? distincts.map(function (s) {
+          return (
+            '<label class="pick-item">' +
+            '<input type="checkbox" value="' + PDF.escapeHtml(s.slug) + '">' +
+            '<span class="pick-name">' + PDF.escapeHtml(s.name) + "</span>" +
+            PDF.categoryBadgeHtml(s.category) +
+            "</label>"
+          );
+        }).join("")
+      : '<p class="text-muted">Aucun spectacle à heure fixe ce jour-là.</p>';
+    $("autoPlanWrap").hidden = false;
+    if (typeof $("autoPlanWrap").scrollIntoView === "function") {
+      $("autoPlanWrap").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+
+  function closeAutoPlanPicker() {
+    $("autoPlanWrap").hidden = true;
+  }
+
   function initJourListeners() {
     $("planDate").addEventListener("change", function () {
       state.currentRealSlots = [];
       $("addFromRealWrap").hidden = true;
+      closeAutoPlanPicker();
       renderJour();
     });
     $("planGate").addEventListener("change", function () {
@@ -420,7 +500,6 @@
     $("btnAutoPlan").addEventListener("click", function () {
       var dateStr = $("planDate").value;
       if (!dateStr) return toast("Choisissez une date.");
-      var plan = planCourant(dateStr);
       var btn = $("btnAutoPlan");
       btn.disabled = true;
       fetchRealDay(dateStr).then(function (dayData) {
@@ -439,28 +518,52 @@
           );
           return;
         }
-        if (plan.items.length && !confirm("Remplacer le programme actuel de cette journée par une proposition automatique ?")) return;
-        var propose = buildAutoPlan(slots, S.gate);
-        if (!propose.length) {
-          toast("Aucune séance ne peut être proposée pour cette date (toutes complètes, ou incompatibles entre elles).");
-          return;
-        }
-        plan.items = propose.map(function (s) {
-          return {
-            slug: s.slug, name: s.name, category: s.category,
-            start: s.start, end: s.end, is_continuous: s.is_continuous, status: s.status, uid: uid(),
-          };
-        });
-        sauver();
-        renderJour();
-        var fixesDispo = slots.filter(function (s) { return !s.is_continuous && s.start && s.end && s.status !== "complet"; }).length;
-        var fixesRetenues = propose.filter(function (s) { return !s.is_continuous; }).length;
-        var ecartees = fixesDispo - fixesRetenues;
-        toast(
-          "Planning proposé : " + propose.length + " spectacle" + (propose.length > 1 ? "s" : "") +
-          (ecartees > 0 ? " (" + ecartees + " séance" + (ecartees > 1 ? "s" : "") + " horaire incompatible écartée" + (ecartees > 1 ? "s" : "") + ")" : "") + "."
-        );
+        openAutoPlanPicker(slots);
       });
+    });
+
+    $("btnCancelAutoPlan").addEventListener("click", closeAutoPlanPicker);
+
+    $("btnGenerateAutoPlan").addEventListener("click", function () {
+      var dateStr = $("planDate").value;
+      var plan = planCourant(dateStr);
+      var slots = state.autoPlanSlots;
+      if (!plan || !slots.length) return;
+      var mandatorySlugs = Array.prototype.slice
+        .call($("autoPlanChecklist").querySelectorAll("input[type=checkbox]:checked"))
+        .map(function (cb) { return cb.value; });
+      if (plan.items.length && !confirm("Remplacer le programme actuel de cette journée par une proposition automatique ?")) return;
+      var propose = buildAutoPlan(slots, S.gate, mandatorySlugs);
+      if (!propose.length) {
+        toast("Aucune séance ne peut être proposée pour cette date (toutes complètes, ou incompatibles entre elles).");
+        return;
+      }
+      plan.items = propose.map(function (s) {
+        return {
+          slug: s.slug, name: s.name, category: s.category,
+          start: s.start, end: s.end, is_continuous: s.is_continuous, status: s.status, uid: uid(),
+        };
+      });
+      sauver();
+      renderJour();
+      closeAutoPlanPicker();
+
+      var proposeSlugs = {};
+      propose.forEach(function (s) { if (s.slug) proposeSlugs[s.slug] = true; });
+      var manques = mandatorySlugs.filter(function (slug) { return !proposeSlugs[slug]; });
+      var fixesDispo = slots.filter(function (s) { return !s.is_continuous && s.start && s.end && s.status !== "complet"; }).length;
+      var fixesRetenues = propose.filter(function (s) { return !s.is_continuous; }).length;
+      var ecartees = fixesDispo - fixesRetenues;
+      var msg =
+        "Planning proposé : " + propose.length + " spectacle" + (propose.length > 1 ? "s" : "") +
+        (ecartees > 0 ? " (" + ecartees + " séance" + (ecartees > 1 ? "s" : "") + " horaire incompatible écartée" + (ecartees > 1 ? "s" : "") + ")" : "") + ".";
+      if (manques.length) {
+        var noms = manques.map(function (slug) {
+          return state.catalogueBySlug[slug] ? state.catalogueBySlug[slug].name : slug;
+        });
+        msg += " ⚠️ Impossible de caser : " + noms.join(", ") + ".";
+      }
+      toast(msg);
     });
 
     $("btnAddReal").addEventListener("click", function () {
