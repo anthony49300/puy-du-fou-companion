@@ -316,6 +316,38 @@
     return continus.concat(choisis);
   }
 
+  // Pour un spectacle demandé qui n'a pas pu être casé : chacune de ses
+  // séances possibles ce jour-là, et le(s) spectacle(s) déjà casés qu'il
+  // faudrait retirer pour lui faire de la place.
+  function optionsPourManquant(slug, slots, gate, planItems) {
+    var candidats = slots.filter(function (s) {
+      return !s.is_continuous && s.start && s.end && s.status !== "complet" && s.slug === slug;
+    });
+    var fixesPlan = planItems.filter(function (it) { return !it.is_continuous && it.start && it.end; });
+    return candidats.map(function (c) {
+      return {
+        start: c.start, end: c.end,
+        blockers: fixesPlan.filter(function (it) { return !seancesCompatibles(it, c, gate); }),
+      };
+    });
+  }
+
+  // Spectacles demandés absents du planning actuel, avec pour chacun les
+  // choix possibles pour l'y intégrer quand même (voir optionsPourManquant).
+  function analyserManques(mandatorySlugs, slots, gate, planItems) {
+    var presents = {};
+    planItems.forEach(function (it) { if (it.slug) presents[it.slug] = true; });
+    return mandatorySlugs
+      .filter(function (slug) { return !presents[slug]; })
+      .map(function (slug) {
+        return {
+          slug: slug,
+          name: state.catalogueBySlug[slug] ? state.catalogueBySlug[slug].name : slug,
+          options: optionsPourManquant(slug, slots, gate, planItems),
+        };
+      });
+  }
+
   function renderJour() {
     var dateStr = $("planDate").value;
     var plan = planCourant(dateStr);
@@ -466,6 +498,7 @@
           );
         }).join("")
       : '<p class="text-muted">Aucun spectacle à heure fixe ce jour-là.</p>';
+    $("autoPlanResult").innerHTML = "";
     $("autoPlanWrap").hidden = false;
     if (typeof $("autoPlanWrap").scrollIntoView === "function") {
       $("autoPlanWrap").scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -474,6 +507,88 @@
 
   function closeAutoPlanPicker() {
     $("autoPlanWrap").hidden = true;
+    $("autoPlanResult").innerHTML = "";
+  }
+
+  // Bilan de la génération : reste affiché (pas un toast qui disparaît) tant
+  // que le panneau est ouvert, avec — en mode précis — un choix concret à
+  // faire pour chaque spectacle demandé qui n'a pas pu être casé.
+  function renderAutoPlanResult(mandatorySlugs, slots, propose) {
+    var el = $("autoPlanResult");
+
+    if (!mandatorySlugs.length) {
+      var fixesDispo = slots.filter(function (s) { return !s.is_continuous && s.start && s.end && s.status !== "complet"; }).length;
+      var fixesRetenues = propose.filter(function (s) { return !s.is_continuous; }).length;
+      var ecartees = fixesDispo - fixesRetenues;
+      el.innerHTML = '<div class="status-banner status-ok"><span aria-hidden="true">✅</span><span>' +
+        "Planning proposé : " + propose.length + " spectacle" + (propose.length > 1 ? "s" : "") +
+        (ecartees > 0 ? " (" + ecartees + " séance" + (ecartees > 1 ? "s" : "") + " horaire incompatible écartée" + (ecartees > 1 ? "s" : "") + ")" : "") +
+        ".</span></div>";
+      return;
+    }
+
+    var dateStr = $("planDate").value;
+    var plan = planCourant(dateStr);
+    var manques = analyserManques(mandatorySlugs, slots, S.gate, plan.items);
+
+    if (!manques.length) {
+      el.innerHTML = '<div class="status-banner status-ok"><span aria-hidden="true">✅</span><span>' +
+        "Les " + mandatorySlugs.length + " spectacle" + (mandatorySlugs.length > 1 ? "s" : "") + " demandé" + (mandatorySlugs.length > 1 ? "s" : "") +
+        " " + (mandatorySlugs.length > 1 ? "sont tous casés" : "est casé") + ".</span></div>";
+      return;
+    }
+
+    el.innerHTML =
+      '<div class="status-banner status-warn"><span aria-hidden="true">⚠️</span><span>' +
+      (mandatorySlugs.length - manques.length) + "/" + mandatorySlugs.length + " spectacle" + (mandatorySlugs.length > 1 ? "s" : "") +
+      " demandé" + (mandatorySlugs.length > 1 ? "s" : "") + " casé" + (mandatorySlugs.length > 1 ? "s" : "") +
+      " — les suivants se heurtent à un conflit, à vous de choisir :</span></div>" +
+      manques.map(function (m) {
+        if (!m.options.length) {
+          return '<div class="autoplan-conflict"><strong>' + PDF.escapeHtml(m.name) + "</strong>Aucun horaire disponible ce jour-là.</div>";
+        }
+        return (
+          '<div class="autoplan-conflict"><strong>' + PDF.escapeHtml(m.name) + "</strong>" +
+          m.options.map(function (opt, i) {
+            var noms = opt.blockers.map(function (b) {
+              return PDF.escapeHtml(b.name) + " (" + PDF.formatTimeFR(b.start) + "–" + PDF.formatTimeFR(b.end) + ")";
+            }).join(" et ");
+            return (
+              '<div class="autoplan-choice">' +
+              "<span>" + PDF.formatTimeFR(opt.start) + "–" + PDF.formatTimeFR(opt.end) +
+              (noms ? " — à la place de " + noms : " — créneau libre") + "</span>" +
+              '<button type="button" class="btn btn-outline" data-swap="' + m.slug + "|" + i + '">Faire ce choix</button>' +
+              "</div>"
+            );
+          }).join("") +
+          "</div>"
+        );
+      }).join("");
+
+    el.querySelectorAll("[data-swap]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var parts = btn.getAttribute("data-swap").split("|");
+        var slug = parts[0], idx = +parts[1];
+        var m = manques.filter(function (x) { return x.slug === slug; })[0];
+        var opt = m.options[idx];
+        var planNow = planCourant($("planDate").value);
+        var blockerUids = {};
+        opt.blockers.forEach(function (b) { blockerUids[b.uid] = true; });
+        planNow.items = planNow.items.filter(function (it) { return !blockerUids[it.uid]; });
+        var slotData = slots.filter(function (s) {
+          return s.slug === slug && s.start === opt.start && s.end === opt.end;
+        })[0];
+        if (slotData) {
+          planNow.items.push({
+            slug: slotData.slug, name: slotData.name, category: slotData.category,
+            start: slotData.start, end: slotData.end, is_continuous: slotData.is_continuous, status: slotData.status, uid: uid(),
+          });
+        }
+        sauver();
+        renderJour();
+        renderAutoPlanResult(mandatorySlugs, slots, propose);
+      });
+    });
   }
 
   function initJourListeners() {
@@ -569,29 +684,7 @@
       });
       sauver();
       renderJour();
-      closeAutoPlanPicker();
-
-      var proposeSlugs = {};
-      propose.forEach(function (s) { if (s.slug) proposeSlugs[s.slug] = true; });
-      var manques = mandatorySlugs.filter(function (slug) { return !proposeSlugs[slug]; });
-      var noms = manques.map(function (slug) {
-        return state.catalogueBySlug[slug] ? state.catalogueBySlug[slug].name : slug;
-      });
-
-      var msg;
-      if (mandatorySlugs.length) {
-        // Mode précis : uniquement les spectacles cochés, aucun remplissage.
-        msg = "Planning généré : " + (mandatorySlugs.length - manques.length) + "/" + mandatorySlugs.length +
-          " spectacle" + (mandatorySlugs.length > 1 ? "s" : "") + " demandé" + (mandatorySlugs.length > 1 ? "s" : "") + " casé" + (mandatorySlugs.length > 1 ? "s" : "") + ".";
-      } else {
-        var fixesDispo = slots.filter(function (s) { return !s.is_continuous && s.start && s.end && s.status !== "complet"; }).length;
-        var fixesRetenues = propose.filter(function (s) { return !s.is_continuous; }).length;
-        var ecartees = fixesDispo - fixesRetenues;
-        msg = "Planning proposé : " + propose.length + " spectacle" + (propose.length > 1 ? "s" : "") +
-          (ecartees > 0 ? " (" + ecartees + " séance" + (ecartees > 1 ? "s" : "") + " horaire incompatible écartée" + (ecartees > 1 ? "s" : "") + ")" : "") + ".";
-      }
-      if (manques.length) msg += " ⚠️ Impossible de caser : " + noms.join(", ") + ".";
-      toast(msg);
+      renderAutoPlanResult(mandatorySlugs, slots, propose);
     });
 
     $("btnAddReal").addEventListener("click", function () {
@@ -1104,6 +1197,7 @@
     module.exports = {
       detecterConflits: detecterConflits, planItemExists: planItemExists, severiteConflit: severiteConflit,
       minutesToHHMM: minutesToHHMM, cycleSeen: cycleSeen, buildAutoPlan: buildAutoPlan,
+      optionsPourManquant: optionsPourManquant,
     };
   }
 })();

@@ -976,6 +976,14 @@ table.visit-grid tfoot td { font-weight: 700; background: var(--bg-elevated); }
 .pick-item input[type="checkbox"] { width: 1.15rem; height: 1.15rem; flex-shrink: 0; }
 .pick-item .pick-name { font-size: 0.92rem; }
 
+/* Résultat du planning automatique : quand un spectacle demandé ne peut pas
+   être casé, propose le(s) créneau(x) possibles et ce qu'il faudrait
+   retirer pour l'y faire tenir. */
+.autoplan-conflict { margin-top: 0.6rem; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 10px; }
+.autoplan-conflict strong { display: block; margin-bottom: 0.3rem; }
+.autoplan-choice { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.25rem 0; flex-wrap: wrap; }
+.autoplan-choice span { font-size: 0.9rem; }
+
 @media (max-width: 640px) {
   .bar { grid-template-columns: 90px 2fr auto; }
 }

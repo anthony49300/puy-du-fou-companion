@@ -161,6 +161,30 @@ test("buildAutoPlan (mode précis) laisse de côté un spectacle vraiment imposs
   assert.strictEqual(plan.length, 1);
 });
 
+function planItem(name, start, end, opts) {
+  return Object.assign({ uid: name, slug: name, name: name, start: start, end: end, is_continuous: false }, opts || {});
+}
+
+test("optionsPourManquant lists each possible slot with the show(s) blocking it", () => {
+  const carnet = loadModule("carnet.js");
+  const slots = [
+    slot("Manquant 10h", "10:00", "10:30", { slug: "manquant" }),
+    slot("Manquant 15h", "15:00", "15:30", { slug: "manquant" }),
+  ];
+  const planItems = [planItem("Bloqueur", "10:15", "10:45")]; // ne gêne que le créneau de 10h
+  const options = carnet.optionsPourManquant("manquant", slots, 30, planItems);
+  assert.strictEqual(options.length, 2);
+  assert.deepStrictEqual(options[0].blockers.map((b) => b.name), ["Bloqueur"]);
+  assert.deepStrictEqual(options[1].blockers, []);
+});
+
+test("optionsPourManquant reports no possible slot when the show isn't scheduled that day", () => {
+  const carnet = loadModule("carnet.js");
+  const slots = [slot("Autre chose", "10:00", "10:30", { slug: "autre" })];
+  const options = carnet.optionsPourManquant("absent", slots, 30, []);
+  assert.deepStrictEqual(options, []);
+});
+
 test("buildAutoPlan guarantees at least one representation of a mandatory show with several per day", () => {
   const carnet = loadModule("carnet.js");
   // Un spectacle répété (ex : fontaines) peut apparaître plusieurs fois dans
