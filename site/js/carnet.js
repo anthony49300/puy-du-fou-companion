@@ -431,10 +431,14 @@
         var timeLabel = it.is_continuous
           ? "En continu" + (it.end ? " " + PDF.formatTimeFR(it.start) + "–" + PDF.formatTimeFR(it.end) : "")
           : PDF.formatTimeFR(it.start) + (it.end ? "–" + PDF.formatTimeFR(it.end) : "");
-        // Heure d'ouverture des portes : n'a de sens que pour une séance
-        // ponctuelle (file d'attente) — pas pour un accès en continu.
-        var gateLabel = (!it.is_continuous && it.start)
-          ? "🚪 Ouverture des portes " + PDF.formatTimeFR(minutesToHHMM(PDF.timeToMinutes(it.start) - S.gate))
+        // Repère "ouverture des portes" : un jalon à part entière avant la
+        // carte, comme un horaire d'embarquement dans un itinéraire — bien
+        // plus visible qu'une simple sous-ligne. N'a de sens que pour une
+        // séance ponctuelle (file d'attente) — pas pour un accès en continu.
+        var gateMarker = (!it.is_continuous && it.start)
+          ? '<div class="gate-marker"><span>🚪 Ouverture des portes ' +
+            PDF.escapeHtml(PDF.formatTimeFR(minutesToHHMM(PDF.timeToMinutes(it.start) - S.gate))) +
+            "</span></div>"
           : "";
         var badges = it.slug
           ? PDF.representationBadges({ start: it.start, is_continuous: it.is_continuous, status: it.status || "scheduled" }, it.category)
@@ -442,10 +446,10 @@
         if (sev === "error") badges += '<span class="badge badge-conflict-error">⛔ Chevauchement</span>';
         else if (sev === "warn") badges += '<span class="badge badge-conflict-warn">⚠️ Portes justes</span>';
         return (
+          gateMarker +
           '<div class="' + cls + '">' +
           '<div class="rep-time">' +
           '<span class="rep-time-main">' + PDF.escapeHtml(timeLabel) + "</span>" +
-          (gateLabel ? '<span class="rep-time-gate">' + PDF.escapeHtml(gateLabel) + "</span>" : "") +
           "</div>" +
           '<div class="rep-name">' + PDF.escapeHtml(it.name) + "</div>" +
           '<div class="rep-badges">' + badges + "</div>" +

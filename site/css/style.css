@@ -648,18 +648,25 @@ main { flex: 1; }
   font-size: 1.1rem;
   color: var(--text);
   min-width: 4.6rem;
+}
+/* Ouverture des portes (carnet uniquement) : un jalon à part entière avant
+   la carte de la séance — pas juste une donnée officielle parmi d'autres,
+   d'où sa mise à part visuelle plutôt qu'une sous-ligne dans la carte. */
+.gate-marker {
   display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-/* Heure d'ouverture des portes (carnet uniquement) : sous-ligne discrète
-   sous l'horaire principal, pas une donnée officielle au même titre. */
-.rep-time-gate {
-  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Segoe UI", serif;
-  font-weight: 400;
-  font-size: 0.7rem;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.6rem 0 0.35rem;
   color: var(--text-soft);
+  font-size: 0.78rem;
 }
+.gate-marker::before, .gate-marker::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--border);
+}
+.timeline > .gate-marker:first-child { margin-top: 0; }
 .rep-name { font-weight: 600; flex: 1 1 180px; }
 .rep-badges { display: flex; gap: 0.35rem; flex-wrap: wrap; }
 
