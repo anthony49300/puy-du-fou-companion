@@ -81,3 +81,40 @@ test("cycleSeen only touches the given key", () => {
   carnet.cycleSeen(seen, "les-vikings");
   assert.deepStrictEqual(seen, { autre: 1, "les-vikings": 1 });
 });
+
+function slot(name, start, end, opts) {
+  return Object.assign({ name: name, slug: name, start: start, end: end, is_continuous: false, status: "scheduled" }, opts || {});
+}
+
+test("buildAutoPlan keeps every continuous show regardless of overlaps", () => {
+  const carnet = loadModule("carnet.js");
+  const slots = [slot("Continu A", "10:00", "18:00", { is_continuous: true }), slot("Continu B", "09:00", "19:00", { is_continuous: true })];
+  const plan = carnet.buildAutoPlan(slots, 30);
+  assert.strictEqual(plan.length, 2);
+});
+
+test("buildAutoPlan picks the maximum compatible set of fixed shows (drops the one blocking two others)", () => {
+  const carnet = loadModule("carnet.js");
+  const slots = [
+    slot("A", "10:00", "11:15"),
+    slot("B", "11:00", "11:30"), // chevauche A
+    slot("C", "12:00", "12:30"), // compatible avec A, pas avec B
+  ];
+  const plan = carnet.buildAutoPlan(slots, 30);
+  assert.deepStrictEqual(plan.map((s) => s.name), ["A", "C"]);
+});
+
+test("buildAutoPlan respects the gate margin, not just literal overlap", () => {
+  const carnet = loadModule("carnet.js");
+  // Pas de chevauchement littéral (10:50 < 11:00) mais portes de B = 11:00 - 30 = 10:30 < fin de A.
+  const slots = [slot("A", "10:00", "10:50"), slot("B", "11:00", "11:30")];
+  const plan = carnet.buildAutoPlan(slots, 30);
+  assert.deepStrictEqual(plan.map((s) => s.name), ["A"]);
+});
+
+test("buildAutoPlan excludes sold-out ('complet') shows", () => {
+  const carnet = loadModule("carnet.js");
+  const slots = [slot("A", "10:00", "10:30", { status: "complet" }), slot("B", "14:00", "14:30")];
+  const plan = carnet.buildAutoPlan(slots, 30);
+  assert.deepStrictEqual(plan.map((s) => s.name), ["B"]);
+});

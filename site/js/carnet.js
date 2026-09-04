@@ -229,6 +229,32 @@
     });
   }
 
+  // Construit une proposition de journée sans conflit à partir des horaires
+  // officiels d'une date : toutes les attractions en continu (jamais en
+  // conflit entre elles), plus le plus grand nombre possible de séances
+  // ponctuelles compatibles (glouton trié par heure de fin, marge des
+  // portes incluse dans le test de compatibilité — optimal pour maximiser
+  // le nombre de séances casées, même avec cette marge). Les séances
+  // "complet" sont écartées : impossible d'y assister de toute façon.
+  function buildAutoPlan(slots, gate) {
+    var continus = slots.filter(function (s) { return s.is_continuous && s.status !== "complet"; });
+    var fixes = slots
+      .filter(function (s) { return !s.is_continuous && s.start && s.end && s.status !== "complet"; })
+      .sort(function (a, b) { return a.end.localeCompare(b.end); });
+
+    var choisis = [];
+    var finPrecedente = null;
+    fixes.forEach(function (s) {
+      var portes = PDF.timeToMinutes(s.start) - gate;
+      if (finPrecedente == null || PDF.timeToMinutes(finPrecedente) <= portes) {
+        choisis.push(s);
+        finPrecedente = s.end;
+      }
+    });
+    choisis.sort(function (a, b) { return a.start.localeCompare(b.start); });
+    return continus.concat(choisis);
+  }
+
   function renderJour() {
     var dateStr = $("planDate").value;
     var plan = planCourant(dateStr);
@@ -388,6 +414,52 @@
         } else {
           toast(slots.length + " horaire(s) chargé(s) depuis le programme officiel.");
         }
+      });
+    });
+
+    $("btnAutoPlan").addEventListener("click", function () {
+      var dateStr = $("planDate").value;
+      if (!dateStr) return toast("Choisissez une date.");
+      var plan = planCourant(dateStr);
+      var btn = $("btnAutoPlan");
+      btn.disabled = true;
+      fetchRealDay(dateStr).then(function (dayData) {
+        btn.disabled = false;
+        if (!dayData) {
+          toast("Aucune donnée officielle pour cette date (hors saison, pas encore publiée, ou trop ancienne) : impossible de proposer un planning.");
+          return;
+        }
+        var slots = realDayToSlots(dayData);
+        populerSelectReel(slots);
+        if (!slots.length) {
+          toast(
+            dayData.status === "closed_day" || dayData.status === "out_of_season"
+              ? "Le Puy du Fou est fermé ce jour-là : rien à proposer."
+              : "Le programme officiel de cette date ne contient aucun horaire."
+          );
+          return;
+        }
+        if (plan.items.length && !confirm("Remplacer le programme actuel de cette journée par une proposition automatique ?")) return;
+        var propose = buildAutoPlan(slots, S.gate);
+        if (!propose.length) {
+          toast("Aucune séance ne peut être proposée pour cette date (toutes complètes, ou incompatibles entre elles).");
+          return;
+        }
+        plan.items = propose.map(function (s) {
+          return {
+            slug: s.slug, name: s.name, category: s.category,
+            start: s.start, end: s.end, is_continuous: s.is_continuous, status: s.status, uid: uid(),
+          };
+        });
+        sauver();
+        renderJour();
+        var fixesDispo = slots.filter(function (s) { return !s.is_continuous && s.start && s.end && s.status !== "complet"; }).length;
+        var fixesRetenues = propose.filter(function (s) { return !s.is_continuous; }).length;
+        var ecartees = fixesDispo - fixesRetenues;
+        toast(
+          "Planning proposé : " + propose.length + " spectacle" + (propose.length > 1 ? "s" : "") +
+          (ecartees > 0 ? " (" + ecartees + " séance" + (ecartees > 1 ? "s" : "") + " horaire incompatible écartée" + (ecartees > 1 ? "s" : "") + ")" : "") + "."
+        );
       });
     });
 
@@ -900,7 +972,7 @@
   if (typeof module !== "undefined" && module.exports) {
     module.exports = {
       detecterConflits: detecterConflits, planItemExists: planItemExists, severiteConflit: severiteConflit,
-      minutesToHHMM: minutesToHHMM, cycleSeen: cycleSeen,
+      minutesToHHMM: minutesToHHMM, cycleSeen: cycleSeen, buildAutoPlan: buildAutoPlan,
     };
   }
 })();
