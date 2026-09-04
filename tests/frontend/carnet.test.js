@@ -119,15 +119,46 @@ test("buildAutoPlan excludes sold-out ('complet') shows", () => {
   assert.deepStrictEqual(plan.map((s) => s.name), ["B"]);
 });
 
-test("buildAutoPlan casts aside a conflicting optional show to protect a mandatory one", () => {
+test("buildAutoPlan (mode précis) never adds an unrequested show as filler", () => {
+  const carnet = loadModule("carnet.js");
+  const slots = [
+    slot("Demandé", "10:00", "10:30", { slug: "demande" }),
+    slot("Pas demandé", "14:00", "14:30", { slug: "pas-demande" }), // parfaitement compatible mais pas coché
+  ];
+  const plan = carnet.buildAutoPlan(slots, 30, ["demande"]);
+  assert.deepStrictEqual(plan.map((s) => s.slug), ["demande"]);
+});
+
+test("buildAutoPlan (mode précis) casts aside a conflicting show, not the mandatory one", () => {
   const carnet = loadModule("carnet.js");
   const slots = [
     slot("Immersif", "14:00", "14:45", { slug: "immersif" }),
-    slot("Optionnel gênant", "14:30", "15:00", { slug: "optionnel-genant" }), // chevauche l'immersif
-    slot("Optionnel compatible", "16:00", "16:30", { slug: "optionnel-ok" }),
+    slot("Autre demandé", "14:30", "15:00", { slug: "autre" }), // chevauche l'immersif
   ];
-  const plan = carnet.buildAutoPlan(slots, 30, ["immersif"]);
-  assert.deepStrictEqual(plan.map((s) => s.slug), ["immersif", "optionnel-ok"]);
+  const plan = carnet.buildAutoPlan(slots, 30, ["immersif", "autre"]);
+  assert.deepStrictEqual(plan.map((s) => s.slug), ["immersif"]);
+});
+
+test("buildAutoPlan (mode précis) traite le spectacle le plus contraint en premier pour ne pas le sacrifier inutilement", () => {
+  const carnet = loadModule("carnet.js");
+  // A n'a qu'une seule séance, qui chevauche la première séance de B ; B a
+  // une seconde séance plus tard, totalement libre. Un tri naïf par heure
+  // de fin caserait la première séance de B (elle finit avant celle de A)
+  // et perdrait A pour de bon, alors que les deux peuvent être casés.
+  const slots = [
+    slot("A", "09:15", "09:45", { slug: "a" }),
+    slot("B", "09:00", "09:30", { slug: "b" }),
+    slot("B (plus tard)", "14:00", "14:30", { slug: "b" }),
+  ];
+  const plan = carnet.buildAutoPlan(slots, 30, ["a", "b"]);
+  assert.deepStrictEqual(plan.map((s) => s.slug).sort(), ["a", "b"]);
+});
+
+test("buildAutoPlan (mode précis) laisse de côté un spectacle vraiment impossible à caser, sans en perdre un autre", () => {
+  const carnet = loadModule("carnet.js");
+  const slots = [slot("A", "10:00", "10:30", { slug: "a" }), slot("B", "10:15", "10:45", { slug: "b" })];
+  const plan = carnet.buildAutoPlan(slots, 30, ["a", "b"]);
+  assert.strictEqual(plan.length, 1);
 });
 
 test("buildAutoPlan guarantees at least one representation of a mandatory show with several per day", () => {

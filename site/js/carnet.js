@@ -240,55 +240,78 @@
   }
 
   // Construit une proposition de journée sans conflit à partir des horaires
-  // officiels d'une date : toutes les attractions en continu (jamais en
-  // conflit entre elles), plus le plus grand nombre possible de séances
-  // ponctuelles compatibles. Les séances "complet" sont écartées :
-  // impossible d'y assister de toute façon.
+  // officiels d'une date. Les attractions en continu sont toujours incluses
+  // (jamais en conflit entre elles) et les séances "complet" toujours
+  // écartées (impossible d'y assister). Deux modes pour les séances à
+  // heure fixe, selon `mandatorySlugs` :
   //
-  // `mandatorySlugs` (optionnel) : spectacles à caser en priorité (ex :
-  // immersifs à capacité limitée, choisis à la main avant de générer). On
-  // leur case d'abord une séance chacun (glouton par heure de fin, une
-  // seule représentation par spectacle), puis on complète avec le plus de
-  // séances optionnelles possible SANS jamais gêner ces incontournables —
-  // toute séance optionnelle qui en gênerait un est écartée avant le second
-  // passage glouton, qui reste donc un glouton classique (trié par fin) sur
-  // le mélange incontournables + optionnels restants.
+  // - Aucun spectacle coché ("proposition libre") : on en case le plus
+  //   grand nombre possible, glouton classique trié par heure de fin.
+  // - Des spectacles cochés ("proposition précise") : on case UNIQUEMENT
+  //   ceux-là (une séance chacune), rien d'autre — pas de remplissage avec
+  //   des spectacles non demandés. La stratégie "le plus contraint
+  //   d'abord" (comme pour une grille de sudoku : caser en premier le
+  //   spectacle qui a le moins de séances encore possibles, puis choisir
+  //   pour lui la séance qui gêne le moins les autres) donne de bien
+  //   meilleurs résultats qu'un simple tri par heure de fin, qui peut
+  //   sacrifier un spectacle à séance unique au profit d'un autre qui,
+  //   lui, avait une séance de repli plus tard dans la journée.
   function buildAutoPlan(slots, gate, mandatorySlugs) {
-    var mandatorySet = {};
-    (mandatorySlugs || []).forEach(function (slug) { mandatorySet[slug] = true; });
-
+    mandatorySlugs = mandatorySlugs || [];
     var continus = slots.filter(function (s) { return s.is_continuous && s.status !== "complet"; });
     var fixesAll = slots.filter(function (s) { return !s.is_continuous && s.start && s.end && s.status !== "complet"; });
 
-    var incontournables = fixesAll
-      .filter(function (s) { return mandatorySet[s.slug]; })
-      .sort(function (a, b) { return a.end.localeCompare(b.end); });
-    var locked = [];
-    var fulfilled = {};
-    incontournables.forEach(function (s) {
-      if (fulfilled[s.slug]) return; // une seule séance suffit pour ce spectacle
-      var dernier = locked[locked.length - 1];
-      if (!dernier || seancesCompatibles(dernier, s, gate)) {
-        locked.push(s);
-        fulfilled[s.slug] = true;
-      }
+    if (!mandatorySlugs.length) {
+      var fixesTries = fixesAll.slice().sort(function (a, b) { return a.end.localeCompare(b.end); });
+      var choisisLibre = [];
+      var finPrecedente = null;
+      fixesTries.forEach(function (s) {
+        var portes = PDF.timeToMinutes(s.start) - gate;
+        if (finPrecedente == null || PDF.timeToMinutes(finPrecedente) <= portes) {
+          choisisLibre.push(s);
+          finPrecedente = s.end;
+        }
+      });
+      choisisLibre.sort(function (a, b) { return a.start.localeCompare(b.start); });
+      return continus.concat(choisisLibre);
+    }
+
+    // Options encore possibles pour chaque spectacle demandé.
+    var options = {};
+    mandatorySlugs.forEach(function (slug) {
+      options[slug] = fixesAll.filter(function (s) { return s.slug === slug; });
     });
 
-    var optionnels = fixesAll
-      .filter(function (s) { return locked.indexOf(s) === -1; })
-      .filter(function (s) { return locked.every(function (l) { return seancesCompatibles(l, s, gate); }); })
-      .sort(function (a, b) { return a.end.localeCompare(b.end); });
-
-    var fusion = locked.concat(optionnels).sort(function (a, b) { return a.end.localeCompare(b.end); });
     var choisis = [];
-    var finPrecedente = null;
-    fusion.forEach(function (s) {
-      var portes = PDF.timeToMinutes(s.start) - gate;
-      if (finPrecedente == null || PDF.timeToMinutes(finPrecedente) <= portes) {
-        choisis.push(s);
-        finPrecedente = s.end;
-      }
-    });
+    var aTraiter = mandatorySlugs.slice();
+    while (aTraiter.length) {
+      // Le plus contraint d'abord (le moins d'options restantes).
+      aTraiter.sort(function (a, b) { return options[a].length - options[b].length; });
+      var slug = aTraiter.shift();
+      var candidats = options[slug];
+      if (!candidats.length) continue; // aucune séance ce jour-là, ou plus aucune compatible
+
+      // Parmi ses séances encore possibles, celle qui élimine le moins
+      // d'options aux autres spectacles restants (à égalité : la plus tôt,
+      // pour laisser le plus de marge sur le reste de la journée).
+      var meilleure = null, moinsDeGenes = Infinity;
+      candidats.forEach(function (c) {
+        var genes = 0;
+        aTraiter.forEach(function (slug2) {
+          options[slug2].forEach(function (s) { if (!seancesCompatibles(c, s, gate)) genes++; });
+        });
+        if (genes < moinsDeGenes || (genes === moinsDeGenes && c.end < meilleure.end)) {
+          meilleure = c;
+          moinsDeGenes = genes;
+        }
+      });
+
+      choisis.push(meilleure);
+      aTraiter.forEach(function (slug2) {
+        options[slug2] = options[slug2].filter(function (s) { return seancesCompatibles(meilleure, s, gate); });
+      });
+    }
+
     choisis.sort(function (a, b) { return a.start.localeCompare(b.start); });
     return continus.concat(choisis);
   }
@@ -551,18 +574,23 @@
       var proposeSlugs = {};
       propose.forEach(function (s) { if (s.slug) proposeSlugs[s.slug] = true; });
       var manques = mandatorySlugs.filter(function (slug) { return !proposeSlugs[slug]; });
-      var fixesDispo = slots.filter(function (s) { return !s.is_continuous && s.start && s.end && s.status !== "complet"; }).length;
-      var fixesRetenues = propose.filter(function (s) { return !s.is_continuous; }).length;
-      var ecartees = fixesDispo - fixesRetenues;
-      var msg =
-        "Planning proposé : " + propose.length + " spectacle" + (propose.length > 1 ? "s" : "") +
-        (ecartees > 0 ? " (" + ecartees + " séance" + (ecartees > 1 ? "s" : "") + " horaire incompatible écartée" + (ecartees > 1 ? "s" : "") + ")" : "") + ".";
-      if (manques.length) {
-        var noms = manques.map(function (slug) {
-          return state.catalogueBySlug[slug] ? state.catalogueBySlug[slug].name : slug;
-        });
-        msg += " ⚠️ Impossible de caser : " + noms.join(", ") + ".";
+      var noms = manques.map(function (slug) {
+        return state.catalogueBySlug[slug] ? state.catalogueBySlug[slug].name : slug;
+      });
+
+      var msg;
+      if (mandatorySlugs.length) {
+        // Mode précis : uniquement les spectacles cochés, aucun remplissage.
+        msg = "Planning généré : " + (mandatorySlugs.length - manques.length) + "/" + mandatorySlugs.length +
+          " spectacle" + (mandatorySlugs.length > 1 ? "s" : "") + " demandé" + (mandatorySlugs.length > 1 ? "s" : "") + " casé" + (mandatorySlugs.length > 1 ? "s" : "") + ".";
+      } else {
+        var fixesDispo = slots.filter(function (s) { return !s.is_continuous && s.start && s.end && s.status !== "complet"; }).length;
+        var fixesRetenues = propose.filter(function (s) { return !s.is_continuous; }).length;
+        var ecartees = fixesDispo - fixesRetenues;
+        msg = "Planning proposé : " + propose.length + " spectacle" + (propose.length > 1 ? "s" : "") +
+          (ecartees > 0 ? " (" + ecartees + " séance" + (ecartees > 1 ? "s" : "") + " horaire incompatible écartée" + (ecartees > 1 ? "s" : "") + ")" : "") + ".";
       }
+      if (manques.length) msg += " ⚠️ Impossible de caser : " + noms.join(", ") + ".";
       toast(msg);
     });
 
