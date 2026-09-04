@@ -63,3 +63,21 @@ test("minutesToHHMM wraps around before midnight (defensive edge case)", () => {
   const carnet = loadModule("carnet.js");
   assert.strictEqual(carnet.minutesToHHMM(-15), "23:45");
 });
+
+test("cycleSeen counts up 0 -> 1 -> 2 then clears the entry", () => {
+  const carnet = loadModule("carnet.js");
+  const seen = {};
+  carnet.cycleSeen(seen, "les-vikings");
+  assert.strictEqual(seen["les-vikings"], 1);
+  carnet.cycleSeen(seen, "les-vikings");
+  assert.strictEqual(seen["les-vikings"], 2);
+  carnet.cycleSeen(seen, "les-vikings");
+  assert.strictEqual("les-vikings" in seen, false);
+});
+
+test("cycleSeen only touches the given key", () => {
+  const carnet = loadModule("carnet.js");
+  const seen = { autre: 1 };
+  carnet.cycleSeen(seen, "les-vikings");
+  assert.deepStrictEqual(seen, { autre: 1, "les-vikings": 1 });
+});

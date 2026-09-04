@@ -57,6 +57,7 @@
     datesMap: {}, // "2026-08-26" -> season_year (pour construire le chemin history/)
     realDayCache: {}, // "2026-08-26" -> payload today.json/history, ou null si indisponible
     currentRealSlots: [], // options actuellement proposées dans le select "programme officiel"
+    currentVisit: null, // visite actuellement ouverte dans le panneau de détail (onglet Visites)
   };
 
   function uid() {
@@ -484,6 +485,13 @@
     return cols;
   }
 
+  // Fait avancer le compteur "vu" d'un spectacle pour une visite : 0 -> 1 ->
+  // 2 -> effacé. Partagé entre la grille et le panneau de détail.
+  function cycleSeen(seen, key) {
+    var n = seen[key] || 0;
+    if (n >= 2) delete seen[key]; else seen[key] = n + 1;
+  }
+
   function renderVisites() {
     var table = $("tblVisites");
     var cols = toutesLesColonnes();
@@ -502,9 +510,9 @@
     var body = "<tbody>" + (vs.length ? vs.map(function (v, vi) {
       return (
         '<tr><td class="visit-date-col">' + PDF.escapeHtml(PDF.formatDateLongFR(v.date)) +
-        '<span class="visit-note" data-moment="' + vi + '" title="Cliquer pour changer la formule" style="cursor:pointer">' +
-        PDF.escapeHtml(v.moment || "Jour") + "</span>" +
+        '<span class="visit-note">' + PDF.escapeHtml(v.moment || "Jour") + "</span>" +
         (v.com ? '<span class="visit-note">' + PDF.escapeHtml(v.com) + "</span>" : "") +
+        ' <button type="button" class="visit-date-link" data-editv="' + vi + '">✏️ Modifier</button>' +
         "</td>" +
         cols.map(function (c) {
           var n = v.seen[c.key] || 0;
@@ -530,11 +538,11 @@
     table.querySelectorAll("[data-cell]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var parts = btn.getAttribute("data-cell").split("|");
-        var v = vs[+parts[0]], key = parts[1];
-        var n = v.seen[key] || 0;
-        if (n >= 2) delete v.seen[key]; else v.seen[key] = n + 1;
+        var v = vs[+parts[0]];
+        cycleSeen(v.seen, parts[1]);
         sauver();
         renderVisites();
+        if (state.currentVisit === v) renderVisitChecklist();
       });
     });
     table.querySelectorAll("[data-delv]").forEach(function (btn) {
@@ -543,17 +551,57 @@
         if (confirm("Supprimer la visite du " + PDF.formatDateFR(v.date) + " ?")) {
           S.visites = S.visites.filter(function (x) { return x !== v; });
           sauver();
+          if (state.currentVisit === v) closeVisitDetail();
           renderVisites();
         }
       });
     });
-    table.querySelectorAll("[data-moment]").forEach(function (span) {
-      span.addEventListener("click", function () {
-        var v = vs[+span.getAttribute("data-moment")];
-        var ordre = ["Jour", "Après-midi", "Soirée"];
-        var i = ordre.indexOf(v.moment || "Jour");
-        v.moment = ordre[(i + 1) % ordre.length];
+    table.querySelectorAll("[data-editv]").forEach(function (btn) {
+      btn.addEventListener("click", function () { openVisitDetail(vs[+btn.getAttribute("data-editv")]); });
+    });
+  }
+
+  /* -- Panneau de détail d'une visite (vue checklist, édition en place) -- */
+
+  function openVisitDetail(visite) {
+    state.currentVisit = visite;
+    $("visitDetailWrap").hidden = false;
+    $("visitDetailTitle").textContent = "Visite du " + PDF.formatDateFR(visite.date);
+    $("visitDate").value = visite.date;
+    $("visitMoment").value = visite.moment || "Jour";
+    $("visitCom").value = visite.com || "";
+    $("visitDetailHint").textContent = "";
+    renderVisitChecklist();
+    if (typeof $("visitDetailWrap").scrollIntoView === "function") {
+      $("visitDetailWrap").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+
+  function closeVisitDetail() {
+    state.currentVisit = null;
+    $("visitDetailWrap").hidden = true;
+  }
+
+  function renderVisitChecklist() {
+    var visite = state.currentVisit;
+    if (!visite) return;
+    var cols = toutesLesColonnes();
+    $("visitChecklist").innerHTML = cols.map(function (c) {
+      var n = visite.seen[c.key] || 0;
+      var cls = n === 1 ? "is-seen" : n > 1 ? "is-seen-twice" : "";
+      var label = n === 0 ? "—" : n === 1 ? "✓" : "×" + n;
+      return (
+        '<div class="visit-check-item">' +
+        '<button type="button" class="visit-check-btn ' + cls + '" data-checkkey="' + c.key + '">' + label + "</button>" +
+        '<span class="visit-check-name">' + PDF.escapeHtml(c.name) + "</span>" +
+        "</div>"
+      );
+    }).join("");
+    $("visitChecklist").querySelectorAll("[data-checkkey]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        cycleSeen(visite.seen, btn.getAttribute("data-checkkey"));
         sauver();
+        renderVisitChecklist();
         renderVisites();
       });
     });
@@ -561,13 +609,66 @@
 
   function initVisitesListeners() {
     $("btnAddVisit").addEventListener("click", function () {
-      var d = prompt("Date de la visite (AAAA-MM-JJ) :", $("planDate").value || PDF.isoDateToday());
-      if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
-      if (S.visites.some(function (v) { return v.date === d; })) return toast("Cette date est déjà au carnet.");
-      var com = prompt("Commentaire (facultatif) :", "") || "";
-      S.visites.push({ date: d, moment: "Jour", com: com, seen: {} });
+      var d = $("planDate").value || PDF.isoDateToday();
+      var existante = S.visites.filter(function (v) { return v.date === d; })[0];
+      if (existante) {
+        openVisitDetail(existante);
+        toast("Une visite existe déjà pour cette date — ouverte pour modification.");
+        return;
+      }
+      var visite = { date: d, moment: "Jour", com: "", seen: {} };
+      S.visites.push(visite);
       S.visites.sort(function (a, b) { return a.date.localeCompare(b.date); });
       sauver();
+      renderVisites();
+      openVisitDetail(visite);
+    });
+
+    $("btnCloseVisitDetail").addEventListener("click", closeVisitDetail);
+
+    $("visitDate").addEventListener("change", function () {
+      var v = state.currentVisit;
+      if (!v) return;
+      var d = $("visitDate").value;
+      if (!d) return;
+      if (S.visites.some(function (x) { return x !== v && x.date === d; })) {
+        $("visitDate").value = v.date;
+        toast("Cette date est déjà utilisée par une autre visite.");
+        return;
+      }
+      v.date = d;
+      S.visites.sort(function (a, b) { return a.date.localeCompare(b.date); });
+      sauver();
+      $("visitDetailTitle").textContent = "Visite du " + PDF.formatDateFR(v.date);
+      renderVisites();
+    });
+
+    $("visitMoment").addEventListener("change", function () {
+      if (!state.currentVisit) return;
+      state.currentVisit.moment = $("visitMoment").value;
+      sauver();
+      renderVisites();
+    });
+
+    $("visitCom").addEventListener("input", function () {
+      if (!state.currentVisit) return;
+      state.currentVisit.com = $("visitCom").value;
+      sauver();
+    });
+    $("visitCom").addEventListener("change", function () {
+      if (!state.currentVisit) return;
+      state.currentVisit.com = $("visitCom").value;
+      sauver();
+      renderVisites();
+    });
+
+    $("btnDeleteVisitDetail").addEventListener("click", function () {
+      var v = state.currentVisit;
+      if (!v) return;
+      if (!confirm("Supprimer la visite du " + PDF.formatDateFR(v.date) + " ?")) return;
+      S.visites = S.visites.filter(function (x) { return x !== v; });
+      sauver();
+      closeVisitDetail();
       renderVisites();
     });
   }
@@ -799,7 +900,7 @@
   if (typeof module !== "undefined" && module.exports) {
     module.exports = {
       detecterConflits: detecterConflits, planItemExists: planItemExists, severiteConflit: severiteConflit,
-      minutesToHHMM: minutesToHHMM,
+      minutesToHHMM: minutesToHHMM, cycleSeen: cycleSeen,
     };
   }
 })();
