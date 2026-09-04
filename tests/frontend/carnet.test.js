@@ -139,6 +139,17 @@ test("buildAutoPlan (mode précis) casts aside a conflicting show, not the manda
   assert.deepStrictEqual(plan.map((s) => s.slug), ["immersif"]);
 });
 
+test("buildAutoPlan (mode précis) case deux spectacles demandés même si les portes de l'un ouvrent avant la fin de l'autre", () => {
+  const carnet = loadModule("carnet.js");
+  // A finit à 10h50, les portes de B (11h00 - 30min) ouvrent à 10h30 : la
+  // marge n'est pas respectée, mais les deux séances ne se chevauchent pas
+  // réellement (10h50 < 11h00) — un ajout manuel ne bloquerait pas non
+  // plus ce cas (juste le badge "Portes justes"), le planning auto non plus.
+  const slots = [slot("A", "10:00", "10:50", { slug: "a" }), slot("B", "11:00", "11:30", { slug: "b" })];
+  const plan = carnet.buildAutoPlan(slots, 30, ["a", "b"]);
+  assert.deepStrictEqual(plan.map((s) => s.slug).sort(), ["a", "b"]);
+});
+
 test("buildAutoPlan (mode précis) traite le spectacle le plus contraint en premier pour ne pas le sacrifier inutilement", () => {
   const carnet = loadModule("carnet.js");
   // A n'a qu'une seule séance, qui chevauche la première séance de B ; B a
@@ -176,6 +187,17 @@ test("optionsPourManquant lists each possible slot with the show(s) blocking it"
   assert.strictEqual(options.length, 2);
   assert.deepStrictEqual(options[0].blockers.map((b) => b.name), ["Bloqueur"]);
   assert.deepStrictEqual(options[1].blockers, []);
+});
+
+test("optionsPourManquant does not report a tight-but-non-overlapping show as a blocker", () => {
+  const carnet = loadModule("carnet.js");
+  const slots = [slot("Manquant", "11:00", "11:30", { slug: "manquant" })];
+  // Le bloqueur potentiel finit à 10h50, avant le début du manquant (11h00) :
+  // pas de chevauchement réel, même si la marge des portes (30 min) n'est
+  // pas respectée — ne doit donc plus apparaître comme un blocage.
+  const planItems = [planItem("Pas un vrai bloqueur", "10:00", "10:50")];
+  const options = carnet.optionsPourManquant("manquant", slots, 30, planItems);
+  assert.deepStrictEqual(options[0].blockers, []);
 });
 
 test("optionsPourManquant reports no possible slot when the show isn't scheduled that day", () => {

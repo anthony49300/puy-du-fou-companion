@@ -238,6 +238,17 @@
     return PDF.timeToMinutes(avant.end) <= PDF.timeToMinutes(apres.start) - gate;
   }
 
+  // Chevauchement réel entre deux séances, indépendamment de la marge des
+  // portes : contrairement à seancesCompatibles, une simple ouverture de
+  // portes déjà passée (mais spectacles qui ne se recouvrent pas dans le
+  // temps) n'est PAS considérée comme un vrai conflit ici — seul un
+  // recouvrement effectif des deux séances l'est.
+  function seancesSeChevauchent(a, b) {
+    var avant = a.start <= b.start ? a : b;
+    var apres = avant === a ? b : a;
+    return PDF.timeToMinutes(avant.end) > PDF.timeToMinutes(apres.start);
+  }
+
   // Construit une proposition de journée sans conflit à partir des horaires
   // officiels d'une date. Les attractions en continu sont toujours incluses
   // (jamais en conflit entre elles) et les séances "complet" toujours
@@ -255,6 +266,15 @@
   //   meilleurs résultats qu'un simple tri par heure de fin, qui peut
   //   sacrifier un spectacle à séance unique au profit d'un autre qui,
   //   lui, avait une séance de repli plus tard dans la journée.
+  //
+  //   En mode précis, une séance dont les portes sont déjà ouvertes quand
+  //   la précédente n'est pas encore finie (marge `gate` non respectée)
+  //   n'est PAS écartée pour autant : seul un vrai chevauchement des deux
+  //   séances l'empêche. C'est exactement la même tolérance que pour un
+  //   ajout manuel ou depuis le programme officiel, qui n'a jamais bloqué
+  //   ce cas — juste affiché le badge "⚠️ Portes justes" une fois dans la
+  //   frise. On privilégie quand même les séances bien espacées quand un
+  //   choix existe (voir le calcul de `genes` ci-dessous).
   function buildAutoPlan(slots, gate, mandatorySlugs) {
     mandatorySlugs = mandatorySlugs || [];
     var continus = slots.filter(function (s) { return s.is_continuous && s.status !== "complet"; });
@@ -307,7 +327,7 @@
 
       choisis.push(meilleure);
       aTraiter.forEach(function (slug2) {
-        options[slug2] = options[slug2].filter(function (s) { return seancesCompatibles(meilleure, s, gate); });
+        options[slug2] = options[slug2].filter(function (s) { return !seancesSeChevauchent(meilleure, s); });
       });
     }
 
@@ -318,6 +338,9 @@
   // Pour un spectacle demandé qui n'a pas pu être casé : chacune de ses
   // séances possibles ce jour-là, et le(s) spectacle(s) déjà casés qu'il
   // faudrait retirer pour lui faire de la place.
+  // `gate` n'est plus utilisé pour déterminer un blocage (voir la note sur
+  // seancesSeChevauchent au-dessus de buildAutoPlan) : conservé dans la
+  // signature pour ne pas casser les appels existants.
   function optionsPourManquant(slug, slots, gate, planItems) {
     var candidats = slots.filter(function (s) {
       return !s.is_continuous && s.start && s.end && s.status !== "complet" && s.slug === slug;
@@ -326,7 +349,7 @@
     return candidats.map(function (c) {
       return {
         start: c.start, end: c.end,
-        blockers: fixesPlan.filter(function (it) { return !seancesCompatibles(it, c, gate); }),
+        blockers: fixesPlan.filter(function (it) { return seancesSeChevauchent(it, c); }),
       };
     });
   }
