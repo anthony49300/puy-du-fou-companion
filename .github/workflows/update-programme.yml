@@ -1,27 +1,14 @@
 name: Mise à jour quotidienne du programme
 
-# Un seul run par jour, le matin : le programme du jour même est de toute
-# façon déjà publié bien avant 9h (pas d'ambiguïté), et ceux du lendemain
-# et du surlendemain le sont aussi en pratique à cette heure-là (la page
-# SCHEDULE_PAGE_URL — voir src/config.py — publie systématiquement
-# aujourd'hui + demain + après-demain en un seul chargement). `collect-daily`
-# récupère donc les 3 jours (chacun seulement si pas déjà connu) en un seul
-# run, sans dépendre d'un déclenchement précis en fin de journée — en
-# régime stable, seul le nouveau jour de la fenêtre (après-demain)
-# nécessite une vraie collecte chaque matin.
-# workflow_dispatch permet de rejouer la collecte à tout moment (ex: après
-# correction du programme officiel) ; avec une date précisée, seule cette
-# date est recollectée (pas le combo des 3 jours).
-#
-# Minute volontairement décalée (13, pas 0) : GitHub documente que les
-# triggers "schedule" sont best-effort et peuvent être retardés ou sautés
-# en cas de forte charge, en particulier au tout début de chaque heure
-# (énormément de workflows sont programmés pile à :00 sur toute la
-# plateforme). Constaté concrètement le 02/09 : le run de 07h00 n'est
-# jamais parti, rattrapé seulement par un workflow_dispatch manuel.
+# Plusieurs passages dans la journée plutôt qu'un seul : les triggers
+# "schedule" GitHub sont best-effort et régulièrement retardés de plusieurs
+# heures (constaté : run raté le 02/09, run parti avec 5h de retard le
+# 03/09). `collect-daily` ne coûte rien (aucun appel réseau) quand tout est
+# déjà connu, donc revérifier toutes les 3h ne fait que rattraper un retard
+# plus vite, sans collecte redondante les fois où c'est déjà à jour.
 on:
   schedule:
-    - cron: "13 7 * * *"    # ~09h13 Europe/Paris (heure d'été) / 08h13 en hiver
+    - cron: "13 7,10,13,16,19 * * *"    # ~9h13/12h13/15h13/18h13/21h13 Paris (été)
   workflow_dispatch:
     inputs:
       date:
