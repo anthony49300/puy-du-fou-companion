@@ -381,6 +381,67 @@
   }
 
   /* ----------------------------------------------------------------------
+   * 5bis. Mini calendrier mensuel (composant réutilisable)
+   *       Utilisé par Historique (navigation + comparateur) et par le
+   *       composeur de journée du Carnet.
+   * -------------------------------------------------------------------- */
+  const DOW_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+  const MONTH_LABELS = [
+    "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+    "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
+  ];
+
+  function pad2(n) {
+    return String(n).padStart(2, "0");
+  }
+  function isoDate(y, m, d) {
+    return y + "-" + pad2(m + 1) + "-" + pad2(d);
+  }
+
+  // Rendu générique d'un mini-calendrier mensuel dans `containerId`, sans
+  // état propre : year/month/selectedDate sont fournis par l'appelant, qui
+  // reste responsable de son propre état (plusieurs calendriers indépendants
+  // peuvent coexister sur une même page, voir le comparateur d'Historique).
+  //
+  // `dayCellInfo(dateMap[dateStr], isSelected, dateStr)` décide, par jour,
+  // des classes CSS/titre/désactivation — propre à chaque page (Historique
+  // grise les jours sans donnée, le Carnet les laisse tous cliquables).
+  function renderMiniCalendar(containerId, year, month, dateMap, selectedDate, dayCellInfo, onSelect, onNav) {
+    const wrap = document.getElementById(containerId);
+    const firstOfMonth = new Date(year, month, 1);
+    const startOffset = (firstOfMonth.getDay() + 6) % 7; // lundi = 0
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    let html = '<div class="calendar-head">' +
+      '<button type="button" class="cal-nav-prev" aria-label="Mois précédent">‹</button>' +
+      '<span class="calendar-title">' + MONTH_LABELS[month] + " " + year + "</span>" +
+      '<button type="button" class="cal-nav-next" aria-label="Mois suivant">›</button>' +
+      "</div>" +
+      '<div class="calendar-grid">';
+
+    DOW_LABELS.forEach((d) => { html += '<div class="cal-dow">' + d + "</div>"; });
+    for (let i = 0; i < startOffset; i++) html += '<div class="cal-empty"></div>';
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = isoDate(year, month, day);
+      const info = dayCellInfo(dateMap[dateStr], dateStr === selectedDate, dateStr);
+      html +=
+        '<button type="button" class="' + info.cls + '" data-date="' + dateStr + '"' +
+        (info.disabled ? " disabled" : "") +
+        ' title="' + info.title + '">' +
+        day + "</button>";
+    }
+    html += "</div>";
+    wrap.innerHTML = html;
+
+    wrap.querySelector(".cal-nav-prev").addEventListener("click", () => onNav(-1));
+    wrap.querySelector(".cal-nav-next").addEventListener("click", () => onNav(1));
+    wrap.querySelectorAll("button.cal-day:not([disabled])").forEach((btn) => {
+      btn.addEventListener("click", () => onSelect(btn.getAttribute("data-date")));
+    });
+  }
+
+  /* ----------------------------------------------------------------------
    * 6. Header / nav / footer injectés
    * -------------------------------------------------------------------- */
   // Nav directe : les 2 pages consultées au quotidien. Le logo sert déjà de
@@ -680,6 +741,10 @@
     badgeHtml,
     categoryBadgeHtml,
     statusBannerHtml,
+    MONTH_LABELS,
+    DOW_LABELS,
+    isoDate,
+    renderMiniCalendar,
     seasonClosedBannerHtml,
     getChartTheme,
     injectHeaderFooter,

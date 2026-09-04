@@ -9,12 +9,6 @@
   "use strict";
   var PDF = window.PDF;
 
-  var DOW_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-  var MONTH_LABELS = [
-    "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-    "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
-  ];
-
   var state = {
     dateMap: {}, // "2026-08-25" -> record from dates.json
     sortedDates: [], // ascending
@@ -27,13 +21,11 @@
     },
   };
 
-  function pad2(n) { return String(n).padStart(2, "0"); }
-  function isoDate(y, m, d) { return y + "-" + pad2(m + 1) + "-" + pad2(d); }
-
-  /* ---------------- Calendrier (composant réutilisable) ---------------- */
+  /* ---------------- Calendrier (composant réutilisable dans app.js) ---------------- */
 
   // Classes/titre d'une case de calendrier à partir de son enregistrement
-  // dates.json (ou undefined si la date n'a jamais été collectée).
+  // dates.json (ou undefined si la date n'a jamais été collectée). Propre à
+  // cette page : ici, un jour sans donnée reste grisé et non cliquable.
   function dayCellInfo(record, isSelected, dateStr) {
     var hasData = !!record;
     var isClosed = hasData && (record.status === "closed_day" || record.status === "out_of_season");
@@ -42,49 +34,10 @@
     return { cls: cls, disabled: !hasData, title: title };
   }
 
-  // Rendu générique d'un mini-calendrier mensuel dans `containerId`, sans
-  // état propre : year/month/selectedDate sont fournis par l'appelant, qui
-  // reste responsable de son propre état (voir state.compare pour un
-  // deuxième/troisième calendrier indépendant du calendrier principal).
-  function renderMiniCalendar(containerId, year, month, dateMap, selectedDate, onSelect, onNav) {
-    var wrap = document.getElementById(containerId);
-    var firstOfMonth = new Date(year, month, 1);
-    var startOffset = (firstOfMonth.getDay() + 6) % 7; // lundi = 0
-    var daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    var html = '<div class="calendar-head">' +
-      '<button type="button" class="cal-nav-prev" aria-label="Mois précédent">‹</button>' +
-      '<span class="calendar-title">' + MONTH_LABELS[month] + " " + year + "</span>" +
-      '<button type="button" class="cal-nav-next" aria-label="Mois suivant">›</button>' +
-      "</div>" +
-      '<div class="calendar-grid">';
-
-    DOW_LABELS.forEach(function (d) { html += '<div class="cal-dow">' + d + "</div>"; });
-    for (var i = 0; i < startOffset; i++) html += '<div class="cal-empty"></div>';
-
-    for (var day = 1; day <= daysInMonth; day++) {
-      var dateStr = isoDate(year, month, day);
-      var info = dayCellInfo(dateMap[dateStr], dateStr === selectedDate, dateStr);
-      html +=
-        '<button type="button" class="' + info.cls + '" data-date="' + dateStr + '"' +
-        (info.disabled ? " disabled" : "") +
-        ' title="' + info.title + '">' +
-        day + "</button>";
-    }
-    html += "</div>";
-    wrap.innerHTML = html;
-
-    wrap.querySelector(".cal-nav-prev").addEventListener("click", function () { onNav(-1); });
-    wrap.querySelector(".cal-nav-next").addEventListener("click", function () { onNav(1); });
-    wrap.querySelectorAll("button.cal-day.has-data").forEach(function (btn) {
-      btn.addEventListener("click", function () { onSelect(btn.getAttribute("data-date")); });
-    });
-  }
-
   function renderCalendar() {
-    renderMiniCalendar(
+    PDF.renderMiniCalendar(
       "calendar-wrap", state.viewYear, state.viewMonth, state.dateMap, state.selectedDate,
-      selectDate, changeMonth
+      dayCellInfo, selectDate, changeMonth
     );
   }
 
@@ -190,8 +143,8 @@
 
   function renderCompareCalendar(which) {
     var c = state.compare[which];
-    renderMiniCalendar(
-      "compare-cal-" + which, c.year, c.month, state.dateMap, c.date,
+    PDF.renderMiniCalendar(
+      "compare-cal-" + which, c.year, c.month, state.dateMap, c.date, dayCellInfo,
       function (dateStr) { pickCompareDate(which, dateStr); },
       function (delta) { changeCompareMonth(which, delta); }
     );
@@ -367,6 +320,6 @@
 
   // Exposé pour les tests (tests/frontend/) — no-op dans un navigateur.
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = { dayCellInfo: dayCellInfo, renderMiniCalendar: renderMiniCalendar };
+    module.exports = { dayCellInfo: dayCellInfo };
   }
 })();

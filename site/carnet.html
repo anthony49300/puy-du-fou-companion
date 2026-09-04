@@ -38,11 +38,11 @@
         <div class="flex-between">
           <h2 class="mt-0">Composer la journée</h2>
         </div>
-        <div class="season-select-row">
-          <label for="planDate">Date
-            <br><input type="date" id="planDate" list="planDates">
-            <datalist id="planDates"></datalist>
-          </label>
+        <div class="calendar-wrap" id="planCalendarWrap"></div>
+        <input type="date" id="planDate" hidden>
+        <p style="margin:0.6rem 0 0"><strong id="planSelectedDateLabel"></strong></p>
+        <p class="text-muted" id="planDatesHint" style="margin:0.25rem 0 0"></p>
+        <div class="season-select-row" style="margin-top:0.75rem">
           <label for="planGate">Portes ouvertes (min. avant)
             <br><input type="number" id="planGate" min="0" max="90" step="5" style="width:5rem">
           </label>
@@ -53,7 +53,6 @@
           <button type="button" class="btn" id="btnAutoPlan">✨ Proposer un planning</button>
           <button type="button" class="btn btn-outline" id="btnClearDay">Vider la journée</button>
         </div>
-        <p class="text-muted" id="planDatesHint" style="margin:0.5rem 0 0"></p>
         <p class="text-muted" id="planHint" style="margin-bottom:0"></p>
       </div>
 

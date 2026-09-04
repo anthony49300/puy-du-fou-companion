@@ -59,6 +59,7 @@
     currentRealSlots: [], // options actuellement proposées dans le select "programme officiel"
     currentVisit: null, // visite actuellement ouverte dans le panneau de détail (onglet Visites)
     autoPlanSlots: [], // horaires officiels proposés pour le panneau "planning automatique"
+    planCalendar: { year: null, month: null }, // mois affiché par le calendrier de "Composer la journée"
   };
 
   function uid() {
@@ -104,14 +105,12 @@
   // liste suggérée du champ date (list="planDates") et un texte d'aide.
   function populerDatesConnues() {
     var dates = Object.keys(state.datesMap).sort();
-    var dl = $("planDates");
-    if (dl) dl.innerHTML = dates.map(function (d) { return '<option value="' + d + '"></option>'; }).join("");
     var hint = $("planDatesHint");
     if (hint) {
       hint.textContent = dates.length
         ? "Programme officiel disponible du " + PDF.formatDateFR(dates[0]) + " au " + PDF.formatDateFR(dates[dates.length - 1]) +
-          " (calendrier et historique — " + dates.length + " jour" + (dates.length > 1 ? "s" : "") + "). Suggestions dans le champ date."
-        : "Aucun programme officiel collecté pour le moment.";
+          " (" + dates.length + " jour" + (dates.length > 1 ? "s" : "") + ", mis en évidence dans le calendrier ci-dessus)."
+        : "Aucun programme officiel collecté pour le moment : le calendrier reste utilisable pour un plan manuel.";
     }
   }
 
@@ -348,10 +347,48 @@
       });
   }
 
+  // Classes/titre d'une case du calendrier de "Composer la journée" : tous
+  // les jours restent cliquables (un plan manuel reste possible même sans
+  // programme officiel connu) ; seul un badge visuel distingue ceux pour
+  // lesquels un programme officiel est disponible.
+  function planDayCellInfo(seasonYear, isSelected, dateStr) {
+    var hasData = seasonYear != null;
+    var cls = "cal-day" + (hasData ? " has-data" : "") + (isSelected ? " is-selected" : "");
+    var title = PDF.formatDateFR(dateStr) + (hasData ? " — programme officiel disponible" : " — pas de programme officiel connu (ajout manuel possible)");
+    return { cls: cls, disabled: false, title: title };
+  }
+
+  function renderPlanCalendar() {
+    PDF.renderMiniCalendar(
+      "planCalendarWrap", state.planCalendar.year, state.planCalendar.month, state.datesMap,
+      $("planDate").value, planDayCellInfo, selectPlanDate, changePlanCalendarMonth
+    );
+  }
+
+  function selectPlanDate(dateStr) {
+    $("planDate").value = dateStr;
+    state.planCalendar.year = +dateStr.slice(0, 4);
+    state.planCalendar.month = +dateStr.slice(5, 7) - 1;
+    renderPlanCalendar();
+    // Déclenche le même traitement que si le champ natif avait changé
+    // (fermeture des panneaux "programme officiel"/"planning auto", etc.).
+    $("planDate").dispatchEvent(new Event("change"));
+  }
+
+  function changePlanCalendarMonth(delta) {
+    var m = state.planCalendar.month + delta, y = state.planCalendar.year;
+    if (m < 0) { m = 11; y -= 1; }
+    if (m > 11) { m = 0; y += 1; }
+    state.planCalendar.month = m;
+    state.planCalendar.year = y;
+    renderPlanCalendar();
+  }
+
   function renderJour() {
     var dateStr = $("planDate").value;
     var plan = planCourant(dateStr);
     $("planMoment").value = plan.moment || "Jour";
+    $("planSelectedDateLabel").textContent = dateStr ? "Journée du " + PDF.formatDateLongFR(dateStr) : "";
     $("planHint").textContent = stockageOk ? "" : "Stockage local indisponible : pensez à exporter vos données.";
 
     var tous = plan.items.slice().sort(function (a, b) {
@@ -759,6 +796,10 @@
 
   function initPlanUI() {
     $("planDate").value = PDF.isoDateToday();
+    var aujourdhui = PDF.isoDateToday();
+    state.planCalendar.year = +aujourdhui.slice(0, 4);
+    state.planCalendar.month = +aujourdhui.slice(5, 7) - 1;
+    renderPlanCalendar();
     $("planGate").value = S.gate;
     renderJour();
   }
