@@ -225,3 +225,31 @@ test("buildAutoPlan without mandatorySlugs behaves exactly as before (backward c
   const slots = [slot("A", "10:00", "11:15"), slot("B", "11:00", "11:30"), slot("C", "12:00", "12:30")];
   assert.deepStrictEqual(carnet.buildAutoPlan(slots, 30).map((s) => s.name), carnet.buildAutoPlan(slots, 30, []).map((s) => s.name));
 });
+
+test("planDayCellInfo: no record -> just a plain, clickable day", () => {
+  const carnet = loadModule("carnet.js");
+  const info = carnet.planDayCellInfo(undefined, false, "2026-09-10");
+  assert.strictEqual(info.disabled, false);
+  assert.strictEqual(info.cls, "cal-day");
+});
+
+test("planDayCellInfo: a normal collected day gets has-data, stays clickable", () => {
+  const carnet = loadModule("carnet.js");
+  const info = carnet.planDayCellInfo({ status: "ok" }, false, "2026-09-05");
+  assert.strictEqual(info.cls, "cal-day has-data");
+  assert.strictEqual(info.disabled, false);
+});
+
+test("planDayCellInfo: closed_day gets is-closed and an explicit 'fermé' title, stays clickable", () => {
+  const carnet = loadModule("carnet.js");
+  const info = carnet.planDayCellInfo({ status: "closed_day" }, false, "2026-09-07");
+  assert.strictEqual(info.cls, "cal-day has-data is-closed");
+  assert.strictEqual(info.disabled, false);
+  assert.ok(info.title.includes("fermé"));
+});
+
+test("planDayCellInfo: out_of_season is treated the same as closed_day", () => {
+  const carnet = loadModule("carnet.js");
+  const info = carnet.planDayCellInfo({ status: "out_of_season" }, false, "2027-02-01");
+  assert.ok(info.cls.includes("is-closed"));
+});

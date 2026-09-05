@@ -53,6 +53,10 @@
   --badge-default-bg: #e9e4d6;
 
   --focus-ring: 0 0 0 3px rgba(201, 138, 43, 0.45);
+  /* Contour marqué des jours de fermeture ponctuelle dans les calendriers :
+     un noir franc en thème clair ; inversé (clair) en thème sombre pour
+     garder le même contraste maximal plutôt que la même valeur littérale. */
+  --cal-closed-outline: #16110c;
 }
 
 /* Dark mode via préférence système (si l'utilisateur n'a pas fait de choix explicite) */
@@ -89,6 +93,7 @@
     --badge-exceptionnel-bg: #2c2138;
     --badge-default: #cfc9b8;
     --badge-default-bg: #2a251c;
+    --cal-closed-outline: #f2e9d8;
   }
 }
 
@@ -125,6 +130,7 @@
   --badge-exceptionnel-bg: #2c2138;
   --badge-default: #cfc9b8;
   --badge-default-bg: #2a251c;
+  --cal-closed-outline: #f2e9d8;
 }
 
 /* ---------- 2. Reset & bases ---------- */
@@ -799,6 +805,7 @@ table.data-table tr.is-changed td:first-child { font-weight: 600; }
   padding: 0.3rem 0;
 }
 .calendar-grid button.cal-day {
+  position: relative;
   aspect-ratio: 1;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -816,8 +823,31 @@ table.data-table tr.is-changed td:first-child { font-weight: 600; }
   font-weight: 600;
 }
 .calendar-grid button.cal-day.has-data:hover { background: var(--accent-3); color: var(--text-on-accent); }
-.calendar-grid button.cal-day.is-closed { background: var(--accent-2-soft); border-color: var(--accent-2); color: var(--text-soft); }
+/* Fermeture ponctuelle : contour marqué + pastille "🚧" bien visible, pour
+   ne pas passer inaperçue à côté des jours ouverts (simple fond teinté). */
+.calendar-grid button.cal-day.is-closed {
+  background: var(--accent-2-soft);
+  border: 2px solid var(--cal-closed-outline);
+  color: var(--text);
+  font-weight: 700;
+}
 .calendar-grid button.cal-day.is-closed:hover { background: var(--accent-2); color: var(--text-on-accent); }
+.calendar-grid button.cal-day.is-closed::after {
+  content: "🚧";
+  position: absolute;
+  top: -0.45rem;
+  right: -0.45rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  line-height: 1;
+  font-size: 0.62rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--cal-closed-outline);
+  border-radius: 999px;
+}
 .calendar-grid button.cal-day.is-selected { background: var(--accent); color: var(--text-on-accent); border-color: var(--accent); }
 .calendar-grid button.cal-day:disabled {
   color: var(--text-soft);

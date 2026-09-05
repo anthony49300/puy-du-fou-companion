@@ -54,7 +54,7 @@
   var state = {
     catalogue: [], // [{slug, name, category}] triés par nom
     catalogueBySlug: {},
-    datesMap: {}, // "2026-08-26" -> season_year (pour construire le chemin history/)
+    datesMap: {}, // "2026-08-26" -> enregistrement dates.json (season_year, status, ...)
     realDayCache: {}, // "2026-08-26" -> payload today.json/history, ou null si indisponible
     currentRealSlots: [], // options actuellement proposées dans le select "programme officiel"
     currentVisit: null, // visite actuellement ouverte dans le panneau de détail (onglet Visites)
@@ -95,7 +95,10 @@
 
   function fetchDatesMap() {
     return PDF.fetchJSON("dates.json").then(function (data) {
-      (data.dates || []).forEach(function (rec) { state.datesMap[rec.date] = rec.season_year; });
+      // L'enregistrement complet (pas juste season_year) : le calendrier de
+      // "Composer la journée" a aussi besoin du statut pour signaler les
+      // jours de fermeture ponctuelle (voir planDayCellInfo).
+      (data.dates || []).forEach(function (rec) { state.datesMap[rec.date] = rec; });
     });
   }
 
@@ -129,7 +132,7 @@
         return data.date === dateStr ? data : null;
       });
     } else if (state.datesMap[dateStr] != null) {
-      promise = PDF.fetchJSON(PDF.historyJsonPath(dateStr, state.datesMap[dateStr]));
+      promise = PDF.fetchJSON(PDF.historyJsonPath(dateStr, state.datesMap[dateStr].season_year));
     } else {
       promise = Promise.resolve(null);
     }
@@ -374,10 +377,13 @@
   // les jours restent cliquables (un plan manuel reste possible même sans
   // programme officiel connu) ; seul un badge visuel distingue ceux pour
   // lesquels un programme officiel est disponible.
-  function planDayCellInfo(seasonYear, isSelected, dateStr) {
-    var hasData = seasonYear != null;
-    var cls = "cal-day" + (hasData ? " has-data" : "") + (isSelected ? " is-selected" : "");
-    var title = PDF.formatDateFR(dateStr) + (hasData ? " — programme officiel disponible" : " — pas de programme officiel connu (ajout manuel possible)");
+  function planDayCellInfo(record, isSelected, dateStr) {
+    var hasData = !!record;
+    var isClosed = hasData && (record.status === "closed_day" || record.status === "out_of_season");
+    var cls = "cal-day" + (hasData ? " has-data" : "") + (isClosed ? " is-closed" : "") + (isSelected ? " is-selected" : "");
+    var title = isClosed
+      ? "Puy du Fou fermé le " + PDF.formatDateFR(dateStr)
+      : PDF.formatDateFR(dateStr) + (hasData ? " — programme officiel disponible" : " — pas de programme officiel connu (ajout manuel possible)");
     return { cls: cls, disabled: false, title: title };
   }
 
@@ -413,6 +419,13 @@
     $("planMoment").value = plan.moment || "Jour";
     $("planSelectedDateLabel").textContent = dateStr ? "Journée du " + PDF.formatDateLongFR(dateStr) : "";
     $("planHint").textContent = stockageOk ? "" : "Stockage local indisponible : pensez à exporter vos données.";
+
+    var record = state.datesMap[dateStr];
+    var isClosed = record && (record.status === "closed_day" || record.status === "out_of_season");
+    $("planClosedBanner").innerHTML = isClosed
+      ? '<div class="status-banner status-stale"><span aria-hidden="true">🚧</span><span>Le Puy du Fou est fermé le ' +
+        PDF.escapeHtml(PDF.formatDateFR(dateStr)) + ".</span></div>"
+      : "";
 
     var tous = plan.items.slice().sort(function (a, b) {
       if (a.is_continuous && b.is_continuous) return 0;
@@ -1265,7 +1278,7 @@
     module.exports = {
       detecterConflits: detecterConflits, planItemExists: planItemExists, severiteConflit: severiteConflit,
       minutesToHHMM: minutesToHHMM, cycleSeen: cycleSeen, buildAutoPlan: buildAutoPlan,
-      optionsPourManquant: optionsPourManquant,
+      optionsPourManquant: optionsPourManquant, planDayCellInfo: planDayCellInfo,
     };
   }
 })();
