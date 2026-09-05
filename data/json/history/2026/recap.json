@@ -4,17 +4,18 @@
   "start_date": "2026-04-04",
   "end_date": "2027-01-03",
   "final": false,
-  "as_of_date": "2026-09-02",
-  "generated_at": "2026-09-02T16:05:43",
-  "days_collected": 144,
+  "as_of_date": "2026-09-05",
+  "generated_at": "2026-09-05T18:22:56",
+  "days_collected": 147,
+  "closed_days_count": 9,
   "representations_by_category": {
-    "spectacle_immersif": 711,
-    "spectacle": 6254,
-    "spectacle_nocturne": 112
+    "spectacle_immersif": 726,
+    "spectacle": 6399,
+    "spectacle_nocturne": 113
   },
   "total_spectacles": 16,
-  "total_representations": 7077,
-  "avg_per_day": 49.15,
+  "total_representations": 7238,
+  "avg_per_day": 49.24,
   "min_per_day": {
     "date": "2026-08-31",
     "count": 27
@@ -27,56 +28,56 @@
     {
       "slug": "lepee-du-roi-arthur",
       "name": "L'Épée du Roi Arthur",
-      "count": 837
+      "count": 856
     },
     {
       "slug": "les-automates-musiciens",
       "name": "Les Automates Musiciens",
-      "count": 774
+      "count": 793
     },
     {
       "slug": "le-mime-et-letoile",
       "name": "Le Mime et l'Étoile",
-      "count": 689
+      "count": 706
     },
     {
       "slug": "le-grand-carillon",
       "name": "Le Grand Carillon",
-      "count": 676
+      "count": 691
     },
     {
       "slug": "le-dernier-panache",
       "name": "Le Dernier Panache",
-      "count": 666
+      "count": 681
     }
   ],
   "least_represented": [
     {
       "slug": "les-noces-de-feu",
       "name": "Les Noces de Feu",
-      "count": 112
+      "count": 113
     },
     {
       "slug": "le-mystere-de-la-perouse",
       "name": "Le Mystère de la Pérouse",
-      "count": 144
+      "count": 147
     },
     {
       "slug": "le-premier-royaume",
       "name": "Le Premier Royaume",
-      "count": 144
+      "count": 147
     },
     {
       "slug": "les-amoureux-de-verdun",
       "name": "Les Amoureux de Verdun",
-      "count": 151
+      "count": 154
     },
     {
       "slug": "le-signe-du-triomphe",
       "name": "Le Signe du Triomphe",
-      "count": 269
+      "count": 276
     }
   ],
-  "continuous_count": 711,
-  "nocturnal_count": 117
+  "continuous_count": 726,
+  "nocturnal_count": 118
 }

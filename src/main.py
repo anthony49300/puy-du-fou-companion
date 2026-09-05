@@ -208,13 +208,24 @@ def cmd_set_season_dates(args: argparse.Namespace) -> int:
 
 
 def cmd_season_recap(args: argparse.Namespace) -> int:
+    today = today_paris().isoformat()
     with database.connect() as conn:
-        payload = exporter.export_season_recap(conn, args.year)
-    if payload is None:
-        print(f"Erreur : aucune saison {args.year} enregistrée (voir `python -m src.main seasons`).")
-        return 1
+        season = database.get_season_by_year(conn, args.year)
+        if season is None:
+            print(f"Erreur : aucune saison {args.year} enregistrée (voir `python -m src.main seasons`).")
+            return 1
+        # Une régénération manuelle ne doit pas figer un bilan "final" tant
+        # que la saison n'est pas réellement terminée (sinon plus aucune
+        # mise à jour automatique mensuelle ne le retouchera ensuite — voir
+        # maybe_export_season_recaps, qui ne touche jamais un bilan final).
+        finished = bool(season["end_date"]) and season["end_date"] < today
+        payload = exporter.export_season_recap(
+            conn, args.year, final=finished, as_of_date=None if finished else today
+        )
     print(f"Bilan de la saison {args.year} régénéré (data/json/history/{args.year}/recap.json) :")
+    print(f"  Statut                  : {'final' if payload['final'] else 'provisoire au ' + payload['as_of_date']}")
     print(f"  Jours collectés         : {payload['days_collected']}")
+    print(f"  Jours de fermeture      : {payload['closed_days_count']}")
     print(f"  Représentations totales : {payload['total_representations']}")
     print(f"  Spectacles distincts    : {payload['total_spectacles']}")
     return 0

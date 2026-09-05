@@ -284,6 +284,9 @@ def export_season_recap(
     by_category: dict[str, int] = {}
     for r in reps:
         by_category[r["spectacle_category"]] = by_category.get(r["spectacle_category"], 0) + 1
+    closed_days_count = sum(
+        1 for d in database.list_active_dates(conn, year) if d["status"] == config.DATE_STATUS_CLOSED_DAY
+    )
 
     payload = {
         "year": year,
@@ -294,6 +297,7 @@ def export_season_recap(
         "as_of_date": reference_date,
         "generated_at": now_iso(),
         "days_collected": len({r["date"] for r in reps}),
+        "closed_days_count": closed_days_count,
         "representations_by_category": by_category,
         **global_stats,
     }

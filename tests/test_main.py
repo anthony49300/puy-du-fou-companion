@@ -4,6 +4,8 @@ CLI avec une branche conditionnelle qui mérite un test dédié (le reste de
 main.py est un fin habillage d'affichage autour de fonctions déjà testées
 ailleurs : Collector, exporter, statistics).
 """
+import json
+import types
 from datetime import timedelta
 
 import pytest
@@ -129,3 +131,37 @@ def test_collect_daily_skips_day_after_tomorrow_when_already_known(fake_collecto
 
     # "Après-demain" est sauté ; "aujourd'hui" et "demain" restent à collecter.
     assert fake_collector.calls == [TODAY, TOMORROW]
+
+
+def test_season_recap_command_does_not_freeze_an_in_progress_season_as_final(tmp_path, monkeypatch):
+    # Régression : une régénération manuelle ne doit pas figer "final" une
+    # saison encore en cours (sinon plus jamais retouchée ensuite par la
+    # mise à jour mensuelle automatique — voir maybe_export_season_recaps).
+    monkeypatch.setattr(config, "HISTORY_JSON_DIR", tmp_path / "history")
+    with database.connect() as conn:
+        database.set_season_dates(conn, TODAY.year, start_date=(TODAY - timedelta(days=30)).isoformat(), end_date=(TODAY + timedelta(days=30)).isoformat())
+
+    rc = main.cmd_season_recap(types.SimpleNamespace(year=TODAY.year))
+
+    assert rc == 0
+    payload = json.loads((tmp_path / "history" / str(TODAY.year) / "recap.json").read_text(encoding="utf-8"))
+    assert payload["final"] is False
+    assert payload["as_of_date"] == TODAY.isoformat()
+
+
+def test_season_recap_command_marks_a_finished_season_as_final(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "HISTORY_JSON_DIR", tmp_path / "history")
+    with database.connect() as conn:
+        database.set_season_dates(conn, TODAY.year, start_date=(TODAY - timedelta(days=60)).isoformat(), end_date=(TODAY - timedelta(days=1)).isoformat())
+
+    rc = main.cmd_season_recap(types.SimpleNamespace(year=TODAY.year))
+
+    assert rc == 0
+    payload = json.loads((tmp_path / "history" / str(TODAY.year) / "recap.json").read_text(encoding="utf-8"))
+    assert payload["final"] is True
+
+
+def test_season_recap_command_unknown_year_returns_error(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "HISTORY_JSON_DIR", tmp_path / "history")
+    rc = main.cmd_season_recap(types.SimpleNamespace(year=1999))
+    assert rc == 1

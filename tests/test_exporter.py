@@ -195,6 +195,24 @@ def test_export_season_recap_contents(conn, tmp_path, monkeypatch):
     assert json.loads(path.read_text(encoding="utf-8"))["year"] == 2026
 
 
+def test_export_season_recap_counts_closed_days(conn, tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "HISTORY_JSON_DIR", tmp_path / "history")
+    database.set_season_dates(conn, 2026, start_date="2026-04-11", end_date="2026-11-08")
+    _add_day(conn, "2026-08-25")
+    _add_day(conn, "2026-08-26")
+    season_id = database.get_or_create_season(conn, 2026)
+    database.create_date_version(
+        conn, date_str="2026-08-27", season_id=season_id, source_url="https://example.test",
+        source_file=None, source_hash="hash-closed", retrieved_at=now_iso(), program_published_at=None,
+        status=config.DATE_STATUS_CLOSED_DAY,
+    )
+
+    payload = exporter.export_season_recap(conn, 2026)
+
+    assert payload["days_collected"] == 2  # le jour fermé n'a aucune représentation
+    assert payload["closed_days_count"] == 1
+
+
 def test_export_season_recap_unknown_year_returns_none(conn, tmp_path, monkeypatch):
     monkeypatch.setattr(config, "HISTORY_JSON_DIR", tmp_path / "history")
     assert exporter.export_season_recap(conn, 1999) is None

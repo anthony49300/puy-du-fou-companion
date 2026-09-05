@@ -49,6 +49,7 @@
       tile("Spectacles distincts", recap.total_spectacles) +
       tile("Représentations totales", recap.total_representations) +
       tile("Jours collectés", recap.days_collected) +
+      tile("Jours de fermeture", recap.closed_days_count) +
       tile("Moyenne / jour", recap.avg_per_day) +
       tile("Jour le plus chargé", recap.max_per_day ? recap.max_per_day.count : null, recap.max_per_day ? PDF.formatDateFR(recap.max_per_day.date) : "") +
       tile("Jour le plus calme", recap.min_per_day ? recap.min_per_day.count : null, recap.min_per_day ? PDF.formatDateFR(recap.min_per_day.date) : "") +
