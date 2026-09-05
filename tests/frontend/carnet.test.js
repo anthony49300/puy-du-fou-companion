@@ -253,3 +253,60 @@ test("planDayCellInfo: out_of_season is treated the same as closed_day", () => {
   const info = carnet.planDayCellInfo({ status: "out_of_season" }, false, "2027-02-01");
   assert.ok(info.cls.includes("is-closed"));
 });
+
+test("icsEscape escapes backslash, semicolon, comma and newline per RFC 5545", () => {
+  const carnet = loadModule("carnet.js");
+  assert.strictEqual(carnet.icsEscape("A, B; C\\D\nE"), "A\\, B\\; C\\\\D\\nE");
+});
+
+test("icsEscape treats null/undefined as an empty string", () => {
+  const carnet = loadModule("carnet.js");
+  assert.strictEqual(carnet.icsEscape(null), "");
+  assert.strictEqual(carnet.icsEscape(undefined), "");
+});
+
+function planItemIcs(name, start, end, opts) {
+  return Object.assign({ uid: "u-" + name, name: name, slug: name, start: start, end: end, is_continuous: false }, opts || {});
+}
+
+test("buildIcs wraps events in a valid VCALENDAR with one VEVENT per item", () => {
+  const carnet = loadModule("carnet.js");
+  const items = [planItemIcs("Les Vikings", "10:45", "11:11")];
+  const ics = carnet.buildIcs("2026-09-05", items, 30, new Date("2026-09-01T12:00:00Z"));
+  assert.match(ics, /^BEGIN:VCALENDAR\r\n/);
+  assert.match(ics, /\r\nEND:VCALENDAR$/);
+  assert.strictEqual((ics.match(/BEGIN:VEVENT/g) || []).length, 1);
+  assert.match(ics, /DTSTART:20260905T104500/);
+  assert.match(ics, /DTEND:20260905T111100/);
+  assert.match(ics, /SUMMARY:Les Vikings/);
+});
+
+test("buildIcs adds a gate-opening VALARM for a fixed-time show, matching the gate margin", () => {
+  const carnet = loadModule("carnet.js");
+  const items = [planItemIcs("Les Vikings", "10:45", "11:11")];
+  const ics = carnet.buildIcs("2026-09-05", items, 30, new Date());
+  assert.match(ics, /BEGIN:VALARM[\s\S]*TRIGGER:-PT30M[\s\S]*END:VALARM/);
+});
+
+test("buildIcs adds no VALARM for a continuous (no queue) attraction", () => {
+  const carnet = loadModule("carnet.js");
+  const items = [planItemIcs("Le Mystère de la Pérouse", "12:00", "20:15", { is_continuous: true })];
+  const ics = carnet.buildIcs("2026-09-05", items, 30, new Date());
+  assert.ok(!ics.includes("BEGIN:VALARM"));
+  assert.match(ics, /DESCRIPTION:Accès en continu\./);
+});
+
+test("buildIcs defaults DTEND to start+30min when the item has no end time", () => {
+  const carnet = loadModule("carnet.js");
+  const items = [planItemIcs("Ajout manuel", "22:00", null)];
+  const ics = carnet.buildIcs("2026-09-05", items, 30, new Date());
+  assert.match(ics, /DTSTART:20260905T220000/);
+  assert.match(ics, /DTEND:20260905T223000/);
+});
+
+test("buildIcs skips items without a start time", () => {
+  const carnet = loadModule("carnet.js");
+  const items = [planItemIcs("Sans horaire", null, null)];
+  const ics = carnet.buildIcs("2026-09-05", items, 30, new Date());
+  assert.ok(!ics.includes("BEGIN:VEVENT"));
+});

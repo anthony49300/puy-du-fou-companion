@@ -449,6 +449,70 @@
     return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
   }
 
+  /* ----------------------------------------------------------------------
+   * Export .ics de la journée composée
+   * -------------------------------------------------------------------- */
+
+  // Échappement texte ICS (RFC 5545) : backslash, virgule, point-virgule et
+  // retour à la ligne doivent être préfixés d'un backslash.
+  function icsEscape(text) {
+    return String(text == null ? "" : text)
+      .replace(/\\/g, "\\\\")
+      .replace(/;/g, "\\;")
+      .replace(/,/g, "\\,")
+      .replace(/\n/g, "\\n");
+  }
+
+  // "2026-08-26" + "10:45" -> "20260826T104500" (heure locale, sans "Z" ni
+  // TZID : le spectacle a lieu en France quel que soit le fuseau du
+  // visiteur qui exporte — le cas d'usage n'est jamais "je consulte à
+  // distance", toujours "j'y serai").
+  function icsDateTime(dateStr, hhmm) {
+    return dateStr.replace(/-/g, "") + "T" + hhmm.replace(":", "") + "00";
+  }
+
+  // Horodatage UTC "AAAAMMJJTHHMMSSZ" requis par DTSTAMP (création de
+  // l'événement dans le calendrier, indépendant de l'heure du spectacle).
+  function icsUtcStamp(date) {
+    return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  }
+
+  // Construit le contenu d'un fichier .ics (RFC 5545) à partir des items
+  // d'une journée composée : un VEVENT par spectacle, avec un rappel
+  // (VALARM) à l'heure d'ouverture des portes pour les séances à heure
+  // fixe (aucun sens pour les attractions en continu, sans file d'attente).
+  function buildIcs(dateStr, items, gate, now) {
+    var dtstamp = icsUtcStamp(now || new Date());
+    var lignes = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Puy du Fou Companion//Carnet//FR", "CALSCALE:GREGORIAN"];
+    items.forEach(function (it) {
+      if (!it.start) return; // rien d'exploitable sans heure de début
+      var fin = it.end || minutesToHHMM(PDF.timeToMinutes(it.start) + 30);
+      var description = it.is_continuous
+        ? "Accès en continu."
+        : "Ouverture des portes : " + PDF.formatTimeFR(minutesToHHMM(PDF.timeToMinutes(it.start) - gate)) + ".";
+      description += "\nAjouté depuis Mon carnet — Puy du Fou (non officiel).";
+
+      lignes.push("BEGIN:VEVENT");
+      lignes.push("UID:" + (it.uid || uid()) + "@puydufou-companion");
+      lignes.push("DTSTAMP:" + dtstamp);
+      lignes.push("DTSTART:" + icsDateTime(dateStr, it.start));
+      lignes.push("DTEND:" + icsDateTime(dateStr, fin));
+      lignes.push("SUMMARY:" + icsEscape(it.name));
+      lignes.push("DESCRIPTION:" + icsEscape(description));
+      lignes.push("LOCATION:" + icsEscape("Puy du Fou"));
+      if (!it.is_continuous) {
+        lignes.push("BEGIN:VALARM");
+        lignes.push("ACTION:DISPLAY");
+        lignes.push("DESCRIPTION:Ouverture des portes");
+        lignes.push("TRIGGER:-PT" + Math.max(0, gate) + "M");
+        lignes.push("END:VALARM");
+      }
+      lignes.push("END:VEVENT");
+    });
+    lignes.push("END:VCALENDAR");
+    return lignes.join("\r\n");
+  }
+
   function renderTimeline(items, conflits) {
     var el = $("jourTimeline");
     if (!items.length) {
@@ -829,6 +893,22 @@
       S.visites.sort(function (a, b) { return a.date.localeCompare(b.date); });
       sauver();
       toast("Journée du " + PDF.formatDateFR(dateStr) + " ajoutée au carnet de visites.");
+    });
+
+    $("btnExportIcs").addEventListener("click", function () {
+      var dateStr = $("planDate").value;
+      var plan = S.plans[dateStr];
+      if (!plan || !plan.items.length) return toast("Cette journée est vide.");
+      var contenu = buildIcs(dateStr, plan.items, S.gate);
+      var blob = new Blob([contenu], { type: "text/calendar;charset=utf-8" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "journee-puy-du-fou-" + dateStr + ".ics";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+      toast("Fichier .ics téléchargé — importez-le dans votre calendrier.");
     });
 
     $("btnPrintDay").addEventListener("click", function () { window.print(); });
@@ -1279,6 +1359,7 @@
       detecterConflits: detecterConflits, planItemExists: planItemExists, severiteConflit: severiteConflit,
       minutesToHHMM: minutesToHHMM, cycleSeen: cycleSeen, buildAutoPlan: buildAutoPlan,
       optionsPourManquant: optionsPourManquant, planDayCellInfo: planDayCellInfo,
+      icsEscape: icsEscape, buildIcs: buildIcs,
     };
   }
 })();
