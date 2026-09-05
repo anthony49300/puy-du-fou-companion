@@ -101,6 +101,18 @@ def test_compute_spectacle_stats_unknown_slug_returns_none(sample_conn):
     assert statistics.compute_spectacle_stats(sample_conn, "spectacle-inexistant") is None
 
 
+def test_compute_spectacle_stats_ignores_park_closed_days(sample_conn):
+    # Un jour où le parc entier est fermé n'est "absent" pour AUCUN
+    # spectacle en particulier : il ne doit ni gonfler days_absent, ni
+    # apparaître dans l'historique journalier.
+    _add_day(sample_conn, "2026-08-27", [], status=config.DATE_STATUS_CLOSED_DAY)
+    stats = statistics.compute_spectacle_stats(sample_conn, "les-vikings")
+    assert stats["stats"]["days_present"] == 2
+    assert stats["stats"]["days_absent"] == 0  # et non 1 à cause du jour fermé
+    assert len(stats["history"]) == 2
+    assert all(h["date"] != "2026-08-27" for h in stats["history"])
+
+
 def test_hourly_distribution(sample_conn):
     dist = statistics.hourly_distribution(sample_conn)
     hours = {d["hour"]: d["count"] for d in dist}

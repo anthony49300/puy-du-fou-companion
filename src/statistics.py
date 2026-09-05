@@ -124,7 +124,15 @@ def compute_spectacle_stats(conn: sqlite3.Connection, slug: str) -> Optional[dic
         return None
 
     reps = database.get_representations_for_spectacle(conn, spectacle["id"])
-    all_active_dates = database.list_active_dates(conn)
+    # Un jour de fermeture ponctuelle du parc (closed_day) ne compte pas
+    # comme un jour où CE spectacle serait "absent" : ce jour-là, AUCUN
+    # spectacle n'a lieu, ce n'est pas spécifique à celui-ci. Il ne doit
+    # donc pas gonfler le dénominateur days_present + days_absent, ni
+    # apparaître dans l'historique journalier de ce spectacle.
+    all_active_dates = [
+        d for d in database.list_active_dates(conn)
+        if d["status"] not in (config.DATE_STATUS_CLOSED_DAY, config.DATE_STATUS_OUT_OF_SEASON)
+    ]
     total_days = len(all_active_dates)
 
     per_day_count: dict[str, int] = defaultdict(int)
