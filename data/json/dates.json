@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-05T11:16:03",
+  "updated_at": "2026-09-05T16:56:46",
   "dates": [
     {
       "date": "2026-04-04",
@@ -261,6 +261,20 @@
       "representation_count": 35
     },
     {
+      "date": "2026-05-11",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-05-12",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
       "date": "2026-05-13",
       "season_year": 2026,
       "status": "ok",
@@ -296,6 +310,27 @@
       "representation_count": 29
     },
     {
+      "date": "2026-05-18",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-05-19",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-05-20",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
       "date": "2026-05-21",
       "season_year": 2026,
       "status": "ok",
@@ -329,6 +364,20 @@
       "status": "ok",
       "spectacle_count": 16,
       "representation_count": 35
+    },
+    {
+      "date": "2026-05-26",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-05-27",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
     },
     {
       "date": "2026-05-28",
@@ -373,6 +422,13 @@
       "representation_count": 34
     },
     {
+      "date": "2026-06-03",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
       "date": "2026-06-04",
       "season_year": 2026,
       "status": "ok",
@@ -413,6 +469,13 @@
       "status": "ok",
       "spectacle_count": 15,
       "representation_count": 28
+    },
+    {
+      "date": "2026-06-10",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
     },
     {
       "date": "2026-06-11",
