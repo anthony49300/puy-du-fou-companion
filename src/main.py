@@ -20,7 +20,7 @@ from datetime import timedelta
 
 from src import config, database, exporter, season_config, statistics
 from src.collector import Collector, PuyDuFouSourceAdapter
-from src.models import today_paris
+from src.models import now_iso, today_paris
 
 
 def _print_header(title: str) -> None:
@@ -89,6 +89,43 @@ def cmd_collect(args: argparse.Namespace) -> int:
     return 0 if outcome.status != config.DATE_STATUS_ERROR else 1
 
 
+def _promote_unresolved_past_days_to_closed(conn, today: str) -> int:
+    """Une date déjà PASSÉE encore "partial" (rien publié par le site
+    malgré les tentatives faites tant qu'elle était dans la fenêtre de
+    collecte, voir _is_resolved) ne changera plus jamais : le jour est
+    passé, personne ne publiera après coup un programme rétroactif. On peut
+    donc en conclure en toute sécurité que le parc était fermé ce jour-là.
+
+    Vérifie explicitement l'absence de représentations avant de promouvoir
+    (et pas seulement le statut) : "partial" peut aussi signifier "quelques
+    représentations trouvées, mais avec un avertissement" (ex: spectacle
+    non reconnu) — un cas qu'il ne faut surtout pas écraser en "fermé".
+
+    Retourne le nombre de dates promues.
+    """
+    promoted = 0
+    for row in database.list_active_dates(conn):
+        if row["date"] >= today or row["status"] != config.DATE_STATUS_PARTIAL:
+            continue
+        if database.get_representations_for_date_id(conn, row["id"]):
+            continue  # de vraies représentations existent : pas une fermeture, ne pas toucher
+        database.create_date_version(
+            conn,
+            date_str=row["date"],
+            season_id=row["season_id"],
+            source_url=row["source_url"],
+            source_file=None,
+            source_hash=None,
+            content_hash=None,
+            retrieved_at=now_iso(),
+            program_published_at=None,
+            status=config.DATE_STATUS_CLOSED_DAY,
+            warnings=["Fermeture ponctuelle déduite : date passée jamais publiée par le site malgré plusieurs tentatives."],
+        )
+        promoted += 1
+    return promoted
+
+
 def _is_resolved(conn, date_str: str) -> bool:
     """Un jour est "connu" au sens de cmd_collect_daily seulement si sa
     dernière collecte a abouti à un résultat définitif (ok/closed_day) — un
@@ -132,6 +169,11 @@ def cmd_collect_daily(args: argparse.Namespace) -> int:
     "inconnu" (il ne l'est jamais, sauf run manqué) — utilisez
     `collect --date ...`/`collect --tomorrow` manuellement si besoin de
     forcer une recollecte.
+
+    Termine par un balayage (_promote_unresolved_past_days_to_closed) qui
+    déduit une fermeture ponctuelle pour toute date PASSÉE restée "partial"
+    malgré les tentatives : ce jour ne repassera plus jamais dans la
+    fenêtre de collecte, c'est le seul moment sûr pour conclure.
     """
     today = today_paris()
     tomorrow = today + timedelta(days=1)
@@ -160,6 +202,12 @@ def cmd_collect_daily(args: argparse.Namespace) -> int:
             rc,
             cmd_collect(argparse.Namespace(date=day_after_tomorrow.isoformat(), tomorrow=False, dry_run=False)),
         )
+
+    with database.connect() as conn:
+        promoted = _promote_unresolved_past_days_to_closed(conn, today.isoformat())
+    if promoted:
+        print(f"{promoted} jour(s) passé(s) jamais publié(s) par le site marqué(s) comme fermeture ponctuelle.")
+
     return rc
 
 

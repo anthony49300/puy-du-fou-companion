@@ -51,11 +51,12 @@ def fake_collector(monkeypatch):
 
 def _seed_date(conn, date_str, *, status=config.DATE_STATUS_OK):
     season_id = database.get_or_create_season(conn, int(date_str[:4]))
-    database.create_date_version(
+    date_id, _ = database.create_date_version(
         conn, date_str=date_str, season_id=season_id, source_url="https://example.test",
         source_file=None, source_hash=f"h-{date_str}", retrieved_at=now_iso(),
         program_published_at=None, status=status,
     )
+    return date_id
 
 
 TODAY = today_paris()  # même horloge que le code testé (voir src.models.today_paris)
@@ -164,6 +165,53 @@ def test_collect_daily_still_skips_a_day_resolved_as_closed(fake_collector):
     main.cmd_collect_daily(None)
 
     assert fake_collector.calls == [TODAY, DAY_AFTER_TOMORROW]
+
+
+YESTERDAY = TODAY - timedelta(days=1)
+
+
+def test_promote_unresolved_past_days_marks_a_never_published_past_date_as_closed(fake_collector):
+    with database.connect() as conn:
+        _seed_date(conn, YESTERDAY.isoformat(), status=config.DATE_STATUS_PARTIAL)
+
+    main.cmd_collect_daily(None)
+
+    with database.connect() as conn:
+        row = database.get_active_date(conn, YESTERDAY.isoformat())
+    assert row["status"] == config.DATE_STATUS_CLOSED_DAY
+
+
+def test_promote_unresolved_past_days_never_touches_a_future_or_present_date(fake_collector):
+    # "partial" pour aujourd'hui/demain/après-demain doit rester tel quel
+    # (encore dans la fenêtre de collecte, sera retenté au run suivant) —
+    # seul le PASSÉ ne changera plus jamais.
+    with database.connect() as conn:
+        _seed_date(conn, TODAY.isoformat(), status=config.DATE_STATUS_PARTIAL)
+
+    main.cmd_collect_daily(None)
+
+    with database.connect() as conn:
+        row = database.get_active_date(conn, TODAY.isoformat())
+    assert row["status"] == config.DATE_STATUS_PARTIAL
+
+
+def test_promote_unresolved_past_days_never_overwrites_real_representations(fake_collector):
+    # Un statut "partial" peut aussi signifier "quelques représentations
+    # trouvées, mais avec un avertissement" (ex: spectacle non reconnu) —
+    # il ne faut surtout pas écraser ce cas en "fermé".
+    with database.connect() as conn:
+        date_id = _seed_date(conn, YESTERDAY.isoformat(), status=config.DATE_STATUS_PARTIAL)
+        spectacle_id = database.get_or_create_spectacle(conn, name="Les Vikings", slug="les-vikings", category="spectacle")
+        database.insert_representation(
+            conn, date_id=date_id, spectacle_id=spectacle_id, start_time="11:30", end_time=None,
+            is_continuous=False, status=config.REPR_STATUS_SCHEDULED, source_text="11:30 Les Vikings",
+        )
+
+    main.cmd_collect_daily(None)
+
+    with database.connect() as conn:
+        row = database.get_active_date(conn, YESTERDAY.isoformat())
+    assert row["status"] == config.DATE_STATUS_PARTIAL  # inchangé
 
 
 def test_season_recap_command_does_not_freeze_an_in_progress_season_as_final(tmp_path, monkeypatch):
