@@ -89,41 +89,57 @@ def cmd_collect(args: argparse.Namespace) -> int:
     return 0 if outcome.status != config.DATE_STATUS_ERROR else 1
 
 
+def _is_resolved(conn, date_str: str) -> bool:
+    """Un jour est "connu" au sens de cmd_collect_daily seulement si sa
+    dernière collecte a abouti à un résultat définitif (ok/closed_day) — un
+    statut "partial"/"error" (rien publié pour l'instant, ou échec) reste
+    "inconnu" et doit être retenté tant qu'il est dans la fenêtre de
+    collecte, sinon il reste bloqué indéfiniment sur ce statut provisoire
+    même une fois que le site finit par publier le vrai programme (voir la
+    note dans la docstring de cmd_collect_daily)."""
+    row = database.get_active_date(conn, date_str)
+    return row is not None and row["status"] in (config.DATE_STATUS_OK, config.DATE_STATUS_CLOSED_DAY)
+
+
 def cmd_collect_daily(args: argparse.Namespace) -> int:
     """Point d'entrée quotidien recommandé pour l'automatisation.
 
     Récupère aujourd'hui, demain et après-demain (chacun seulement s'il
-    n'est pas déjà connu) en un seul appel, exécuté une fois par jour le
-    matin par le workflow GitHub Actions — la page "programme du jour"
-    publie systématiquement ces 3 jours en un seul chargement (voir
-    SCHEDULE_PAGE_URL / schedule_json_parser.py) : les couvrir tous les
-    trois ne coûte donc jamais plus d'UNE requête réseau au total, même
-    quand les trois sont inconnus en même temps (le cache dans
-    PuyDuFouScheduleSourceAdapter évite de re-télécharger la même page pour
-    chaque date). En régime stable, "aujourd'hui" et "demain" sont déjà
-    connus (collectés respectivement avant-hier et hier), seul
-    "après-demain" — le nouveau jour de la fenêtre — nécessite une vraie
-    collecte chaque matin : chaque jour est ainsi connu avec un jour
-    d'avance sur le strict nécessaire, ce qui absorbe un run manqué sans
-    trou de données. "Aujourd'hui"/"demain" ne redeviennent utiles à
-    recollecter que si un run précédent a été manqué : dans ce cas ils sont
-    encore inconnus et servent de rattrapage. Ne fait AUCUN appel réseau si
-    les trois jours sont déjà connus, ce qui rend cette commande sûre à
-    rappeler (ex: relance manuelle) sans dupliquer le travail.
+    n'est pas déjà connu DE FAÇON DÉFINITIVE — voir _is_resolved) en un
+    seul appel, exécuté une fois par jour le matin par le workflow GitHub
+    Actions — la page "programme du jour" publie systématiquement ces 3
+    jours en un seul chargement (voir SCHEDULE_PAGE_URL /
+    schedule_json_parser.py) : les couvrir tous les trois ne coûte donc
+    jamais plus d'UNE requête réseau au total, même quand les trois sont
+    inconnus en même temps (le cache dans PuyDuFouScheduleSourceAdapter
+    évite de re-télécharger la même page pour chaque date). En régime
+    stable, "aujourd'hui" et "demain" sont déjà connus (collectés
+    respectivement avant-hier et hier), seul "après-demain" — le nouveau
+    jour de la fenêtre — nécessite une vraie collecte chaque matin :
+    chaque jour est ainsi connu avec un jour d'avance sur le strict
+    nécessaire, ce qui absorbe un run manqué sans trou de données.
+    "Aujourd'hui"/"demain" ne redeviennent utiles à recollecter que si un
+    run précédent a été manqué, OU si le jour est resté "partial"/"error"
+    (rien publié pour l'instant côté site) : dans ces deux cas ils sont
+    encore "inconnus" et servent de rattrapage. Ne fait AUCUN appel réseau
+    si les trois jours sont déjà connus de façon définitive, ce qui rend
+    cette commande sûre à rappeler (ex: relance manuelle) sans dupliquer le
+    travail.
 
     Contrepartie assumée : un vrai correctif publié par le site EN COURS DE
-    JOURNÉE sur un jour déjà connu ne sera pas rattrapé automatiquement
-    avant que ce jour ne redevienne "inconnu" (il ne l'est jamais, sauf run
-    manqué) — utilisez `collect --date ...`/`collect --tomorrow`
-    manuellement si besoin de forcer une recollecte.
+    JOURNÉE sur un jour déjà connu de façon définitive (ok/closed_day) ne
+    sera pas rattrapé automatiquement avant que ce jour ne redevienne
+    "inconnu" (il ne l'est jamais, sauf run manqué) — utilisez
+    `collect --date ...`/`collect --tomorrow` manuellement si besoin de
+    forcer une recollecte.
     """
     today = today_paris()
     tomorrow = today + timedelta(days=1)
     day_after_tomorrow = today + timedelta(days=2)
     with database.connect() as conn:
-        have_today = database.get_active_date(conn, today.isoformat()) is not None
-        have_tomorrow = database.get_active_date(conn, tomorrow.isoformat()) is not None
-        have_day_after_tomorrow = database.get_active_date(conn, day_after_tomorrow.isoformat()) is not None
+        have_today = _is_resolved(conn, today.isoformat())
+        have_tomorrow = _is_resolved(conn, tomorrow.isoformat())
+        have_day_after_tomorrow = _is_resolved(conn, day_after_tomorrow.isoformat())
 
     rc = 0
     if have_today:

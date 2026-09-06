@@ -49,12 +49,12 @@ def fake_collector(monkeypatch):
     return _RecordingAdapter
 
 
-def _seed_date(conn, date_str):
+def _seed_date(conn, date_str, *, status=config.DATE_STATUS_OK):
     season_id = database.get_or_create_season(conn, int(date_str[:4]))
     database.create_date_version(
         conn, date_str=date_str, season_id=season_id, source_url="https://example.test",
         source_file=None, source_hash=f"h-{date_str}", retrieved_at=now_iso(),
-        program_published_at=None, status=config.DATE_STATUS_OK,
+        program_published_at=None, status=status,
     )
 
 
@@ -131,6 +131,39 @@ def test_collect_daily_skips_day_after_tomorrow_when_already_known(fake_collecto
 
     # "Après-demain" est sauté ; "aujourd'hui" et "demain" restent à collecter.
     assert fake_collector.calls == [TODAY, TOMORROW]
+
+
+def test_collect_daily_retries_a_day_still_stuck_on_partial(fake_collector):
+    # Régression : un jour "partial" (rien publié pour l'instant côté site,
+    # 0 représentation) ne doit PAS compter comme "déjà connu" — sinon il
+    # reste bloqué sur ce statut provisoire pour toujours, même une fois le
+    # vrai programme publié (voir _is_resolved).
+    with database.connect() as conn:
+        _seed_date(conn, TOMORROW.isoformat(), status=config.DATE_STATUS_PARTIAL)
+
+    main.cmd_collect_daily(None)
+
+    assert fake_collector.calls == [TODAY, TOMORROW, DAY_AFTER_TOMORROW]
+
+
+def test_collect_daily_retries_a_day_stuck_on_error(fake_collector):
+    with database.connect() as conn:
+        _seed_date(conn, TODAY.isoformat(), status=config.DATE_STATUS_ERROR)
+
+    main.cmd_collect_daily(None)
+
+    assert fake_collector.calls == [TODAY, TOMORROW, DAY_AFTER_TOMORROW]
+
+
+def test_collect_daily_still_skips_a_day_resolved_as_closed(fake_collector):
+    # Un jour "closed_day" EST un résultat définitif (fermeture confirmée) :
+    # il doit rester sauté, contrairement à "partial"/"error".
+    with database.connect() as conn:
+        _seed_date(conn, TOMORROW.isoformat(), status=config.DATE_STATUS_CLOSED_DAY)
+
+    main.cmd_collect_daily(None)
+
+    assert fake_collector.calls == [TODAY, DAY_AFTER_TOMORROW]
 
 
 def test_season_recap_command_does_not_freeze_an_in_progress_season_as_final(tmp_path, monkeypatch):
