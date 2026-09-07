@@ -306,7 +306,9 @@ class Collector:
                     # au PDF, qui doit être ouvert par PyMuPDF depuis un
                     # vrai fichier — voir le repli dry-run ci-dessous).
                     html_text = fetch_result.content.decode("utf-8", errors="replace")
-                    parse_result = schedule_json_parser.parse_schedule_html(html_text, requested_date=date_str)
+                    parse_result = schedule_json_parser.parse_schedule_html(
+                        html_text, requested_date=date_str, is_today=(target_date == today_paris())
+                    )
                     strategy = "drupal_settings_json"
                 else:
                     pdf_path = raw_path
@@ -390,9 +392,28 @@ class Collector:
                     dry_run_preview=preview,
                 )
 
+            if parse_result.park_closed:
+                # Constaté sur la source (0 représentation, mais date bien
+                # reconnue par le site) : normal, pas une anomalie — statut
+                # dédié plutôt que "partial" (qui impliquerait un souci de
+                # collecte) malgré la présence d'un avertissement.
+                status = config.DATE_STATUS_CLOSED_DAY
+            else:
+                status = config.DATE_STATUS_PARTIAL if warnings else config.DATE_STATUS_OK
+
             # --- Écriture en base ---
             previous_hash = database.get_latest_hash(conn, effective_date_str)
-            if previous_hash == content_hash:
+            existing = database.get_active_date(conn, effective_date_str)
+            # Le hash ne porte QUE sur les représentations résolues (voir
+            # compute_content_hash) : deux collectes "0 représentation" ont
+            # donc le MÊME hash que le jour soit "pas encore publié"
+            # (partial) ou "confirmé fermé" (closed_day) — un changement de
+            # statut à lui seul, sans changement de représentations, doit
+            # quand même créer une nouvelle version, sinon la transition
+            # partial -> closed_day (ou l'inverse) ne serait jamais
+            # enregistrée.
+            status_unchanged = existing is not None and existing["status"] == status
+            if previous_hash == content_hash and status_unchanged:
                 database.log_collection_finish(
                     conn, log_id, status=config.LOG_STATUS_NO_CHANGE,
                     message=(
@@ -400,7 +421,6 @@ class Collector:
                         "précédente) : aucune nouvelle version créée."
                     ),
                 )
-                existing = database.get_active_date(conn, effective_date_str)
                 reps = database.get_representations_for_date_id(conn, existing["id"]) if existing else []
                 return CollectOutcome(
                     status=existing["status"] if existing else config.DATE_STATUS_OK,
@@ -420,15 +440,6 @@ class Collector:
             except ValueError:
                 pass
             season_id = database.get_or_create_season(conn, season_year)
-
-            if parse_result.park_closed:
-                # Constaté sur la source (0 représentation, mais date bien
-                # reconnue par le site) : normal, pas une anomalie — statut
-                # dédié plutôt que "partial" (qui impliquerait un souci de
-                # collecte) malgré la présence d'un avertissement.
-                status = config.DATE_STATUS_CLOSED_DAY
-            else:
-                status = config.DATE_STATUS_PARTIAL if warnings else config.DATE_STATUS_OK
 
             date_id, version = database.create_date_version(
                 conn,

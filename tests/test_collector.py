@@ -3,13 +3,13 @@
 Utilise un SourceAdapter factice (pas de vrai réseau) pour rester rapide et
 déterministe.
 """
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 
 from src import config, database, season_config
 from src.collector import Collector, FetchResult, SourceAdapter
-from tests.fixtures import SAMPLE_SCHEDULE_HTML
+from tests.fixtures import SAMPLE_SCHEDULE_HTML, build_schedule_html
 
 
 @pytest.fixture(autouse=True)
@@ -171,3 +171,74 @@ def test_collect_records_closed_day_instead_of_error(db_path):
         active = database.get_active_date(conn, "2026-08-28")
         assert active is not None
         assert active["status"] == config.DATE_STATUS_CLOSED_DAY
+
+
+def test_collect_records_closed_day_when_dates_open_entirely_empty_for_today(db_path):
+    """Constaté en pratique (fermeture du 07/09/2026) : le widget peut ne
+    lister ABSOLUMENT aucune date ouverte plutôt que de lister le jour avec
+    des événements vides. Collector.collect() doit transmettre "c'est bien
+    la date du jour" à schedule_json_parser pour que ce cas soit interprété
+    comme une fermeture (voir is_today)."""
+    empty_html = build_schedule_html({"dates_open": [], "events": {}, "sections": {}})
+
+    class _HtmlAdapter(SourceAdapter):
+        source_url = "https://example.test/programme-du-jour"
+
+        def fetch(self, target_date):
+            return FetchResult(content=empty_html.encode("utf-8"), content_type="html", source_url=self.source_url)
+
+    outcome = Collector(adapter=_HtmlAdapter(), db_path=db_path).collect()  # target_date=None -> aujourd'hui
+
+    assert outcome.status == config.DATE_STATUS_CLOSED_DAY
+
+
+def test_collect_transitions_from_partial_to_closed_day_despite_identical_zero_rep_hash(db_path):
+    """Régression : "0 représentation, pas encore publié" (partial) et "0
+    représentation, confirmé fermé" (closed_day) ont le MÊME hash de
+    contenu (calculé sur les représentations, toujours vides dans les deux
+    cas) — un changement de STATUT seul doit quand même être enregistré,
+    sinon la transition partial -> closed_day ne serait jamais persistée
+    une fois le parc réellement confirmé fermé."""
+    not_open_yet_html = build_schedule_html({"dates_open": ["2099-01-01"], "events": {}, "sections": {}})
+    confirmed_closed_html = build_schedule_html({"dates_open": [], "events": {}, "sections": {}})
+
+    class _HtmlAdapter(SourceAdapter):
+        source_url = "https://example.test/programme-du-jour"
+
+        def __init__(self):
+            self.calls = 0
+
+        def fetch(self, target_date):
+            self.calls += 1
+            html = not_open_yet_html if self.calls == 1 else confirmed_closed_html
+            return FetchResult(content=html.encode("utf-8"), content_type="html", source_url=self.source_url)
+
+    collector = Collector(adapter=_HtmlAdapter(), db_path=db_path)
+
+    first = collector.collect()  # aujourd'hui, pas encore publié
+    assert first.status == config.DATE_STATUS_PARTIAL
+
+    second = collector.collect()  # aujourd'hui, cette fois confirmé fermé
+    assert second.status == config.DATE_STATUS_CLOSED_DAY
+
+    with database.connect(db_path) as conn:
+        active = database.get_active_date(conn, first.date_str)
+        assert active["status"] == config.DATE_STATUS_CLOSED_DAY
+
+
+def test_collect_dates_open_entirely_empty_for_a_future_date_is_not_closed(db_path):
+    """La même page vide, mais demandée pour une date future explicite (pas
+    "aujourd'hui") : ne doit PAS être interprétée comme une fermeture,
+    seulement comme "pas encore publié" (partial)."""
+    empty_html = build_schedule_html({"dates_open": [], "events": {}, "sections": {}})
+
+    class _HtmlAdapter(SourceAdapter):
+        source_url = "https://example.test/programme-du-jour"
+
+        def fetch(self, target_date):
+            return FetchResult(content=empty_html.encode("utf-8"), content_type="html", source_url=self.source_url)
+
+    future_date = date.today() + timedelta(days=5)
+    outcome = Collector(adapter=_HtmlAdapter(), db_path=db_path).collect(future_date)
+
+    assert outcome.status == config.DATE_STATUS_PARTIAL

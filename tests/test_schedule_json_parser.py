@@ -4,7 +4,7 @@ source JSON structurée qui a remplacé le PDF par défaut (voir
 src/collector.py, PuyDuFouScheduleSourceAdapter).
 """
 from src import config, schedule_json_parser
-from tests.fixtures import HTML_WITHOUT_SETTINGS_JSON, SAMPLE_SCHEDULE_HTML
+from tests.fixtures import HTML_WITHOUT_SETTINGS_JSON, SAMPLE_SCHEDULE_HTML, build_schedule_html
 
 
 def test_parse_extracts_all_representations_for_requested_date():
@@ -91,6 +91,30 @@ def test_parse_detects_closed_day_when_events_entry_is_empty():
 def test_parse_open_day_is_not_flagged_as_closed():
     result = schedule_json_parser.parse_schedule_html(SAMPLE_SCHEDULE_HTML, "2026-08-26")
     assert result.park_closed is False
+
+
+def test_parse_detects_closed_day_when_dates_open_is_entirely_empty_and_it_is_today():
+    """Fermeture ponctuelle constatée en pratique (07/09/2026) : le widget
+    ne liste ABSOLUMENT aucune date ouverte plutôt que de lister le jour
+    avec des événements vides — uniquement interprété comme une fermeture
+    quand c'est la date du jour (is_today=True)."""
+    html = build_schedule_html({"dates_open": [], "events": {}, "sections": {}})
+    result = schedule_json_parser.parse_schedule_html(html, "2026-09-07", is_today=True)
+    assert result.date_found == "2026-09-07"
+    assert result.park_closed is True
+    assert result.representations == []
+    assert not result.warnings  # pas une anomalie, comme l'autre variante de fermeture
+
+
+def test_parse_empty_dates_open_for_a_future_date_stays_unpublished_not_closed():
+    """La même page vide, mais pour demain/après-demain (is_today=False) :
+    reste "pas encore publié", pas une fermeture — l'absence de données ne
+    prouve rien pour un jour qui n'est pas encore arrivé."""
+    html = build_schedule_html({"dates_open": [], "events": {}, "sections": {}})
+    result = schedule_json_parser.parse_schedule_html(html, "2026-09-08", is_today=False)
+    assert result.date_found is None
+    assert result.park_closed is False
+    assert result.warnings
 
 
 def test_parse_missing_settings_json_returns_none_with_warning():

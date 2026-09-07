@@ -111,7 +111,7 @@ def _to_minutes(hhmm: str) -> int:
     return h * 60 + m
 
 
-def parse_schedule_html(html: str, requested_date: str) -> ParseResult:
+def parse_schedule_html(html: str, requested_date: str, *, is_today: bool = False) -> ParseResult:
     """Analyse la page "programme du jour" et extrait les représentations
     de `requested_date` (ISO "YYYY-MM-DD").
 
@@ -130,9 +130,19 @@ def parse_schedule_html(html: str, requested_date: str) -> ParseResult:
     qui y figure mais sans aucune entrée dans `events` (ou une entrée
     vide) signifie que le parc est fermé ce jour-là — c'est ce que
     l'utilisateur voit s'afficher comme "Le Puy du Fou est fermé" sur la
-    page officielle. Une date ABSENTE de `dates_open` signifie autre
-    chose : elle est simplement hors de la fenêtre de 3 jours publiée
-    (pas encore atteinte), ce qui n'implique rien sur son statut réel.
+    page officielle. Une date ABSENTE de `dates_open` signifie
+    normalement autre chose : elle est simplement hors de la fenêtre de 3
+    jours publiée (pas encore atteinte), ce qui n'implique rien sur son
+    statut réel.
+
+    Exception constatée en pratique (fermeture du 07/09/2026) : `dates_open`
+    peut être ENTIÈREMENT VIDE plutôt que de lister le jour avec des
+    événements vides — dans ce cas précis, le widget n'affiche jamais rien
+    à ouvrir, pas même la date du jour. `is_today=True` (positionné par
+    l'appelant, qui connaît la date du jour) permet de distinguer ce cas
+    d'une fermeture réelle de "vraiment rien publié pour l'instant" : on ne
+    l'applique JAMAIS à demain/après-demain, dont l'absence ne prouve rien
+    (ils peuvent simplement ne pas encore être publiés).
     """
     warnings: list[str] = []
     schedule = _extract_timeline_schedule(html)
@@ -145,6 +155,13 @@ def parse_schedule_html(html: str, requested_date: str) -> ParseResult:
         return ParseResult(date_found=None, warnings=warnings, strategy_used=STRATEGY_NAME)
 
     dates_open = schedule.get("dates_open") or []
+    if is_today and requested_date not in dates_open and not dates_open:
+        # Le parc est fermé aujourd'hui : voir la note sur dates_open vide
+        # ci-dessus. Pas d'avertissement ici, comme pour l'autre variante
+        # de fermeture (date présente mais events vide) : ce n'est pas une
+        # anomalie de collecte.
+        return ParseResult(date_found=requested_date, park_closed=True, strategy_used=STRATEGY_NAME)
+
     if requested_date not in dates_open:
         warnings.append(
             f"Aucune donnée publiée pour {requested_date} sur la page "
