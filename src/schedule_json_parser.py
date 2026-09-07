@@ -75,11 +75,35 @@ _ENTITY_NUMBER_SPAN_RE = re.compile(r"<span[^>]*>.*?</span>", re.S)
 _TAG_RE = re.compile(r"<[^>]+>")
 _DURATION_NUMBER_RE = re.compile(r"(\d+)")
 
+# Texte VISIBLE affiché pendant une fermeture (hors du bloc JSON), ex :
+# "Prochaine ouverture le Jeudi 10 Septembre 2026" — constaté en pratique
+# lors de la fermeture du 07/09/2026 au 09/09/2026 inclus.
+_NEXT_OPENING_RE = re.compile(r"Prochaine ouverture le\s+\w+\s+(\d{1,2})\s+(\w+)\s+(\d{4})", re.I)
+_FRENCH_MONTHS = {
+    "janvier": 1, "février": 2, "fevrier": 2, "mars": 3, "avril": 4, "mai": 5, "juin": 6,
+    "juillet": 7, "août": 8, "aout": 8, "septembre": 9, "octobre": 10,
+    "novembre": 11, "décembre": 12, "decembre": 12,
+}
+
 # Marge (en minutes) au-delà de laquelle l'écart entre la durée annoncée
 # d'un spectacle et l'étendue (fin - début) d'un créneau signale un accès
 # en continu ("visite libre") plutôt qu'une représentation ponctuelle (voir
 # docstring du module).
 _CONTINUOUS_SPAN_MARGIN_MINUTES = 5
+
+
+def _extract_next_opening_date(html: str) -> str | None:
+    """Extrait la date ISO annoncée par "Prochaine ouverture le <jour>
+    <mois> <année>" (texte visible, pas dans le JSON) — None si absent ou
+    non reconnu (jamais bloquant, juste une info en plus)."""
+    m = _NEXT_OPENING_RE.search(html)
+    if not m:
+        return None
+    day, month_name, year = m.group(1), m.group(2), m.group(3)
+    month = _FRENCH_MONTHS.get(month_name.lower())
+    if month is None:
+        return None
+    return f"{int(year):04d}-{month:02d}-{int(day):02d}"
 
 
 def _extract_timeline_schedule(html: str) -> dict | None:
@@ -143,6 +167,12 @@ def parse_schedule_html(html: str, requested_date: str, *, is_today: bool = Fals
     d'une fermeture réelle de "vraiment rien publié pour l'instant" : on ne
     l'applique JAMAIS à demain/après-demain, dont l'absence ne prouve rien
     (ils peuvent simplement ne pas encore être publiés).
+
+    Quand le parc est fermé, la page affiche aussi (en texte visible, hors
+    JSON) la date de réouverture ("Prochaine ouverture le Jeudi 10
+    Septembre 2026") : voir `ParseResult.next_opening_date`, qui permet à
+    l'appelant de déduire que TOUS les jours jusqu'à cette date sont fermés
+    eux aussi, sans attendre que chacun devienne "aujourd'hui" à son tour.
     """
     warnings: list[str] = []
     schedule = _extract_timeline_schedule(html)
@@ -160,7 +190,10 @@ def parse_schedule_html(html: str, requested_date: str, *, is_today: bool = Fals
         # ci-dessus. Pas d'avertissement ici, comme pour l'autre variante
         # de fermeture (date présente mais events vide) : ce n'est pas une
         # anomalie de collecte.
-        return ParseResult(date_found=requested_date, park_closed=True, strategy_used=STRATEGY_NAME)
+        return ParseResult(
+            date_found=requested_date, park_closed=True, strategy_used=STRATEGY_NAME,
+            next_opening_date=_extract_next_opening_date(html),
+        )
 
     if requested_date not in dates_open:
         warnings.append(
@@ -175,7 +208,10 @@ def parse_schedule_html(html: str, requested_date: str, *, is_today: bool = Fals
         # anomalie, donc pas d'avertissement "aucune représentation
         # trouvée" ici — juste le marqueur park_closed, à charge du code
         # appelant de le refléter comme tel plutôt que comme une erreur.
-        return ParseResult(date_found=requested_date, park_closed=True, strategy_used=STRATEGY_NAME)
+        return ParseResult(
+            date_found=requested_date, park_closed=True, strategy_used=STRATEGY_NAME,
+            next_opening_date=_extract_next_opening_date(html),
+        )
 
     sections = schedule.get("sections") or {}
     representations: list[ParsedRepresentation] = []

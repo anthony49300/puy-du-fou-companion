@@ -106,6 +106,26 @@ def test_parse_detects_closed_day_when_dates_open_is_entirely_empty_and_it_is_to
     assert not result.warnings  # pas une anomalie, comme l'autre variante de fermeture
 
 
+def test_parse_extracts_next_opening_date_from_visible_closure_text():
+    """"Prochaine ouverture le Jeudi 10 Septembre 2026" (texte visible, hors
+    JSON) constaté sur la page pendant la fermeture du 07/09/2026."""
+    html = build_schedule_html({"dates_open": [], "events": {}, "sections": {}})
+    html = html.replace(
+        "</body>",
+        '<div class="next"> Prochaine ouverture le Jeudi 10 Septembre 2026</div></body>',
+    )
+    result = schedule_json_parser.parse_schedule_html(html, "2026-09-07", is_today=True)
+    assert result.park_closed is True
+    assert result.next_opening_date == "2026-09-10"
+
+
+def test_parse_next_opening_date_is_none_when_absent():
+    html = build_schedule_html({"dates_open": [], "events": {}, "sections": {}})
+    result = schedule_json_parser.parse_schedule_html(html, "2026-09-07", is_today=True)
+    assert result.park_closed is True
+    assert result.next_opening_date is None
+
+
 def test_parse_empty_dates_open_for_a_future_date_stays_unpublished_not_closed():
     """La même page vide, mais pour demain/après-demain (is_today=False) :
     reste "pas encore publié", pas une fermeture — l'absence de données ne

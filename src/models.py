@@ -109,6 +109,13 @@ class ParseResult:
     # positionne pour l'instant (voir sa docstring) ; toujours False côté
     # pdf_parser, qui n'a pas de moyen fiable de distinguer les deux cas.
     park_closed: bool = False
+    # Date ISO ("YYYY-MM-DD") de la prochaine ouverture annoncée sur la
+    # page pendant une fermeture ("Prochaine ouverture le Jeudi 10
+    # Septembre 2026") — permet de déduire que TOUS les jours entre la
+    # fermeture constatée et cette date sont fermés eux aussi, sans
+    # attendre que chacun devienne "aujourd'hui" à son tour. None si le
+    # parc n'est pas fermé, ou si le texte n'a pas été trouvé/reconnu.
+    next_opening_date: Optional[str] = None
 
 
 def now_iso() -> str:

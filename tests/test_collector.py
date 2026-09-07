@@ -7,6 +7,7 @@ from datetime import date, timedelta
 
 import pytest
 
+from src import collector as collector_module
 from src import config, database, season_config
 from src.collector import Collector, FetchResult, SourceAdapter
 from tests.fixtures import SAMPLE_SCHEDULE_HTML, build_schedule_html
@@ -224,6 +225,64 @@ def test_collect_transitions_from_partial_to_closed_day_despite_identical_zero_r
     with database.connect(db_path) as conn:
         active = database.get_active_date(conn, first.date_str)
         assert active["status"] == config.DATE_STATUS_CLOSED_DAY
+
+
+def test_collect_backfills_the_whole_closure_range_from_the_announced_reopening_date(db_path, monkeypatch):
+    """Constaté en pratique (fermeture du 07 au 09/09/2026 inclus,
+    réouverture annoncée le 10) : la page affiche "Prochaine ouverture le
+    ..." pendant la fermeture — on doit alors marquer fermés tous les jours
+    jusqu'à cette date, pas seulement celui demandé."""
+    monkeypatch.setattr(collector_module, "today_paris", lambda: date(2026, 9, 7))
+    closed_html = build_schedule_html({"dates_open": [], "events": {}, "sections": {}}).replace(
+        "</body>", '<div class="next"> Prochaine ouverture le Jeudi 10 Septembre 2026</div></body>'
+    )
+
+    class _HtmlAdapter(SourceAdapter):
+        source_url = "https://example.test/programme-du-jour"
+
+        def fetch(self, target_date):
+            return FetchResult(content=closed_html.encode("utf-8"), content_type="html", source_url=self.source_url)
+
+    outcome = Collector(adapter=_HtmlAdapter(), db_path=db_path).collect(date(2026, 9, 7))
+
+    assert outcome.status == config.DATE_STATUS_CLOSED_DAY
+    with database.connect(db_path) as conn:
+        for d in ("2026-09-08", "2026-09-09"):
+            row = database.get_active_date(conn, d)
+            assert row is not None, f"{d} devrait avoir été rempli par le comblement"
+            assert row["status"] == config.DATE_STATUS_CLOSED_DAY
+        # La date de réouverture elle-même n'est PAS marquée fermée (exclue,
+        # c'est justement le jour où ça rouvre).
+        assert database.get_active_date(conn, "2026-09-10") is None
+
+
+def test_collect_backfill_never_overwrites_an_already_resolved_day(db_path, monkeypatch):
+    """Si un jour dans la plage a déjà de vraies données (ok) — un
+    correctif publié entre-temps, par ex. — le comblement ne doit surtout
+    pas l'écraser en "fermé"."""
+    monkeypatch.setattr(collector_module, "today_paris", lambda: date(2026, 9, 7))
+    closed_html = build_schedule_html({"dates_open": [], "events": {}, "sections": {}}).replace(
+        "</body>", '<div class="next"> Prochaine ouverture le Jeudi 10 Septembre 2026</div></body>'
+    )
+
+    class _HtmlAdapter(SourceAdapter):
+        source_url = "https://example.test/programme-du-jour"
+
+        def fetch(self, target_date):
+            return FetchResult(content=closed_html.encode("utf-8"), content_type="html", source_url=self.source_url)
+
+    with database.connect(db_path) as conn:
+        season_id = database.get_or_create_season(conn, 2026)
+        database.create_date_version(
+            conn, date_str="2026-09-08", season_id=season_id, source_url="https://example.test",
+            source_file=None, source_hash="h", retrieved_at="2026-09-06T00:00:00",
+            program_published_at=None, status=config.DATE_STATUS_OK,
+        )
+
+    Collector(adapter=_HtmlAdapter(), db_path=db_path).collect(date(2026, 9, 7))
+
+    with database.connect(db_path) as conn:
+        assert database.get_active_date(conn, "2026-09-08")["status"] == config.DATE_STATUS_OK
 
 
 def test_collect_dates_open_entirely_empty_for_a_future_date_is_not_closed(db_path):

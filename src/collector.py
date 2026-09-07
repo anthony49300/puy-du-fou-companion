@@ -20,6 +20,7 @@ import hashlib
 from dataclasses import dataclass
 from datetime import date as date_cls
 from datetime import datetime
+from datetime import timedelta
 from functools import lru_cache
 from pathlib import Path
 from typing import Optional
@@ -219,6 +220,47 @@ def compute_content_hash(resolved: list[tuple]) -> str:
         for info, rep in resolved
     )
     return hashlib.sha256(json.dumps(canonical, ensure_ascii=False).encode("utf-8")).hexdigest()
+
+
+_MAX_BACKFILL_DAYS = 60  # garde-fou : une date de réouverture mal lue/absurde ne doit pas créer des centaines de lignes
+
+
+def _backfill_closed_range(conn, *, season_id: int, source_url: str, from_date: date_cls, until_date: date_cls) -> int:
+    """Crée une version "closed_day" pour chaque date strictement entre
+    `from_date` (déjà traitée par l'appelant, exclue ici) et `until_date`
+    (date de réouverture annoncée, exclue), sauf si déjà résolue
+    (ok/closed_day) — ne touche jamais un jour qui a de vraies données.
+
+    Utilisé quand la page annonce "Prochaine ouverture le ..." pendant une
+    fermeture (voir schedule_json_parser.ParseResult.next_opening_date) :
+    on connaît alors le statut de toute la période d'un coup, sans attendre
+    que chaque jour devienne "aujourd'hui" à son tour. Retourne le nombre
+    de dates créées.
+    """
+    created = 0
+    current = from_date + timedelta(days=1)
+    steps = 0
+    while current < until_date and steps < _MAX_BACKFILL_DAYS:
+        date_str = current.isoformat()
+        existing = database.get_active_date(conn, date_str)
+        if existing is None or existing["status"] not in (config.DATE_STATUS_OK, config.DATE_STATUS_CLOSED_DAY):
+            database.create_date_version(
+                conn,
+                date_str=date_str,
+                season_id=season_id,
+                source_url=source_url,
+                source_file=None,
+                source_hash=None,
+                content_hash=None,
+                retrieved_at=now_iso(),
+                program_published_at=None,
+                status=config.DATE_STATUS_CLOSED_DAY,
+                warnings=[f'Fermeture déduite de l\'annonce "Prochaine ouverture le {until_date.isoformat()}" sur la page officielle.'],
+            )
+            created += 1
+        current += timedelta(days=1)
+        steps += 1
+    return created
 
 
 def save_raw(
@@ -470,10 +512,27 @@ class Collector:
                     source_text=rep.source_text,
                 )
 
+            backfilled = 0
+            if parse_result.park_closed and parse_result.next_opening_date:
+                try:
+                    until_date = date_cls.fromisoformat(parse_result.next_opening_date)
+                except ValueError:
+                    until_date = None
+                if until_date is not None:
+                    backfilled = _backfill_closed_range(
+                        conn, season_id=season_id, source_url=fetch_result.source_url,
+                        from_date=date_cls.fromisoformat(effective_date_str), until_date=until_date,
+                    )
+
             message = (
                 f"Programme du {effective_date_str} enregistré (version {version}), "
                 f"{len(resolved)} représentation(s), stratégie d'extraction={strategy}."
             )
+            if backfilled:
+                message += (
+                    f" Fermeture annoncée jusqu'au {parse_result.next_opening_date} : "
+                    f"{backfilled} jour(s) supplémentaire(s) marqué(s) fermé(s)."
+                )
             database.log_collection_finish(conn, log_id, status=config.LOG_STATUS_SUCCESS, message=message)
 
             return CollectOutcome(
