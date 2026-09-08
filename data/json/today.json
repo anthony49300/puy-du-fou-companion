@@ -1,19 +1,19 @@
 {
-  "date": "2026-09-07",
+  "date": "2026-09-08",
   "season": {
     "year": 2026,
     "name": "Saison 2026",
     "start_date": "2026-04-04",
     "end_date": "2027-01-03"
   },
-  "updated_at": "2026-09-07T13:52:15",
+  "updated_at": "2026-09-08T12:08:17",
   "status": "closed_day",
   "warnings": [
-    "Le Puy du Fou est fermé le 2026-09-07."
+    "Fermeture déduite de l'annonce \"Prochaine ouverture le 2026-09-10\" sur la page officielle."
   ],
   "source": {
     "url": "https://www.puydufou.com/france/fr/programme-du-jour",
-    "retrieved_at": "2026-09-07T13:52:07",
+    "retrieved_at": "2026-09-07T14:01:52",
     "program_published_at": null
   },
   "spectacle_count": 0,
