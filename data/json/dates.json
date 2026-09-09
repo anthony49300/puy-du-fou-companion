@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-08T12:08:17",
+  "updated_at": "2026-09-09T11:27:07",
   "dates": [
     {
       "date": "2026-04-04",
@@ -1120,6 +1120,13 @@
       "status": "ok",
       "spectacle_count": 16,
       "representation_count": 54
+    },
+    {
+      "date": "2026-09-11",
+      "season_year": 2026,
+      "status": "ok",
+      "spectacle_count": 15,
+      "representation_count": 53
     }
   ]
 }
