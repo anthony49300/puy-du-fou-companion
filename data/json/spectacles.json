@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-13T10:28:28",
+  "updated_at": "2026-09-14T06:18:57",
   "categories": [
     "spectacle",
     "spectacle_nocturne",
@@ -13,7 +13,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 5,
+        "today_count": 0,
         "avg_per_day": 5.84,
         "days_present": 151,
         "days_absent": 2,
@@ -625,11 +625,11 @@
           "count": 5
         },
         {
-          "date": "2026-09-14",
+          "date": "2026-09-15",
           "count": 0
         },
         {
-          "date": "2026-09-15",
+          "date": "2026-09-16",
           "count": 0
         }
       ]
@@ -640,7 +640,7 @@
       "category": "spectacle_immersif",
       "active": true,
       "stats": {
-        "today_count": 2,
+        "today_count": 0,
         "avg_per_day": 1.95,
         "days_present": 147,
         "days_absent": 6,
@@ -1252,11 +1252,11 @@
           "count": 2
         },
         {
-          "date": "2026-09-14",
+          "date": "2026-09-15",
           "count": 0
         },
         {
-          "date": "2026-09-15",
+          "date": "2026-09-16",
           "count": 0
         }
       ]
@@ -1267,7 +1267,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 3,
+        "today_count": 0,
         "avg_per_day": 3.48,
         "days_present": 151,
         "days_absent": 2,
@@ -1879,11 +1879,11 @@
           "count": 3
         },
         {
-          "date": "2026-09-14",
+          "date": "2026-09-15",
           "count": 0
         },
         {
-          "date": "2026-09-15",
+          "date": "2026-09-16",
           "count": 0
         }
       ]
@@ -1894,7 +1894,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 4,
+        "today_count": 0,
         "avg_per_day": 4.65,
         "days_present": 151,
         "days_absent": 2,
@@ -2506,11 +2506,11 @@
           "count": 4
         },
         {
-          "date": "2026-09-14",
+          "date": "2026-09-15",
           "count": 0
         },
         {
-          "date": "2026-09-15",
+          "date": "2026-09-16",
           "count": 0
         }
       ]
@@ -2521,7 +2521,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 5,
+        "today_count": 0,
         "avg_per_day": 4.72,
         "days_present": 151,
         "days_absent": 2,
@@ -3133,11 +3133,11 @@
           "count": 5
         },
         {
-          "date": "2026-09-14",
+          "date": "2026-09-15",
           "count": 0
         },
         {
-          "date": "2026-09-15",
+          "date": "2026-09-16",
           "count": 0
         }
       ]
@@ -3148,7 +3148,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 4,
+        "today_count": 0,
         "avg_per_day": 4.83,
         "days_present": 151,
         "days_absent": 2,
@@ -3760,11 +3760,11 @@
           "count": 4
         },
         {
-          "date": "2026-09-14",
+          "date": "2026-09-15",
           "count": 0
         },
         {
-          "date": "2026-09-15",
+          "date": "2026-09-16",
           "count": 0
         }
       ]
@@ -3775,7 +3775,7 @@
       "category": "spectacle_immersif",
       "active": true,
       "stats": {
-        "today_count": 1,
+        "today_count": 0,
         "avg_per_day": 1.0,
         "days_present": 151,
         "days_absent": 2,
@@ -4387,11 +4387,11 @@
           "count": 1
         },
         {
-          "date": "2026-09-14",
+          "date": "2026-09-15",
           "count": 0
         },
         {
-          "date": "2026-09-15",
+          "date": "2026-09-16",
           "count": 0
         }
       ]
@@ -4402,7 +4402,7 @@
       "category": "spectacle_immersif",
       "active": true,
       "stats": {
-        "today_count": 1,
+        "today_count": 0,
         "avg_per_day": 1.0,
         "days_present": 151,
         "days_absent": 2,
@@ -5014,11 +5014,11 @@
           "count": 1
         },
         {
-          "date": "2026-09-14",
+          "date": "2026-09-15",
           "count": 0
         },
         {
-          "date": "2026-09-15",
+          "date": "2026-09-16",
           "count": 0
         }
       ]
@@ -5029,7 +5029,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 3,
+        "today_count": 0,
         "avg_per_day": 2.93,
         "days_present": 151,
         "days_absent": 2,
@@ -5641,11 +5641,11 @@
           "count": 3
         },
         {
-          "date": "2026-09-14",
+          "date": "2026-09-15",
           "count": 0
         },
         {
-          "date": "2026-09-15",
+          "date": "2026-09-16",
           "count": 0
         }
       ]
@@ -5656,7 +5656,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 2,
+        "today_count": 0,
         "avg_per_day": 1.89,
         "days_present": 151,
         "days_absent": 2,
@@ -6268,11 +6268,11 @@
           "count": 2
         },
         {
-          "date": "2026-09-14",
+          "date": "2026-09-15",
           "count": 0
         },
         {
-          "date": "2026-09-15",
+          "date": "2026-09-16",
           "count": 0
         }
       ]
@@ -6283,7 +6283,7 @@
       "category": "spectacle_immersif",
       "active": true,
       "stats": {
-        "today_count": 1,
+        "today_count": 0,
         "avg_per_day": 1.05,
         "days_present": 151,
         "days_absent": 2,
@@ -6895,11 +6895,11 @@
           "count": 1
         },
         {
-          "date": "2026-09-14",
+          "date": "2026-09-15",
           "count": 0
         },
         {
-          "date": "2026-09-15",
+          "date": "2026-09-16",
           "count": 0
         }
       ]
@@ -6910,7 +6910,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 6,
+        "today_count": 0,
         "avg_per_day": 5.42,
         "days_present": 151,
         "days_absent": 2,
@@ -7522,11 +7522,11 @@
           "count": 6
         },
         {
-          "date": "2026-09-14",
+          "date": "2026-09-15",
           "count": 0
         },
         {
-          "date": "2026-09-15",
+          "date": "2026-09-16",
           "count": 0
         }
       ]
@@ -7537,7 +7537,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 3,
+        "today_count": 0,
         "avg_per_day": 2.99,
         "days_present": 149,
         "days_absent": 4,
@@ -8149,11 +8149,11 @@
           "count": 3
         },
         {
-          "date": "2026-09-14",
+          "date": "2026-09-15",
           "count": 0
         },
         {
-          "date": "2026-09-15",
+          "date": "2026-09-16",
           "count": 0
         }
       ]
@@ -8164,7 +8164,7 @@
       "category": "spectacle_nocturne",
       "active": true,
       "stats": {
-        "today_count": 1,
+        "today_count": 0,
         "avg_per_day": 1.06,
         "days_present": 109,
         "days_absent": 44,
@@ -8776,11 +8776,11 @@
           "count": 1
         },
         {
-          "date": "2026-09-14",
+          "date": "2026-09-15",
           "count": 0
         },
         {
-          "date": "2026-09-15",
+          "date": "2026-09-16",
           "count": 0
         }
       ]
@@ -8791,7 +8791,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 3,
+        "today_count": 0,
         "avg_per_day": 3.5,
         "days_present": 151,
         "days_absent": 2,
@@ -9403,11 +9403,11 @@
           "count": 3
         },
         {
-          "date": "2026-09-14",
+          "date": "2026-09-15",
           "count": 0
         },
         {
-          "date": "2026-09-15",
+          "date": "2026-09-16",
           "count": 0
         }
       ]
@@ -9418,7 +9418,7 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 3,
+        "today_count": 0,
         "avg_per_day": 3.5,
         "days_present": 151,
         "days_absent": 2,
@@ -10030,11 +10030,11 @@
           "count": 3
         },
         {
-          "date": "2026-09-14",
+          "date": "2026-09-15",
           "count": 0
         },
         {
-          "date": "2026-09-15",
+          "date": "2026-09-16",
           "count": 0
         }
       ]
