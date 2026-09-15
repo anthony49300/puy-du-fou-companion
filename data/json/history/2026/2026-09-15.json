@@ -6,15 +6,14 @@
     "start_date": "2026-04-04",
     "end_date": "2027-01-03"
   },
-  "updated_at": "2026-09-14T06:18:57",
-  "status": "partial",
+  "updated_at": "2026-09-15T13:00:30",
+  "status": "closed_day",
   "warnings": [
-    "Aucune donnée publiée pour 2026-09-15 sur la page (dates disponibles : aucune).",
-    "Aucune représentation détectée dans le programme récupéré."
+    "Fermeture deduite de l'annonce \"Prochaine ouverture le 2026-09-17\" sur la page officielle (correction manuelle : la collecte automatique du jour meme avait ecrase ce statut par une recollecte redondante, voir fix cmd_collect_daily)."
   ],
   "source": {
     "url": "https://www.puydufou.com/france/fr/programme-du-jour",
-    "retrieved_at": "2026-09-14T06:18:57",
+    "retrieved_at": "2026-09-15T13:00:23",
     "program_published_at": null
   },
   "spectacle_count": 0,

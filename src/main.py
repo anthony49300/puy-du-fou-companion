@@ -174,27 +174,36 @@ def cmd_collect_daily(args: argparse.Namespace) -> int:
     déduit une fermeture ponctuelle pour toute date PASSÉE restée "partial"
     malgré les tentatives : ce jour ne repassera plus jamais dans la
     fenêtre de collecte, c'est le seul moment sûr pour conclure.
+
+    Résolution revérifiée avant CHAQUE jour plutôt que toutes les trois
+    d'un coup au départ : collecter "aujourd'hui" peut déjà résoudre
+    "demain"/"après-demain" par comblement de fermeture (voir
+    `_backfill_closed_range`) ; sans cette revérification, on les
+    recollecterait quand même juste après et on écraserait ce closed_day
+    correct par un "partial" trompeur.
     """
     today = today_paris()
     tomorrow = today + timedelta(days=1)
     day_after_tomorrow = today + timedelta(days=2)
-    with database.connect() as conn:
-        have_today = _is_resolved(conn, today.isoformat())
-        have_tomorrow = _is_resolved(conn, tomorrow.isoformat())
-        have_day_after_tomorrow = _is_resolved(conn, day_after_tomorrow.isoformat())
 
     rc = 0
+    with database.connect() as conn:
+        have_today = _is_resolved(conn, today.isoformat())
     if have_today:
         print(f"Programme du {today.isoformat()} déjà connu (collecté précédemment) : pas de recollecte.")
     else:
         print(f"Aucun programme connu pour le {today.isoformat()} : collecte de rattrapage.")
         rc = max(rc, cmd_collect(argparse.Namespace(date=None, tomorrow=False, dry_run=False)))
 
+    with database.connect() as conn:
+        have_tomorrow = _is_resolved(conn, tomorrow.isoformat())
     if have_tomorrow:
         print(f"Programme du {tomorrow.isoformat()} déjà connu (collecté précédemment) : pas de recollecte.")
     else:
         rc = max(rc, cmd_collect(argparse.Namespace(date=None, tomorrow=True, dry_run=False)))
 
+    with database.connect() as conn:
+        have_day_after_tomorrow = _is_resolved(conn, day_after_tomorrow.isoformat())
     if have_day_after_tomorrow:
         print(f"Programme du {day_after_tomorrow.isoformat()} déjà connu (collecté précédemment) : pas de recollecte.")
     else:

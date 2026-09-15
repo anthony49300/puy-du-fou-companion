@@ -6,14 +6,16 @@ ailleurs : Collector, exporter, statistics).
 """
 import json
 import types
-from datetime import timedelta
+from datetime import date, timedelta
 
 import pytest
 
+from src import collector as collector_module
 from src import config, database, main
 from src.collector import Collector as RealCollector
-from src.collector import SourceAdapter
+from src.collector import FetchResult, SourceAdapter
 from src.models import now_iso, today_paris
+from tests.fixtures import build_schedule_html
 
 
 class _RecordingAdapter(SourceAdapter):
@@ -165,6 +167,41 @@ def test_collect_daily_still_skips_a_day_resolved_as_closed(fake_collector):
     main.cmd_collect_daily(None)
 
     assert fake_collector.calls == [TODAY, DAY_AFTER_TOMORROW]
+
+
+def test_collect_daily_does_not_overwrite_a_backfilled_closure_with_a_redundant_collect(monkeypatch):
+    """Régression constatée en pratique (fermeture du 14 au 16/09/2026) :
+    collecter "aujourd'hui" comble "demain"/"après-demain" en closed_day
+    sans appel réseau (voir _backfill_closed_range) ; cmd_collect_daily ne
+    doit pas les recollecter juste après et écraser ça par un "partial"."""
+    fixed_today = date(2026, 9, 14)
+    fixed_tomorrow = fixed_today + timedelta(days=1)
+    fixed_day_after_tomorrow = fixed_today + timedelta(days=2)
+    monkeypatch.setattr(main, "today_paris", lambda: fixed_today)
+    monkeypatch.setattr(collector_module, "today_paris", lambda: fixed_today)
+
+    closed_html = build_schedule_html({"dates_open": [], "events": {}, "sections": {}}).replace(
+        "</body>", '<div class="next">Prochaine ouverture le Jeudi 17 Septembre 2026</div></body>'
+    )
+
+    class _AlwaysClosedHtmlAdapter(SourceAdapter):
+        source_url = "https://example.test/programme-du-jour"
+
+        def fetch(self, target_date):
+            return FetchResult(content=closed_html.encode("utf-8"), content_type="html", source_url=self.source_url)
+
+    monkeypatch.setattr(main, "Collector", lambda adapter=None: RealCollector(adapter=_AlwaysClosedHtmlAdapter()))
+
+    main.cmd_collect_daily(None)
+
+    with database.connect() as conn:
+        today_row = database.get_active_date(conn, fixed_today.isoformat())
+        tomorrow_row = database.get_active_date(conn, fixed_tomorrow.isoformat())
+        day_after_row = database.get_active_date(conn, fixed_day_after_tomorrow.isoformat())
+
+    assert today_row["status"] == config.DATE_STATUS_CLOSED_DAY
+    assert tomorrow_row["status"] == config.DATE_STATUS_CLOSED_DAY
+    assert day_after_row["status"] == config.DATE_STATUS_CLOSED_DAY
 
 
 YESTERDAY = TODAY - timedelta(days=1)
