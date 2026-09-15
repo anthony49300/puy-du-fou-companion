@@ -1,12 +1,12 @@
 {
-  "date": "2026-09-15",
+  "date": "2026-09-16",
   "season": {
     "year": 2026,
     "name": "Saison 2026",
     "start_date": "2026-04-04",
     "end_date": "2027-01-03"
   },
-  "updated_at": "2026-09-15T13:00:28",
+  "updated_at": "2026-09-15T22:13:35",
   "status": "closed_day",
   "warnings": [
     "Fermeture deduite de l'annonce \"Prochaine ouverture le 2026-09-17\" sur la page officielle (correction manuelle : la collecte automatique du jour meme avait ecrase ce statut par une recollecte redondante, voir fix cmd_collect_daily)."
