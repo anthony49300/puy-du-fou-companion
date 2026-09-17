@@ -1,22 +1,26 @@
 {
-  "date": "2026-09-17",
+  "date": "2026-09-18",
   "season": {
     "year": 2026,
     "name": "Saison 2026",
     "start_date": "2026-04-04",
     "end_date": "2027-01-03"
   },
-  "updated_at": "2026-09-16T22:10:49",
+  "updated_at": "2026-09-17T22:10:12",
   "status": "ok",
   "warnings": [],
   "source": {
     "url": "https://www.puydufou.com/france/fr/programme-du-jour",
-    "retrieved_at": "2026-09-15T10:35:30",
+    "retrieved_at": "2026-09-16T12:36:09",
     "program_published_at": null
   },
-  "spectacle_count": 14,
-  "representation_count": 36,
-  "nocturne": null,
+  "spectacle_count": 15,
+  "representation_count": 38,
+  "nocturne": {
+    "name": "Les Noces de Feu",
+    "slug": "les-noces-de-feu",
+    "start": "21:30"
+  },
   "spectacles": [
     {
       "name": "L'Épée du Roi Arthur",
@@ -185,11 +189,11 @@
       "category": "spectacle_immersif",
       "representations": [
         {
-          "start": "11:30",
-          "end": "18:00",
+          "start": "12:00",
+          "end": "20:00",
           "is_continuous": true,
           "status": "scheduled",
-          "source_text": "Le Mystère de La Pérouse 20' 11:30-18:00"
+          "source_text": "Le Mystère de La Pérouse 20' 12:00-20:00"
         }
       ]
     },
@@ -248,11 +252,11 @@
       "category": "spectacle_immersif",
       "representations": [
         {
-          "start": "12:00",
-          "end": "18:00",
+          "start": "11:00",
+          "end": "19:30",
           "is_continuous": true,
           "status": "scheduled",
-          "source_text": "Les Amoureux de Verdun 15' 12:00-18:00"
+          "source_text": "Les Amoureux de Verdun 15' 11:00-19:30"
         }
       ]
     },
@@ -281,6 +285,13 @@
           "is_continuous": false,
           "status": "scheduled",
           "source_text": "Les Automates Musiciens 7' 18:00-18:07"
+        },
+        {
+          "start": "20:00",
+          "end": "20:07",
+          "is_continuous": false,
+          "status": "scheduled",
+          "source_text": "Les Automates Musiciens 7' 20:00-20:07"
         }
       ]
     },
@@ -309,6 +320,20 @@
           "is_continuous": false,
           "status": "scheduled",
           "source_text": "Les Grandes Eaux 8' 14:00-14:08"
+        }
+      ]
+    },
+    {
+      "name": "Les Noces de Feu",
+      "slug": "les-noces-de-feu",
+      "category": "spectacle_nocturne",
+      "representations": [
+        {
+          "start": "21:30",
+          "end": "22:00",
+          "is_continuous": false,
+          "status": "scheduled",
+          "source_text": "Les Noces de Feu 30' 21:30-22:00"
         }
       ]
     },
