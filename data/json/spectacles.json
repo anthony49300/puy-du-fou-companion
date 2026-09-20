@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-19T11:56:08",
+  "updated_at": "2026-09-20T12:17:32",
   "categories": [
     "spectacle",
     "spectacle_nocturne",
@@ -13,10 +13,10 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 9,
+        "today_count": 5,
         "avg_per_day": 5.83,
         "days_present": 155,
-        "days_absent": 1,
+        "days_absent": 2,
         "total_representations": 904
       },
       "history": [
@@ -643,6 +643,10 @@
         {
           "date": "2026-09-21",
           "count": 0
+        },
+        {
+          "date": "2026-09-22",
+          "count": 0
         }
       ]
     },
@@ -655,7 +659,7 @@
         "today_count": 2,
         "avg_per_day": 1.95,
         "days_present": 149,
-        "days_absent": 7,
+        "days_absent": 8,
         "total_representations": 290
       },
       "history": [
@@ -1282,6 +1286,10 @@
         {
           "date": "2026-09-21",
           "count": 0
+        },
+        {
+          "date": "2026-09-22",
+          "count": 0
         }
       ]
     },
@@ -1291,10 +1299,10 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 5,
+        "today_count": 3,
         "avg_per_day": 3.48,
         "days_present": 155,
-        "days_absent": 1,
+        "days_absent": 2,
         "total_representations": 540
       },
       "history": [
@@ -1921,6 +1929,10 @@
         {
           "date": "2026-09-21",
           "count": 0
+        },
+        {
+          "date": "2026-09-22",
+          "count": 0
         }
       ]
     },
@@ -1930,10 +1942,10 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 7,
+        "today_count": 4,
         "avg_per_day": 4.64,
         "days_present": 155,
-        "days_absent": 1,
+        "days_absent": 2,
         "total_representations": 719
       },
       "history": [
@@ -2560,6 +2572,10 @@
         {
           "date": "2026-09-21",
           "count": 0
+        },
+        {
+          "date": "2026-09-22",
+          "count": 0
         }
       ]
     },
@@ -2572,7 +2588,7 @@
         "today_count": 5,
         "avg_per_day": 4.73,
         "days_present": 155,
-        "days_absent": 1,
+        "days_absent": 2,
         "total_representations": 733
       },
       "history": [
@@ -3199,6 +3215,10 @@
         {
           "date": "2026-09-21",
           "count": 0
+        },
+        {
+          "date": "2026-09-22",
+          "count": 0
         }
       ]
     },
@@ -3208,10 +3228,10 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 7,
+        "today_count": 4,
         "avg_per_day": 4.81,
         "days_present": 155,
-        "days_absent": 1,
+        "days_absent": 2,
         "total_representations": 746
       },
       "history": [
@@ -3838,6 +3858,10 @@
         {
           "date": "2026-09-21",
           "count": 0
+        },
+        {
+          "date": "2026-09-22",
+          "count": 0
         }
       ]
     },
@@ -3850,7 +3874,7 @@
         "today_count": 1,
         "avg_per_day": 1.0,
         "days_present": 155,
-        "days_absent": 1,
+        "days_absent": 2,
         "total_representations": 155
       },
       "history": [
@@ -4476,6 +4500,10 @@
         },
         {
           "date": "2026-09-21",
+          "count": 0
+        },
+        {
+          "date": "2026-09-22",
           "count": 0
         }
       ]
@@ -4489,7 +4517,7 @@
         "today_count": 1,
         "avg_per_day": 1.0,
         "days_present": 155,
-        "days_absent": 1,
+        "days_absent": 2,
         "total_representations": 155
       },
       "history": [
@@ -5116,6 +5144,10 @@
         {
           "date": "2026-09-21",
           "count": 0
+        },
+        {
+          "date": "2026-09-22",
+          "count": 0
         }
       ]
     },
@@ -5125,10 +5157,10 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 4,
+        "today_count": 3,
         "avg_per_day": 2.92,
         "days_present": 155,
-        "days_absent": 1,
+        "days_absent": 2,
         "total_representations": 453
       },
       "history": [
@@ -5755,6 +5787,10 @@
         {
           "date": "2026-09-21",
           "count": 0
+        },
+        {
+          "date": "2026-09-22",
+          "count": 0
         }
       ]
     },
@@ -5764,10 +5800,10 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 3,
+        "today_count": 2,
         "avg_per_day": 1.88,
         "days_present": 155,
-        "days_absent": 1,
+        "days_absent": 2,
         "total_representations": 292
       },
       "history": [
@@ -6394,6 +6430,10 @@
         {
           "date": "2026-09-21",
           "count": 0
+        },
+        {
+          "date": "2026-09-22",
+          "count": 0
         }
       ]
     },
@@ -6406,7 +6446,7 @@
         "today_count": 1,
         "avg_per_day": 1.05,
         "days_present": 155,
-        "days_absent": 1,
+        "days_absent": 2,
         "total_representations": 162
       },
       "history": [
@@ -7033,6 +7073,10 @@
         {
           "date": "2026-09-21",
           "count": 0
+        },
+        {
+          "date": "2026-09-22",
+          "count": 0
         }
       ]
     },
@@ -7042,10 +7086,10 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 7,
+        "today_count": 5,
         "avg_per_day": 5.4,
         "days_present": 155,
-        "days_absent": 1,
+        "days_absent": 2,
         "total_representations": 837
       },
       "history": [
@@ -7672,6 +7716,10 @@
         {
           "date": "2026-09-21",
           "count": 0
+        },
+        {
+          "date": "2026-09-22",
+          "count": 0
         }
       ]
     },
@@ -7681,10 +7729,10 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 4,
+        "today_count": 3,
         "avg_per_day": 2.99,
         "days_present": 153,
-        "days_absent": 3,
+        "days_absent": 4,
         "total_representations": 458
       },
       "history": [
@@ -8311,6 +8359,10 @@
         {
           "date": "2026-09-21",
           "count": 0
+        },
+        {
+          "date": "2026-09-22",
+          "count": 0
         }
       ]
     },
@@ -8320,10 +8372,10 @@
       "category": "spectacle_nocturne",
       "active": true,
       "stats": {
-        "today_count": 1,
+        "today_count": 0,
         "avg_per_day": 1.05,
         "days_present": 111,
-        "days_absent": 45,
+        "days_absent": 46,
         "total_representations": 117
       },
       "history": [
@@ -8950,6 +9002,10 @@
         {
           "date": "2026-09-21",
           "count": 0
+        },
+        {
+          "date": "2026-09-22",
+          "count": 0
         }
       ]
     },
@@ -8959,10 +9015,10 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 5,
+        "today_count": 3,
         "avg_per_day": 3.5,
         "days_present": 155,
-        "days_absent": 1,
+        "days_absent": 2,
         "total_representations": 543
       },
       "history": [
@@ -9589,6 +9645,10 @@
         {
           "date": "2026-09-21",
           "count": 0
+        },
+        {
+          "date": "2026-09-22",
+          "count": 0
         }
       ]
     },
@@ -9598,10 +9658,10 @@
       "category": "spectacle",
       "active": true,
       "stats": {
-        "today_count": 5,
+        "today_count": 3,
         "avg_per_day": 3.5,
         "days_present": 155,
-        "days_absent": 1,
+        "days_absent": 2,
         "total_representations": 542
       },
       "history": [
@@ -10227,6 +10287,10 @@
         },
         {
           "date": "2026-09-21",
+          "count": 0
+        },
+        {
+          "date": "2026-09-22",
           "count": 0
         }
       ]
