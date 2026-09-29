@@ -145,10 +145,11 @@
 
   /**
    * Calcule, à partir de l'heure RÉELLE actuelle du navigateur, le prochain
-   * spectacle nocturne du jour dans `today.spectacles` (à n'utiliser que si
-   * `isDataForToday(today.date)` est vrai). Contrairement au champ
-   * "nocturne" du JSON — figé au moment de l'export côté serveur — ceci
-   * reste exact tout au long de la journée même sans nouvelle collecte.
+   * spectacle (toutes catégories) et le prochain spectacle nocturne du jour
+   * dans `today.spectacles` (à n'utiliser que si `isDataForToday(today.date)`
+   * est vrai). Contrairement au champ "nocturne" du JSON — figé au moment de
+   * l'export côté serveur — ceci reste exact tout au long de la journée même
+   * sans nouvelle collecte.
    */
   function computeUpcoming(today) {
     const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
@@ -164,8 +165,9 @@
     slots.sort((a, b) => a.mins - b.mins);
     const toItem = (slot) =>
       slot && { name: slot.spectacle.name, start: slot.rep.start, category: slot.spectacle.category };
+    const next = toItem(slots[0]);
     const nocturne = toItem(slots.find((s) => s.spectacle.category === "spectacle_nocturne"));
-    return { nocturne: nocturne || null };
+    return { next: next || null, nocturne: nocturne || null };
   }
 
   /* ----------------------------------------------------------------------

@@ -44,9 +44,9 @@
 
     <div class="decorative-rule">⚜ ⚜ ⚜</div>
 
-    <section class="section">
+    <section class="section explore-section">
       <h2>Explorer le site</h2>
-      <div class="card-grid">
+      <div class="card-grid explore-grid">
         <a class="card nav-card" href="programme.html">
           <span class="nav-card-icon" aria-hidden="true">📜</span>
           <h3>Programme du jour</h3>
@@ -129,7 +129,13 @@
       // PDF.computeUpcoming), pas du champ "nocturne" du JSON qui est figé
       // au moment de la dernière collecte automatique.
       var upcoming = PDF.computeUpcoming(today);
-      el.innerHTML = highlightCard("🌙", "Spectacle nocturne", upcoming.nocturne);
+      // Le nocturne EST déjà le prochain spectacle (ex: en fin de journée) :
+      // une seule carte suffit, pas de doublon avec le même horaire deux fois.
+      var isSameSlot = upcoming.next && upcoming.nocturne &&
+        upcoming.next.start === upcoming.nocturne.start && upcoming.next.name === upcoming.nocturne.name;
+      var cards = highlightCard("🎭", "Prochain spectacle", upcoming.next);
+      if (!isSameSlot) cards += highlightCard("🌙", "Spectacle nocturne", upcoming.nocturne);
+      el.innerHTML = cards;
     }
 
     PDF.fetchJSON("today.json")
