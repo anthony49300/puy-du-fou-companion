@@ -6,7 +6,7 @@
     "start_date": "2026-04-04",
     "end_date": "2027-01-03"
   },
-  "updated_at": "2026-09-17T12:35:23",
+  "updated_at": "2026-09-29T23:41:57",
   "status": "ok",
   "warnings": [],
   "source": {
@@ -603,5 +603,6 @@
         }
       ]
     }
-  ]
+  ],
+  "next_opening": null
 }
