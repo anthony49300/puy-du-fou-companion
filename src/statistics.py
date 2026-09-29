@@ -118,19 +118,25 @@ def compute_stats_by_season(conn: sqlite3.Connection) -> list[dict]:
 # Statistiques par spectacle
 # ---------------------------------------------------------------------------
 
-def compute_spectacle_stats(conn: sqlite3.Connection, slug: str) -> Optional[dict]:
+def compute_spectacle_stats(
+    conn: sqlite3.Connection, slug: str, season_year: Optional[int] = None
+) -> Optional[dict]:
     spectacle = database.get_spectacle_by_slug(conn, slug)
     if not spectacle:
         return None
 
     reps = database.get_representations_for_spectacle(conn, spectacle["id"])
+    if season_year is not None:
+        season_dates = {d["date"] for d in database.list_active_dates(conn, season_year)}
+        reps = [r for r in reps if r["date"] in season_dates]
+
     # Un jour de fermeture ponctuelle du parc (closed_day) ne compte pas
     # comme un jour où CE spectacle serait "absent" : ce jour-là, AUCUN
     # spectacle n'a lieu, ce n'est pas spécifique à celui-ci. Il ne doit
     # donc pas gonfler le dénominateur days_present + days_absent, ni
     # apparaître dans l'historique journalier de ce spectacle.
     all_active_dates = [
-        d for d in database.list_active_dates(conn)
+        d for d in database.list_active_dates(conn, season_year)
         if d["status"] not in (config.DATE_STATUS_CLOSED_DAY, config.DATE_STATUS_OUT_OF_SEASON)
     ]
 
@@ -138,11 +144,21 @@ def compute_spectacle_stats(conn: sqlite3.Connection, slug: str) -> Optional[dic
     # active_periods configurées, un jour d'ouverture du parc n'est pas une
     # "absence" de ce spectacle (il n'est simplement pas censé y jouer) —
     # sans ça, days_absent/avg_per_day seraient faussés sur toute la saison.
+    # Ne garder que la (les) période(s) de LA SAISON AFFICHÉE : un spectacle
+    # retiré une seule année donnée (ex: Bal des Oiseaux Fantômes, arrêté
+    # après le 02/11/2025 puis à nouveau le 01/11/2026) a une période par
+    # année — appliquer celle de 2026 à la vue 2025 viderait à tort tout son
+    # historique cette année-là (régression constatée : days_present correct
+    # mais history=[] pour 2025, faute de ce filtrage par année).
     active_periods = normalizer.get_active_periods(slug)
-    if active_periods:
+    relevant_periods = [
+        (start, end) for start, end in active_periods
+        if season_year is None or str(season_year) in (start[:4], end[:4])
+    ]
+    if relevant_periods:
         all_active_dates = [
             d for d in all_active_dates
-            if any(start <= d["date"] <= end for start, end in active_periods)
+            if any(start <= d["date"] <= end for start, end in relevant_periods)
         ]
 
     total_days = len(all_active_dates)
@@ -165,6 +181,7 @@ def compute_spectacle_stats(conn: sqlite3.Connection, slug: str) -> Optional[dic
         "name": spectacle["name"],
         "category": spectacle["category"],
         "active": bool(spectacle["active"]),
+        "active_periods": [{"from": start, "to": end} for start, end in relevant_periods],
         "stats": {
             "today_count": today_count,
             "avg_per_day": round(avg_per_day, 2),
@@ -226,8 +243,8 @@ def rarely_programmed(conn: sqlite3.Connection, max_days_present: int = 5) -> li
     return sorted(result, key=lambda x: x["days_present"])
 
 
-def hourly_distribution(conn: sqlite3.Connection) -> list[dict]:
-    reps = database.get_all_active_representations(conn)
+def hourly_distribution(conn: sqlite3.Connection, season_year: Optional[int] = None) -> list[dict]:
+    reps = database.get_all_active_representations(conn, season_year)
     counter: Counter[str] = Counter()
     for r in reps:
         if r["start_time"]:
@@ -236,9 +253,9 @@ def hourly_distribution(conn: sqlite3.Connection) -> list[dict]:
     return [{"hour": h, "count": c} for h, c in sorted(counter.items())]
 
 
-def spectacles_per_day(conn: sqlite3.Connection) -> list[dict]:
+def spectacles_per_day(conn: sqlite3.Connection, season_year: Optional[int] = None) -> list[dict]:
     """Nombre de spectacles DIFFÉRENTS disponibles chaque jour (pas le nb de représentations)."""
-    reps = database.get_all_active_representations(conn)
+    reps = database.get_all_active_representations(conn, season_year)
     per_day: dict[str, set] = defaultdict(set)
     for r in reps:
         per_day[r["date"]].add(r["spectacle_slug"])

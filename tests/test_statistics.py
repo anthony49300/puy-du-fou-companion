@@ -126,6 +126,23 @@ def test_compute_spectacle_stats_ignores_park_closed_days(sample_conn):
     assert all(h["date"] != "2026-08-27" for h in stats["history"])
 
 
+def test_compute_spectacle_stats_scoped_to_a_season_excludes_other_years(sample_conn):
+    # Une autre saison (2025) avec les mêmes horaires ne doit pas gonfler
+    # les stats 2026, ni l'inverse (voir la demande d'un sélecteur d'année
+    # une fois plusieurs saisons en base).
+    _add_day(sample_conn, "2025-08-25", [
+        ("Les Vikings", "les-vikings", "spectacle", "11:30", None, False, config.REPR_STATUS_SCHEDULED),
+    ])
+
+    stats_2026 = statistics.compute_spectacle_stats(sample_conn, "les-vikings", season_year=2026)
+    stats_2025 = statistics.compute_spectacle_stats(sample_conn, "les-vikings", season_year=2025)
+
+    assert stats_2026["stats"]["total_representations"] == 3  # inchangé, le jour de 2025 est exclu
+    assert stats_2026["stats"]["days_present"] == 2
+    assert stats_2025["stats"]["total_representations"] == 1
+    assert stats_2025["stats"]["days_present"] == 1
+
+
 def test_compute_spectacle_stats_restricts_absence_to_the_configured_active_period(sample_conn, _with_active_periods):
     # Spectacle éphémère (Toussaint/Noël) : sa période ne couvre que le 27,
     # les jours 25/26 (hors période) ne doivent pas compter comme absence.
@@ -146,6 +163,63 @@ def test_compute_spectacle_stats_restricts_absence_to_the_configured_active_peri
     assert stats["stats"]["days_present"] == 1
     assert stats["stats"]["days_absent"] == 0  # et non 2 (25 et 26, hors période)
     assert len(stats["history"]) == 1
+
+
+def test_compute_spectacle_stats_exposes_active_periods_for_the_badge(sample_conn, _with_active_periods):
+    _with_active_periods({
+        "la-toussaint-fantastique": {
+            "name": "La Toussaint Fantastique",
+            "category": "spectacle",
+            "aliases": [],
+            "active_periods": [
+                {"from": "2025-10-03", "to": "2025-11-01"},
+                {"from": "2026-08-27", "to": "2026-08-27"},
+            ],
+        }
+    })
+    _add_day(sample_conn, "2026-08-27", [
+        ("La Toussaint Fantastique", "la-toussaint-fantastique", "spectacle", "20:00", None, False, config.REPR_STATUS_SCHEDULED),
+    ])
+
+    global_stats = statistics.compute_spectacle_stats(sample_conn, "la-toussaint-fantastique")
+    scoped_2026 = statistics.compute_spectacle_stats(sample_conn, "la-toussaint-fantastique", season_year=2026)
+    scoped_2025 = statistics.compute_spectacle_stats(sample_conn, "la-toussaint-fantastique", season_year=2025)
+
+    assert len(global_stats["active_periods"]) == 2  # vue globale : toutes les périodes
+    assert scoped_2026["active_periods"] == [{"from": "2026-08-27", "to": "2026-08-27"}]
+    assert scoped_2025["active_periods"] == [{"from": "2025-10-03", "to": "2025-11-01"}]
+
+
+def test_compute_spectacle_stats_active_periods_empty_for_a_permanent_spectacle(sample_conn):
+    stats = statistics.compute_spectacle_stats(sample_conn, "les-vikings")
+    assert stats["active_periods"] == []
+
+
+def test_compute_spectacle_stats_ignores_an_active_period_from_another_season(sample_conn, _with_active_periods):
+    # Régression : un spectacle retiré une SEULE année (ex: Bal des Oiseaux
+    # Fantômes, arrêté après le 02/11/2025 mais aussi après le 01/11/2026,
+    # une période par saison) ne doit pas voir son historique 2025 vidé par
+    # la période configurée pour 2026. Avant le fix, active_periods était
+    # appliqué tel quel (toutes années confondues) à all_active_dates : la
+    # période 2026 ne recoupant AUCUNE date de 2025, all_active_dates (donc
+    # history) tombait à 0 malgré une vraie représentation ce jour-là.
+    _add_day(sample_conn, "2025-08-25", [
+        ("Les Vikings", "les-vikings", "spectacle", "11:30", None, False, config.REPR_STATUS_SCHEDULED),
+    ])
+    _with_active_periods({
+        "les-vikings": {
+            "name": "Les Vikings",
+            "category": "spectacle",
+            "aliases": ["Les Vikings"],
+            "active_periods": [{"from": "2026-04-04", "to": "2026-08-25"}],
+        }
+    })
+
+    stats_2025 = statistics.compute_spectacle_stats(sample_conn, "les-vikings", season_year=2025)
+
+    assert stats_2025["active_periods"] == []  # la période 2026 ne s'applique pas à la vue 2025
+    assert stats_2025["stats"]["days_present"] == 1
+    assert len(stats_2025["history"]) == 1  # et non 0 (voir la régression ci-dessus)
 
 
 def test_hourly_distribution(sample_conn):

@@ -1,150 +1,878 @@
 {
-  "updated_at": "2026-09-25T08:22:35",
+  "updated_at": "2026-09-29T21:48:41",
   "global": {
-    "total_spectacles": 16,
-    "total_representations": 7849,
-    "avg_per_day": 49.36,
+    "total_spectacles": 17,
+    "total_representations": 16772,
+    "avg_per_day": 49.04,
     "min_per_day": {
-      "date": "2026-08-31",
+      "date": "2025-06-10",
       "count": 27
     },
     "max_per_day": {
-      "date": "2026-05-15",
+      "date": "2025-05-30",
       "count": 75
     },
     "most_represented": [
       {
         "slug": "lepee-du-roi-arthur",
         "name": "L'Épée du Roi Arthur",
-        "count": 930
+        "count": 1965
       },
       {
         "slug": "les-automates-musiciens",
         "name": "Les Automates Musiciens",
-        "count": 857
+        "count": 1802
       },
       {
         "slug": "le-mime-et-letoile",
         "name": "Le Mime et l'Étoile",
-        "count": 768
+        "count": 1644
       },
       {
         "slug": "le-grand-carillon",
         "name": "Le Grand Carillon",
-        "count": 751
+        "count": 1635
       },
       {
         "slug": "le-dernier-panache",
         "name": "Le Dernier Panache",
-        "count": 738
+        "count": 1572
       }
     ],
     "least_represented": [
       {
+        "slug": "la-frairie-de-la-toussaint",
+        "name": "La Frairie de la Toussaint",
+        "count": 66
+      },
+      {
         "slug": "les-noces-de-feu",
         "name": "Les Noces de Feu",
-        "count": 119
+        "count": 252
       },
       {
         "slug": "le-mystere-de-la-perouse",
         "name": "Le Mystère de la Pérouse",
-        "count": 159
+        "count": 342
       },
       {
         "slug": "le-premier-royaume",
         "name": "Le Premier Royaume",
-        "count": 159
+        "count": 342
       },
       {
         "slug": "les-amoureux-de-verdun",
         "name": "Les Amoureux de Verdun",
-        "count": 167
-      },
-      {
-        "slug": "la-renaissance-du-chateau",
-        "name": "La Renaissance du Château",
-        "count": 292
+        "count": 386
       }
     ],
-    "continuous_count": 777,
-    "nocturnal_count": 124
+    "continuous_count": 1694,
+    "nocturnal_count": 265
   },
-  "by_season": [
-    {
-      "year": 2026,
-      "total_representations": 7849,
-      "total_spectacles": 16,
-      "days_collected": 159
-    }
-  ],
   "charts": {
     "representations_per_spectacle": [
       {
         "name": "L'Épée du Roi Arthur",
-        "count": 930
+        "count": 1965
       },
       {
         "name": "Les Automates Musiciens",
-        "count": 857
+        "count": 1802
       },
       {
         "name": "Le Mime et l'Étoile",
-        "count": 768
+        "count": 1644
       },
       {
         "name": "Le Grand Carillon",
-        "count": 751
+        "count": 1635
       },
       {
         "name": "Le Dernier Panache",
-        "count": 738
-      },
-      {
-        "name": "Mousquetaire de Richelieu",
-        "count": 558
+        "count": 1572
       },
       {
         "name": "Les Vikings",
-        "count": 558
+        "count": 1195
+      },
+      {
+        "name": "Mousquetaire de Richelieu",
+        "count": 1192
       },
       {
         "name": "Le Bal des Oiseaux Fantômes",
-        "count": 555
-      },
-      {
-        "name": "Les Grandes Eaux",
-        "count": 471
+        "count": 1183
       },
       {
         "name": "Le Secret de la Lance",
-        "count": 466
+        "count": 1000
+      },
+      {
+        "name": "Les Grandes Eaux",
+        "count": 933
       },
       {
         "name": "Le Signe du Triomphe",
-        "count": 301
+        "count": 639
       },
       {
         "name": "La Renaissance du Château",
-        "count": 292
+        "count": 624
       },
       {
         "name": "Les Amoureux de Verdun",
-        "count": 167
+        "count": 386
       },
       {
         "name": "Le Premier Royaume",
-        "count": 159
+        "count": 342
       },
       {
         "name": "Le Mystère de la Pérouse",
-        "count": 159
+        "count": 342
       },
       {
         "name": "Les Noces de Feu",
-        "count": 119
+        "count": 252
+      },
+      {
+        "name": "La Frairie de la Toussaint",
+        "count": 66
       }
     ],
     "spectacles_per_day": [
+      {
+        "date": "2025-04-05",
+        "count": 15
+      },
+      {
+        "date": "2025-04-06",
+        "count": 15
+      },
+      {
+        "date": "2025-04-07",
+        "count": 15
+      },
+      {
+        "date": "2025-04-08",
+        "count": 15
+      },
+      {
+        "date": "2025-04-09",
+        "count": 15
+      },
+      {
+        "date": "2025-04-10",
+        "count": 15
+      },
+      {
+        "date": "2025-04-11",
+        "count": 15
+      },
+      {
+        "date": "2025-04-12",
+        "count": 15
+      },
+      {
+        "date": "2025-04-13",
+        "count": 15
+      },
+      {
+        "date": "2025-04-14",
+        "count": 15
+      },
+      {
+        "date": "2025-04-15",
+        "count": 15
+      },
+      {
+        "date": "2025-04-16",
+        "count": 15
+      },
+      {
+        "date": "2025-04-17",
+        "count": 15
+      },
+      {
+        "date": "2025-04-18",
+        "count": 15
+      },
+      {
+        "date": "2025-04-19",
+        "count": 15
+      },
+      {
+        "date": "2025-04-20",
+        "count": 15
+      },
+      {
+        "date": "2025-04-21",
+        "count": 15
+      },
+      {
+        "date": "2025-04-22",
+        "count": 15
+      },
+      {
+        "date": "2025-04-23",
+        "count": 15
+      },
+      {
+        "date": "2025-04-24",
+        "count": 15
+      },
+      {
+        "date": "2025-04-25",
+        "count": 15
+      },
+      {
+        "date": "2025-04-26",
+        "count": 15
+      },
+      {
+        "date": "2025-04-27",
+        "count": 14
+      },
+      {
+        "date": "2025-04-28",
+        "count": 15
+      },
+      {
+        "date": "2025-04-29",
+        "count": 15
+      },
+      {
+        "date": "2025-04-30",
+        "count": 15
+      },
+      {
+        "date": "2025-05-01",
+        "count": 15
+      },
+      {
+        "date": "2025-05-02",
+        "count": 15
+      },
+      {
+        "date": "2025-05-03",
+        "count": 15
+      },
+      {
+        "date": "2025-05-04",
+        "count": 15
+      },
+      {
+        "date": "2025-05-05",
+        "count": 14
+      },
+      {
+        "date": "2025-05-06",
+        "count": 16
+      },
+      {
+        "date": "2025-05-07",
+        "count": 16
+      },
+      {
+        "date": "2025-05-08",
+        "count": 16
+      },
+      {
+        "date": "2025-05-09",
+        "count": 16
+      },
+      {
+        "date": "2025-05-10",
+        "count": 16
+      },
+      {
+        "date": "2025-05-11",
+        "count": 16
+      },
+      {
+        "date": "2025-05-12",
+        "count": 15
+      },
+      {
+        "date": "2025-05-15",
+        "count": 15
+      },
+      {
+        "date": "2025-05-16",
+        "count": 16
+      },
+      {
+        "date": "2025-05-17",
+        "count": 15
+      },
+      {
+        "date": "2025-05-18",
+        "count": 16
+      },
+      {
+        "date": "2025-05-22",
+        "count": 15
+      },
+      {
+        "date": "2025-05-23",
+        "count": 15
+      },
+      {
+        "date": "2025-05-24",
+        "count": 16
+      },
+      {
+        "date": "2025-05-25",
+        "count": 16
+      },
+      {
+        "date": "2025-05-28",
+        "count": 15
+      },
+      {
+        "date": "2025-05-29",
+        "count": 16
+      },
+      {
+        "date": "2025-05-30",
+        "count": 16
+      },
+      {
+        "date": "2025-05-31",
+        "count": 16
+      },
+      {
+        "date": "2025-06-01",
+        "count": 16
+      },
+      {
+        "date": "2025-06-02",
+        "count": 15
+      },
+      {
+        "date": "2025-06-03",
+        "count": 15
+      },
+      {
+        "date": "2025-06-05",
+        "count": 15
+      },
+      {
+        "date": "2025-06-06",
+        "count": 16
+      },
+      {
+        "date": "2025-06-07",
+        "count": 15
+      },
+      {
+        "date": "2025-06-08",
+        "count": 16
+      },
+      {
+        "date": "2025-06-09",
+        "count": 16
+      },
+      {
+        "date": "2025-06-10",
+        "count": 15
+      },
+      {
+        "date": "2025-06-12",
+        "count": 15
+      },
+      {
+        "date": "2025-06-13",
+        "count": 16
+      },
+      {
+        "date": "2025-06-14",
+        "count": 15
+      },
+      {
+        "date": "2025-06-15",
+        "count": 16
+      },
+      {
+        "date": "2025-06-16",
+        "count": 15
+      },
+      {
+        "date": "2025-06-17",
+        "count": 16
+      },
+      {
+        "date": "2025-06-18",
+        "count": 15
+      },
+      {
+        "date": "2025-06-19",
+        "count": 16
+      },
+      {
+        "date": "2025-06-20",
+        "count": 15
+      },
+      {
+        "date": "2025-06-21",
+        "count": 15
+      },
+      {
+        "date": "2025-06-22",
+        "count": 16
+      },
+      {
+        "date": "2025-06-23",
+        "count": 15
+      },
+      {
+        "date": "2025-06-24",
+        "count": 16
+      },
+      {
+        "date": "2025-06-25",
+        "count": 15
+      },
+      {
+        "date": "2025-06-26",
+        "count": 16
+      },
+      {
+        "date": "2025-06-27",
+        "count": 15
+      },
+      {
+        "date": "2025-06-28",
+        "count": 15
+      },
+      {
+        "date": "2025-06-29",
+        "count": 16
+      },
+      {
+        "date": "2025-06-30",
+        "count": 15
+      },
+      {
+        "date": "2025-07-01",
+        "count": 16
+      },
+      {
+        "date": "2025-07-02",
+        "count": 16
+      },
+      {
+        "date": "2025-07-03",
+        "count": 16
+      },
+      {
+        "date": "2025-07-04",
+        "count": 15
+      },
+      {
+        "date": "2025-07-05",
+        "count": 15
+      },
+      {
+        "date": "2025-07-06",
+        "count": 16
+      },
+      {
+        "date": "2025-07-07",
+        "count": 16
+      },
+      {
+        "date": "2025-07-08",
+        "count": 16
+      },
+      {
+        "date": "2025-07-09",
+        "count": 16
+      },
+      {
+        "date": "2025-07-10",
+        "count": 16
+      },
+      {
+        "date": "2025-07-11",
+        "count": 15
+      },
+      {
+        "date": "2025-07-12",
+        "count": 15
+      },
+      {
+        "date": "2025-07-13",
+        "count": 16
+      },
+      {
+        "date": "2025-07-14",
+        "count": 16
+      },
+      {
+        "date": "2025-07-15",
+        "count": 16
+      },
+      {
+        "date": "2025-07-16",
+        "count": 16
+      },
+      {
+        "date": "2025-07-17",
+        "count": 16
+      },
+      {
+        "date": "2025-07-18",
+        "count": 15
+      },
+      {
+        "date": "2025-07-19",
+        "count": 15
+      },
+      {
+        "date": "2025-07-20",
+        "count": 16
+      },
+      {
+        "date": "2025-07-21",
+        "count": 16
+      },
+      {
+        "date": "2025-07-22",
+        "count": 16
+      },
+      {
+        "date": "2025-07-23",
+        "count": 16
+      },
+      {
+        "date": "2025-07-24",
+        "count": 16
+      },
+      {
+        "date": "2025-07-25",
+        "count": 15
+      },
+      {
+        "date": "2025-07-26",
+        "count": 15
+      },
+      {
+        "date": "2025-07-27",
+        "count": 16
+      },
+      {
+        "date": "2025-07-28",
+        "count": 16
+      },
+      {
+        "date": "2025-07-29",
+        "count": 16
+      },
+      {
+        "date": "2025-07-30",
+        "count": 16
+      },
+      {
+        "date": "2025-07-31",
+        "count": 16
+      },
+      {
+        "date": "2025-08-01",
+        "count": 15
+      },
+      {
+        "date": "2025-08-02",
+        "count": 15
+      },
+      {
+        "date": "2025-08-03",
+        "count": 16
+      },
+      {
+        "date": "2025-08-04",
+        "count": 16
+      },
+      {
+        "date": "2025-08-05",
+        "count": 16
+      },
+      {
+        "date": "2025-08-06",
+        "count": 16
+      },
+      {
+        "date": "2025-08-07",
+        "count": 16
+      },
+      {
+        "date": "2025-08-08",
+        "count": 15
+      },
+      {
+        "date": "2025-08-09",
+        "count": 15
+      },
+      {
+        "date": "2025-08-10",
+        "count": 16
+      },
+      {
+        "date": "2025-08-11",
+        "count": 16
+      },
+      {
+        "date": "2025-08-12",
+        "count": 16
+      },
+      {
+        "date": "2025-08-13",
+        "count": 16
+      },
+      {
+        "date": "2025-08-14",
+        "count": 16
+      },
+      {
+        "date": "2025-08-15",
+        "count": 15
+      },
+      {
+        "date": "2025-08-16",
+        "count": 15
+      },
+      {
+        "date": "2025-08-17",
+        "count": 16
+      },
+      {
+        "date": "2025-08-18",
+        "count": 16
+      },
+      {
+        "date": "2025-08-19",
+        "count": 16
+      },
+      {
+        "date": "2025-08-20",
+        "count": 16
+      },
+      {
+        "date": "2025-08-21",
+        "count": 16
+      },
+      {
+        "date": "2025-08-22",
+        "count": 15
+      },
+      {
+        "date": "2025-08-23",
+        "count": 15
+      },
+      {
+        "date": "2025-08-24",
+        "count": 16
+      },
+      {
+        "date": "2025-08-25",
+        "count": 16
+      },
+      {
+        "date": "2025-08-26",
+        "count": 16
+      },
+      {
+        "date": "2025-08-27",
+        "count": 16
+      },
+      {
+        "date": "2025-08-28",
+        "count": 16
+      },
+      {
+        "date": "2025-08-29",
+        "count": 15
+      },
+      {
+        "date": "2025-08-30",
+        "count": 15
+      },
+      {
+        "date": "2025-08-31",
+        "count": 16
+      },
+      {
+        "date": "2025-09-01",
+        "count": 15
+      },
+      {
+        "date": "2025-09-04",
+        "count": 16
+      },
+      {
+        "date": "2025-09-05",
+        "count": 15
+      },
+      {
+        "date": "2025-09-06",
+        "count": 15
+      },
+      {
+        "date": "2025-09-07",
+        "count": 16
+      },
+      {
+        "date": "2025-09-11",
+        "count": 16
+      },
+      {
+        "date": "2025-09-12",
+        "count": 15
+      },
+      {
+        "date": "2025-09-13",
+        "count": 15
+      },
+      {
+        "date": "2025-09-14",
+        "count": 16
+      },
+      {
+        "date": "2025-09-18",
+        "count": 14
+      },
+      {
+        "date": "2025-09-19",
+        "count": 15
+      },
+      {
+        "date": "2025-09-20",
+        "count": 16
+      },
+      {
+        "date": "2025-09-21",
+        "count": 15
+      },
+      {
+        "date": "2025-09-25",
+        "count": 14
+      },
+      {
+        "date": "2025-09-26",
+        "count": 15
+      },
+      {
+        "date": "2025-09-27",
+        "count": 15
+      },
+      {
+        "date": "2025-09-28",
+        "count": 16
+      },
+      {
+        "date": "2025-10-03",
+        "count": 16
+      },
+      {
+        "date": "2025-10-04",
+        "count": 17
+      },
+      {
+        "date": "2025-10-05",
+        "count": 16
+      },
+      {
+        "date": "2025-10-10",
+        "count": 16
+      },
+      {
+        "date": "2025-10-11",
+        "count": 17
+      },
+      {
+        "date": "2025-10-12",
+        "count": 16
+      },
+      {
+        "date": "2025-10-18",
+        "count": 17
+      },
+      {
+        "date": "2025-10-19",
+        "count": 17
+      },
+      {
+        "date": "2025-10-20",
+        "count": 17
+      },
+      {
+        "date": "2025-10-21",
+        "count": 17
+      },
+      {
+        "date": "2025-10-22",
+        "count": 17
+      },
+      {
+        "date": "2025-10-23",
+        "count": 17
+      },
+      {
+        "date": "2025-10-24",
+        "count": 17
+      },
+      {
+        "date": "2025-10-25",
+        "count": 17
+      },
+      {
+        "date": "2025-10-26",
+        "count": 17
+      },
+      {
+        "date": "2025-10-27",
+        "count": 17
+      },
+      {
+        "date": "2025-10-28",
+        "count": 17
+      },
+      {
+        "date": "2025-10-29",
+        "count": 17
+      },
+      {
+        "date": "2025-10-30",
+        "count": 17
+      },
+      {
+        "date": "2025-10-31",
+        "count": 17
+      },
+      {
+        "date": "2025-11-01",
+        "count": 17
+      },
+      {
+        "date": "2025-11-02",
+        "count": 14
+      },
+      {
+        "date": "2025-11-08",
+        "count": 15
+      },
+      {
+        "date": "2025-11-09",
+        "count": 15
+      },
+      {
+        "date": "2025-11-10",
+        "count": 15
+      },
+      {
+        "date": "2025-11-11",
+        "count": 14
+      },
       {
         "date": "2026-04-04",
         "count": 16
@@ -783,6 +1511,738 @@
       }
     ],
     "seasonal_evolution": [
+      {
+        "date": "2025-04-05",
+        "count": 50
+      },
+      {
+        "date": "2025-04-06",
+        "count": 38
+      },
+      {
+        "date": "2025-04-07",
+        "count": 38
+      },
+      {
+        "date": "2025-04-08",
+        "count": 44
+      },
+      {
+        "date": "2025-04-09",
+        "count": 38
+      },
+      {
+        "date": "2025-04-10",
+        "count": 38
+      },
+      {
+        "date": "2025-04-11",
+        "count": 33
+      },
+      {
+        "date": "2025-04-12",
+        "count": 44
+      },
+      {
+        "date": "2025-04-13",
+        "count": 38
+      },
+      {
+        "date": "2025-04-14",
+        "count": 38
+      },
+      {
+        "date": "2025-04-15",
+        "count": 44
+      },
+      {
+        "date": "2025-04-16",
+        "count": 44
+      },
+      {
+        "date": "2025-04-17",
+        "count": 50
+      },
+      {
+        "date": "2025-04-18",
+        "count": 38
+      },
+      {
+        "date": "2025-04-19",
+        "count": 50
+      },
+      {
+        "date": "2025-04-20",
+        "count": 53
+      },
+      {
+        "date": "2025-04-21",
+        "count": 38
+      },
+      {
+        "date": "2025-04-22",
+        "count": 44
+      },
+      {
+        "date": "2025-04-23",
+        "count": 44
+      },
+      {
+        "date": "2025-04-24",
+        "count": 44
+      },
+      {
+        "date": "2025-04-25",
+        "count": 33
+      },
+      {
+        "date": "2025-04-26",
+        "count": 44
+      },
+      {
+        "date": "2025-04-27",
+        "count": 50
+      },
+      {
+        "date": "2025-04-28",
+        "count": 44
+      },
+      {
+        "date": "2025-04-29",
+        "count": 38
+      },
+      {
+        "date": "2025-04-30",
+        "count": 37
+      },
+      {
+        "date": "2025-05-01",
+        "count": 43
+      },
+      {
+        "date": "2025-05-02",
+        "count": 61
+      },
+      {
+        "date": "2025-05-03",
+        "count": 53
+      },
+      {
+        "date": "2025-05-04",
+        "count": 34
+      },
+      {
+        "date": "2025-05-05",
+        "count": 33
+      },
+      {
+        "date": "2025-05-06",
+        "count": 40
+      },
+      {
+        "date": "2025-05-07",
+        "count": 35
+      },
+      {
+        "date": "2025-05-08",
+        "count": 40
+      },
+      {
+        "date": "2025-05-09",
+        "count": 56
+      },
+      {
+        "date": "2025-05-10",
+        "count": 56
+      },
+      {
+        "date": "2025-05-11",
+        "count": 36
+      },
+      {
+        "date": "2025-05-12",
+        "count": 28
+      },
+      {
+        "date": "2025-05-15",
+        "count": 39
+      },
+      {
+        "date": "2025-05-16",
+        "count": 40
+      },
+      {
+        "date": "2025-05-17",
+        "count": 65
+      },
+      {
+        "date": "2025-05-18",
+        "count": 47
+      },
+      {
+        "date": "2025-05-22",
+        "count": 34
+      },
+      {
+        "date": "2025-05-23",
+        "count": 39
+      },
+      {
+        "date": "2025-05-24",
+        "count": 54
+      },
+      {
+        "date": "2025-05-25",
+        "count": 47
+      },
+      {
+        "date": "2025-05-28",
+        "count": 39
+      },
+      {
+        "date": "2025-05-29",
+        "count": 67
+      },
+      {
+        "date": "2025-05-30",
+        "count": 75
+      },
+      {
+        "date": "2025-05-31",
+        "count": 67
+      },
+      {
+        "date": "2025-06-01",
+        "count": 36
+      },
+      {
+        "date": "2025-06-02",
+        "count": 28
+      },
+      {
+        "date": "2025-06-03",
+        "count": 28
+      },
+      {
+        "date": "2025-06-05",
+        "count": 35
+      },
+      {
+        "date": "2025-06-06",
+        "count": 40
+      },
+      {
+        "date": "2025-06-07",
+        "count": 67
+      },
+      {
+        "date": "2025-06-08",
+        "count": 70
+      },
+      {
+        "date": "2025-06-09",
+        "count": 40
+      },
+      {
+        "date": "2025-06-10",
+        "count": 27
+      },
+      {
+        "date": "2025-06-12",
+        "count": 35
+      },
+      {
+        "date": "2025-06-13",
+        "count": 40
+      },
+      {
+        "date": "2025-06-14",
+        "count": 66
+      },
+      {
+        "date": "2025-06-15",
+        "count": 47
+      },
+      {
+        "date": "2025-06-16",
+        "count": 28
+      },
+      {
+        "date": "2025-06-17",
+        "count": 36
+      },
+      {
+        "date": "2025-06-18",
+        "count": 35
+      },
+      {
+        "date": "2025-06-19",
+        "count": 57
+      },
+      {
+        "date": "2025-06-20",
+        "count": 62
+      },
+      {
+        "date": "2025-06-21",
+        "count": 66
+      },
+      {
+        "date": "2025-06-22",
+        "count": 54
+      },
+      {
+        "date": "2025-06-23",
+        "count": 35
+      },
+      {
+        "date": "2025-06-24",
+        "count": 40
+      },
+      {
+        "date": "2025-06-25",
+        "count": 35
+      },
+      {
+        "date": "2025-06-26",
+        "count": 47
+      },
+      {
+        "date": "2025-06-27",
+        "count": 53
+      },
+      {
+        "date": "2025-06-28",
+        "count": 66
+      },
+      {
+        "date": "2025-06-29",
+        "count": 53
+      },
+      {
+        "date": "2025-06-30",
+        "count": 35
+      },
+      {
+        "date": "2025-07-01",
+        "count": 36
+      },
+      {
+        "date": "2025-07-02",
+        "count": 36
+      },
+      {
+        "date": "2025-07-03",
+        "count": 47
+      },
+      {
+        "date": "2025-07-04",
+        "count": 45
+      },
+      {
+        "date": "2025-07-05",
+        "count": 66
+      },
+      {
+        "date": "2025-07-06",
+        "count": 47
+      },
+      {
+        "date": "2025-07-07",
+        "count": 36
+      },
+      {
+        "date": "2025-07-08",
+        "count": 47
+      },
+      {
+        "date": "2025-07-09",
+        "count": 40
+      },
+      {
+        "date": "2025-07-10",
+        "count": 54
+      },
+      {
+        "date": "2025-07-11",
+        "count": 53
+      },
+      {
+        "date": "2025-07-12",
+        "count": 66
+      },
+      {
+        "date": "2025-07-13",
+        "count": 67
+      },
+      {
+        "date": "2025-07-14",
+        "count": 40
+      },
+      {
+        "date": "2025-07-15",
+        "count": 40
+      },
+      {
+        "date": "2025-07-16",
+        "count": 47
+      },
+      {
+        "date": "2025-07-17",
+        "count": 58
+      },
+      {
+        "date": "2025-07-18",
+        "count": 55
+      },
+      {
+        "date": "2025-07-19",
+        "count": 66
+      },
+      {
+        "date": "2025-07-20",
+        "count": 54
+      },
+      {
+        "date": "2025-07-21",
+        "count": 47
+      },
+      {
+        "date": "2025-07-22",
+        "count": 47
+      },
+      {
+        "date": "2025-07-23",
+        "count": 47
+      },
+      {
+        "date": "2025-07-24",
+        "count": 58
+      },
+      {
+        "date": "2025-07-25",
+        "count": 55
+      },
+      {
+        "date": "2025-07-26",
+        "count": 66
+      },
+      {
+        "date": "2025-07-27",
+        "count": 58
+      },
+      {
+        "date": "2025-07-28",
+        "count": 47
+      },
+      {
+        "date": "2025-07-29",
+        "count": 58
+      },
+      {
+        "date": "2025-07-30",
+        "count": 47
+      },
+      {
+        "date": "2025-07-31",
+        "count": 58
+      },
+      {
+        "date": "2025-08-01",
+        "count": 55
+      },
+      {
+        "date": "2025-08-02",
+        "count": 66
+      },
+      {
+        "date": "2025-08-03",
+        "count": 58
+      },
+      {
+        "date": "2025-08-04",
+        "count": 67
+      },
+      {
+        "date": "2025-08-05",
+        "count": 67
+      },
+      {
+        "date": "2025-08-06",
+        "count": 67
+      },
+      {
+        "date": "2025-08-07",
+        "count": 71
+      },
+      {
+        "date": "2025-08-08",
+        "count": 66
+      },
+      {
+        "date": "2025-08-09",
+        "count": 67
+      },
+      {
+        "date": "2025-08-10",
+        "count": 63
+      },
+      {
+        "date": "2025-08-11",
+        "count": 67
+      },
+      {
+        "date": "2025-08-12",
+        "count": 70
+      },
+      {
+        "date": "2025-08-13",
+        "count": 67
+      },
+      {
+        "date": "2025-08-14",
+        "count": 70
+      },
+      {
+        "date": "2025-08-15",
+        "count": 66
+      },
+      {
+        "date": "2025-08-16",
+        "count": 67
+      },
+      {
+        "date": "2025-08-17",
+        "count": 63
+      },
+      {
+        "date": "2025-08-18",
+        "count": 67
+      },
+      {
+        "date": "2025-08-19",
+        "count": 67
+      },
+      {
+        "date": "2025-08-20",
+        "count": 67
+      },
+      {
+        "date": "2025-08-21",
+        "count": 70
+      },
+      {
+        "date": "2025-08-22",
+        "count": 66
+      },
+      {
+        "date": "2025-08-23",
+        "count": 66
+      },
+      {
+        "date": "2025-08-24",
+        "count": 58
+      },
+      {
+        "date": "2025-08-25",
+        "count": 47
+      },
+      {
+        "date": "2025-08-26",
+        "count": 47
+      },
+      {
+        "date": "2025-08-27",
+        "count": 40
+      },
+      {
+        "date": "2025-08-28",
+        "count": 58
+      },
+      {
+        "date": "2025-08-29",
+        "count": 53
+      },
+      {
+        "date": "2025-08-30",
+        "count": 66
+      },
+      {
+        "date": "2025-08-31",
+        "count": 40
+      },
+      {
+        "date": "2025-09-01",
+        "count": 28
+      },
+      {
+        "date": "2025-09-04",
+        "count": 54
+      },
+      {
+        "date": "2025-09-05",
+        "count": 53
+      },
+      {
+        "date": "2025-09-06",
+        "count": 66
+      },
+      {
+        "date": "2025-09-07",
+        "count": 47
+      },
+      {
+        "date": "2025-09-11",
+        "count": 54
+      },
+      {
+        "date": "2025-09-12",
+        "count": 62
+      },
+      {
+        "date": "2025-09-13",
+        "count": 67
+      },
+      {
+        "date": "2025-09-14",
+        "count": 54
+      },
+      {
+        "date": "2025-09-18",
+        "count": 33
+      },
+      {
+        "date": "2025-09-19",
+        "count": 34
+      },
+      {
+        "date": "2025-09-20",
+        "count": 67
+      },
+      {
+        "date": "2025-09-21",
+        "count": 52
+      },
+      {
+        "date": "2025-09-25",
+        "count": 33
+      },
+      {
+        "date": "2025-09-26",
+        "count": 34
+      },
+      {
+        "date": "2025-09-27",
+        "count": 64
+      },
+      {
+        "date": "2025-09-28",
+        "count": 67
+      },
+      {
+        "date": "2025-10-03",
+        "count": 36
+      },
+      {
+        "date": "2025-10-04",
+        "count": 54
+      },
+      {
+        "date": "2025-10-05",
+        "count": 39
+      },
+      {
+        "date": "2025-10-10",
+        "count": 36
+      },
+      {
+        "date": "2025-10-11",
+        "count": 54
+      },
+      {
+        "date": "2025-10-12",
+        "count": 39
+      },
+      {
+        "date": "2025-10-18",
+        "count": 45
+      },
+      {
+        "date": "2025-10-19",
+        "count": 40
+      },
+      {
+        "date": "2025-10-20",
+        "count": 40
+      },
+      {
+        "date": "2025-10-21",
+        "count": 45
+      },
+      {
+        "date": "2025-10-22",
+        "count": 40
+      },
+      {
+        "date": "2025-10-23",
+        "count": 45
+      },
+      {
+        "date": "2025-10-24",
+        "count": 37
+      },
+      {
+        "date": "2025-10-25",
+        "count": 54
+      },
+      {
+        "date": "2025-10-26",
+        "count": 45
+      },
+      {
+        "date": "2025-10-27",
+        "count": 40
+      },
+      {
+        "date": "2025-10-28",
+        "count": 45
+      },
+      {
+        "date": "2025-10-29",
+        "count": 41
+      },
+      {
+        "date": "2025-10-30",
+        "count": 40
+      },
+      {
+        "date": "2025-10-31",
+        "count": 37
+      },
+      {
+        "date": "2025-11-01",
+        "count": 45
+      },
+      {
+        "date": "2025-11-02",
+        "count": 32
+      },
+      {
+        "date": "2025-11-08",
+        "count": 33
+      },
+      {
+        "date": "2025-11-09",
+        "count": 33
+      },
+      {
+        "date": "2025-11-10",
+        "count": 27
+      },
+      {
+        "date": "2025-11-11",
+        "count": 32
+      },
       {
         "date": "2026-04-04",
         "count": 58
@@ -1423,148 +2883,166 @@
     "hourly_distribution": [
       {
         "hour": "08:00",
-        "count": 1
+        "count": 2
       },
       {
         "hour": "09:00",
-        "count": 414
+        "count": 814
       },
       {
         "hour": "10:00",
-        "count": 933
+        "count": 1866
       },
       {
         "hour": "11:00",
-        "count": 1035
+        "count": 2154
       },
       {
         "hour": "12:00",
-        "count": 884
+        "count": 1936
       },
       {
         "hour": "13:00",
-        "count": 495
+        "count": 1141
       },
       {
         "hour": "14:00",
-        "count": 761
+        "count": 1580
       },
       {
         "hour": "15:00",
-        "count": 850
+        "count": 1725
       },
       {
         "hour": "16:00",
-        "count": 589
+        "count": 1435
       },
       {
         "hour": "17:00",
-        "count": 683
+        "count": 1470
       },
       {
         "hour": "18:00",
-        "count": 526
+        "count": 1193
       },
       {
         "hour": "19:00",
-        "count": 392
+        "count": 833
       },
       {
         "hour": "20:00",
-        "count": 162
+        "count": 358
       },
       {
         "hour": "21:00",
-        "count": 55
+        "count": 132
       },
       {
         "hour": "22:00",
-        "count": 69
+        "count": 132
+      },
+      {
+        "hour": "23:00",
+        "count": 1
       }
     ],
     "top_spectacles": [
       {
         "name": "L'Épée du Roi Arthur",
-        "count": 930
+        "count": 1965
       },
       {
         "name": "Les Automates Musiciens",
-        "count": 857
+        "count": 1802
       },
       {
         "name": "Le Mime et l'Étoile",
-        "count": 768
+        "count": 1644
       },
       {
         "name": "Le Grand Carillon",
-        "count": 751
+        "count": 1635
       },
       {
         "name": "Le Dernier Panache",
-        "count": 738
-      },
-      {
-        "name": "Mousquetaire de Richelieu",
-        "count": 558
+        "count": 1572
       },
       {
         "name": "Les Vikings",
-        "count": 558
+        "count": 1195
+      },
+      {
+        "name": "Mousquetaire de Richelieu",
+        "count": 1192
       },
       {
         "name": "Le Bal des Oiseaux Fantômes",
-        "count": 555
-      },
-      {
-        "name": "Les Grandes Eaux",
-        "count": 471
+        "count": 1183
       },
       {
         "name": "Le Secret de la Lance",
-        "count": 466
+        "count": 1000
+      },
+      {
+        "name": "Les Grandes Eaux",
+        "count": 933
       }
     ],
     "bottom_spectacles": [
       {
+        "name": "La Frairie de la Toussaint",
+        "count": 66
+      },
+      {
         "name": "Les Noces de Feu",
-        "count": 119
+        "count": 252
       },
       {
         "name": "Le Mystère de la Pérouse",
-        "count": 159
+        "count": 342
       },
       {
         "name": "Le Premier Royaume",
-        "count": 159
+        "count": 342
       },
       {
         "name": "Les Amoureux de Verdun",
-        "count": 167
+        "count": 386
       },
       {
         "name": "La Renaissance du Château",
-        "count": 292
+        "count": 624
       },
       {
         "name": "Le Signe du Triomphe",
-        "count": 301
-      },
-      {
-        "name": "Le Secret de la Lance",
-        "count": 466
+        "count": 639
       },
       {
         "name": "Les Grandes Eaux",
-        "count": 471
+        "count": 933
+      },
+      {
+        "name": "Le Secret de la Lance",
+        "count": 1000
       },
       {
         "name": "Le Bal des Oiseaux Fantômes",
-        "count": 555
-      },
-      {
-        "name": "Les Vikings",
-        "count": 558
+        "count": 1183
       }
     ]
-  }
+  },
+  "by_season": [
+    {
+      "year": 2025,
+      "total_representations": 8923,
+      "total_spectacles": 17,
+      "days_collected": 183
+    },
+    {
+      "year": 2026,
+      "total_representations": 7849,
+      "total_spectacles": 16,
+      "days_collected": 159
+    }
+  ]
 }

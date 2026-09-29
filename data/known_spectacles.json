@@ -30,7 +30,10 @@
     "name": "Le Bal des Oiseaux Fantômes",
     "category": "spectacle",
     "aliases": ["Le Bal des Oiseaux Fantômes", "Bal des Oiseaux Fantômes", "Le Bal des Oiseaux Fantomes", "BAL"],
-    "active_periods": [{"from": "2026-04-04", "to": "2026-11-01"}]
+    "active_periods": [
+      {"from": "2025-04-05", "to": "2025-11-02"},
+      {"from": "2026-04-04", "to": "2026-11-01"}
+    ]
   },
   "la-renaissance-du-chateau": {
     "name": "La Renaissance du Château",
@@ -86,8 +89,11 @@
   "la-frairie-de-la-toussaint": {
     "name": "La Frairie de la Toussaint",
     "category": "spectacle",
-    "aliases": ["La Frairie de la Toussaint", "LA FRAIRIE DE LA TOUSSAINT"],
-    "active_periods": [{"from": "2026-10-03", "to": "2026-10-31"}]
+    "aliases": ["La Frairie de la Toussaint", "LA FRAIRIE DE LA TOUSSAINT", "Frairie 2025"],
+    "active_periods": [
+      {"from": "2025-10-03", "to": "2025-11-01"},
+      {"from": "2026-10-03", "to": "2026-10-31"}
+    ]
   },
   "le-mystere-de-noel": {
     "name": "Le Mystère de Noël",

@@ -1,0 +1,83 @@
+{
+  "year": 2025,
+  "season_name": "Saison 2025",
+  "start_date": "2025-04-05",
+  "end_date": "2025-11-11",
+  "final": true,
+  "as_of_date": "2025-11-11",
+  "generated_at": "2026-09-29T22:05:46",
+  "days_collected": 183,
+  "closed_days_count": 38,
+  "representations_by_category": {
+    "spectacle_immersif": 917,
+    "spectacle": 7873,
+    "spectacle_nocturne": 133
+  },
+  "total_spectacles": 17,
+  "total_representations": 8923,
+  "avg_per_day": 48.76,
+  "min_per_day": {
+    "date": "2025-06-10",
+    "count": 27
+  },
+  "max_per_day": {
+    "date": "2025-05-30",
+    "count": 75
+  },
+  "most_represented": [
+    {
+      "slug": "lepee-du-roi-arthur",
+      "name": "L'Épée du Roi Arthur",
+      "count": 1035
+    },
+    {
+      "slug": "les-automates-musiciens",
+      "name": "Les Automates Musiciens",
+      "count": 945
+    },
+    {
+      "slug": "le-grand-carillon",
+      "name": "Le Grand Carillon",
+      "count": 884
+    },
+    {
+      "slug": "le-mime-et-letoile",
+      "name": "Le Mime et l'Étoile",
+      "count": 876
+    },
+    {
+      "slug": "le-dernier-panache",
+      "name": "Le Dernier Panache",
+      "count": 834
+    }
+  ],
+  "least_represented": [
+    {
+      "slug": "la-frairie-de-la-toussaint",
+      "name": "La Frairie de la Toussaint",
+      "count": 66
+    },
+    {
+      "slug": "les-noces-de-feu",
+      "name": "Les Noces de Feu",
+      "count": 133
+    },
+    {
+      "slug": "le-mystere-de-la-perouse",
+      "name": "Le Mystère de la Pérouse",
+      "count": 183
+    },
+    {
+      "slug": "le-premier-royaume",
+      "name": "Le Premier Royaume",
+      "count": 183
+    },
+    {
+      "slug": "les-amoureux-de-verdun",
+      "name": "Les Amoureux de Verdun",
+      "count": 219
+    }
+  ],
+  "continuous_count": 917,
+  "nocturnal_count": 141
+}

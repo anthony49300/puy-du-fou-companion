@@ -8,7 +8,10 @@
 
   var charts = {}; // id -> Chart instance
   var statsData = null;
-  var state = { periodDays: 30 }; // 0 = toute la saison ; s'applique aux graphiques "isDate"
+  // periodDays : 0 = toute la saison ; s'applique aux graphiques "isDate".
+  // years/year : sélecteur de saison pour les tuiles + graphiques (la table
+  // "Comparaison des saisons" reste toujours toutes saisons confondues).
+  var state = { periodDays: 30, years: [], year: null };
 
   var CHART_DEFS = [
     {
@@ -282,6 +285,40 @@
       .join("");
   }
 
+  // Charge les tuiles + graphiques d'UNE saison (ou le fichier global si
+  // year est absent/inconnu) — data/json/history/{year}/stats.json, même
+  // forme que stats.json (voir src/exporter.py:export_stats).
+  function loadYear(year) {
+    var path = year ? "history/" + year + "/stats.json" : "stats.json";
+    return PDF.fetchJSON(path).then(function (data) {
+      statsData = data;
+      renderGlobalStats(data.global || {});
+      renderAllCharts();
+    });
+  }
+
+  function renderYearSelect() {
+    var wrap = document.getElementById("stats-year-select");
+    if (!wrap) return;
+    if (state.years.length <= 1) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+    wrap.innerHTML = state.years.map(function (y) {
+      return '<button type="button" class="chip' + (y === state.year ? " active" : "") + '" data-year="' + y + '">' + y + "</button>";
+    }).join("");
+    wrap.querySelectorAll(".chip").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        state.year = +btn.getAttribute("data-year");
+        renderYearSelect();
+        loadYear(state.year).catch(function (err) {
+          PDF.renderErrorMessage(
+            document.getElementById("stats-error-slot"),
+            "Impossible de charger les statistiques de " + state.year + " (" + err.message + ")."
+          );
+        });
+      });
+    });
+  }
+
   function init() {
     buildChartCards();
 
@@ -295,11 +332,27 @@
     });
 
     PDF.fetchJSON("stats.json")
-      .then(function (data) {
-        statsData = data;
-        renderGlobalStats(data.global || {});
-        renderSeasonTable(data.by_season || []);
-        renderAllCharts();
+      .then(function (globalData) {
+        renderSeasonTable(globalData.by_season || []);
+        // "Comparaison des saisons" reste global ; les tuiles/graphiques,
+        // eux, démarrent sur la saison la plus récente (en cours) par
+        // défaut — pas sur un mélange de toutes les saisons.
+        state.years = (globalData.by_season || [])
+          .map(function (s) { return s.year; })
+          .sort(function (a, b) { return b - a; });
+
+        if (state.years.length <= 1) {
+          state.year = state.years[0] || null;
+          renderYearSelect();
+          statsData = globalData;
+          renderGlobalStats(globalData.global || {});
+          renderAllCharts();
+          return;
+        }
+
+        state.year = state.years[0];
+        renderYearSelect();
+        return loadYear(state.year);
       })
       .catch(function (err) {
         PDF.renderErrorMessage(

@@ -1,0 +1,23 @@
+{
+  "date": "2025-09-02",
+  "season": {
+    "year": 2025,
+    "name": "Saison 2025",
+    "start_date": "2025-04-05",
+    "end_date": "2025-11-11"
+  },
+  "updated_at": "2026-09-29T22:05:28",
+  "status": "closed_day",
+  "warnings": [
+    "Fermeture ponctuelle deduite du calendrier d'ouverture reduite hors haute saison."
+  ],
+  "source": {
+    "url": "https://www.puydufou.com/france/fr/programme-du-jour",
+    "retrieved_at": "2026-09-29T22:05:19",
+    "program_published_at": null
+  },
+  "spectacle_count": 0,
+  "representation_count": 0,
+  "nocturne": null,
+  "spectacles": []
+}

@@ -273,3 +273,64 @@ def test_maybe_export_season_recaps_updates_in_progress_recap_once_per_month(con
     recap = json.loads((tmp_path / "history" / "2026" / "recap.json").read_text(encoding="utf-8"))
     assert recap["final"] is False
     assert recap["as_of_date"] == "2026-09-01"
+
+
+# ---------------------------------------------------------------------------
+# Vues par saison (data/json/history/{année}/{stats,spectacles}.json) —
+# plusieurs saisons en base ne doivent plus être mélangées par défaut.
+# ---------------------------------------------------------------------------
+
+def test_export_stats_default_is_global_across_seasons(conn, tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "STATS_JSON", tmp_path / "stats.json")
+    _add_day(conn, "2025-08-01")
+    _add_day(conn, "2026-08-01")
+
+    payload = exporter.export_stats(conn)
+
+    assert payload["global"]["total_representations"] == 2
+    assert sorted(s["year"] for s in payload["by_season"]) == [2025, 2026]
+
+
+def test_export_stats_scoped_to_one_season_excludes_the_other(conn, tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "HISTORY_JSON_DIR", tmp_path / "history")
+    _add_day(conn, "2025-08-01")
+    _add_day(conn, "2026-08-01")
+
+    payload = exporter.export_stats(conn, 2025)
+
+    assert payload["global"]["total_representations"] == 1
+    assert "by_season" not in payload  # n'a de sens que pour la vue globale
+    assert (tmp_path / "history" / "2025" / "stats.json").exists()
+
+
+def test_export_spectacles_scoped_excludes_a_spectacle_absent_that_season(conn, tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "HISTORY_JSON_DIR", tmp_path / "history")
+    _add_day(conn, "2025-08-01")  # Les Vikings, via _add_day
+    date_id_2026 = _add_day(conn, "2026-08-01")
+    bal_id = database.get_or_create_spectacle(
+        conn, name="Le Bal des Oiseaux Fantômes", slug="le-bal-des-oiseaux-fantomes", category="spectacle"
+    )
+    database.insert_representation(
+        conn, date_id=date_id_2026, spectacle_id=bal_id, start_time="10:15", end_time=None,
+        is_continuous=False, status=config.REPR_STATUS_SCHEDULED, source_text="10:15 Le Bal des Oiseaux Fantômes",
+    )
+
+    payload_2025 = exporter.export_spectacles(conn, 2025)
+    payload_2026 = exporter.export_spectacles(conn, 2026)
+
+    assert {s["slug"] for s in payload_2025["spectacles"]} == {"les-vikings"}
+    assert {s["slug"] for s in payload_2026["spectacles"]} == {"les-vikings", "le-bal-des-oiseaux-fantomes"}
+
+
+def test_export_per_year_views_skips_a_season_not_yet_started(conn, tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "HISTORY_JSON_DIR", tmp_path / "history")
+    database.set_season_dates(conn, 2026, start_date="2026-04-11", end_date="2026-11-08")
+    database.set_season_dates(conn, 2027, start_date="2027-04-01", end_date="2027-11-01")
+    _add_day(conn, "2026-08-01")
+
+    processed = exporter.export_per_year_views(conn, today="2026-08-27")
+
+    assert processed == [2026]
+    assert (tmp_path / "history" / "2026" / "stats.json").exists()
+    assert (tmp_path / "history" / "2026" / "spectacles.json").exists()
+    assert not (tmp_path / "history" / "2027").exists()
