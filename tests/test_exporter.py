@@ -121,6 +121,28 @@ def test_export_today_passes_through_closed_day_status(conn, tmp_path, monkeypat
     assert payload["warnings"] == ["Le Puy du Fou est fermé le 2026-08-28."]
 
 
+def test_export_today_exposes_next_opening_for_a_directly_known_closed_day(conn, tmp_path, monkeypatch):
+    # Régression : une date CONNUE directement (pas de repli "stale") avec
+    # une réouverture annoncée à la collecte doit exposer next_opening —
+    # avant le fix, ce champ restait à None sauf en repli "hors saison"
+    # (l'accueil affichait alors "0 spectacle" plutôt que la date de
+    # réouverture, malgré l'info déjà connue de la collecte).
+    monkeypatch.setattr(config, "TODAY_JSON", tmp_path / "today.json")
+    season_id = database.get_or_create_season(conn, 2026)
+    database.create_date_version(
+        conn, date_str="2026-09-29", season_id=season_id, source_url="https://example.test",
+        source_file=None, source_hash="hash-closed", retrieved_at=now_iso(),
+        program_published_at=None, status=config.DATE_STATUS_CLOSED_DAY,
+        warnings=["Le Puy du Fou est fermé le 2026-09-29."],
+        next_opening_date="2026-10-03",
+    )
+
+    payload = exporter.export_today(conn, reference_date="2026-09-29")
+
+    assert payload["status"] == config.DATE_STATUS_CLOSED_DAY
+    assert payload["next_opening"] == "2026-10-03"
+
+
 def test_export_today_reports_after_season_with_next_opening(conn, tmp_path, monkeypatch):
     monkeypatch.setattr(config, "TODAY_JSON", tmp_path / "today.json")
     database.set_season_dates(conn, 2026, start_date="2026-04-11", end_date="2026-11-08")

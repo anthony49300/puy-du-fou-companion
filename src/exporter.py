@@ -230,7 +230,12 @@ def export_today(conn: sqlite3.Connection, *, reference_date: Optional[str] = No
 
     payload = _build_date_payload(conn, row)
     payload["season_window"] = None
-    payload["next_opening"] = None
+    # Réouverture annoncée à la collecte (voir Collector, next_opening_date) :
+    # doit s'afficher même quand CETTE date est directement connue en
+    # closed_day (pas seulement en repli "stale" hors saison, écrasé
+    # ci-dessous le cas échéant) — sinon l'accueil affiche "0 spectacle" au
+    # lieu de "Fermé, réouverture le ...", faute d'avertir explicitement.
+    payload["next_opening"] = row["next_opening_date"] if row["status"] == config.DATE_STATUS_CLOSED_DAY else None
     if stale:
         if out_of_season:
             payload["status"] = config.DATE_STATUS_OUT_OF_SEASON

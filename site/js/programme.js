@@ -153,6 +153,11 @@
         document.getElementById("status-banner-slot").innerHTML =
           PDF.seasonClosedBannerHtml(today) ||
           PDF.statusBannerHtml(today.status, today.date, (today.representation_count || 0) > 0, true);
+        // Rien à filtrer/rechercher un jour de fermeture : la barre de
+        // recherche + le sélecteur de catégorie n'ont plus de sens.
+        var hasSlots = (today.spectacles || []).length > 0;
+        var searchBarWrap = document.getElementById("search-bar-wrap");
+        if (searchBarWrap) searchBarWrap.hidden = !hasSlots;
         populateCategoryFilter(today);
         renderProgramme();
       })

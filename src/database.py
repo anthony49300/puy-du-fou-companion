@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS dates (
     version INTEGER NOT NULL DEFAULT 1,
     is_active INTEGER NOT NULL DEFAULT 1,
     warnings TEXT NOT NULL DEFAULT '[]',
+    next_opening_date TEXT,
     created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_dates_date ON dates(date);
@@ -105,6 +106,8 @@ def _migrate_missing_columns(conn: sqlite3.Connection) -> None:
     existing = {row["name"] for row in conn.execute("PRAGMA table_info(dates)").fetchall()}
     if "content_hash" not in existing:
         conn.execute("ALTER TABLE dates ADD COLUMN content_hash TEXT")
+    if "next_opening_date" not in existing:
+        conn.execute("ALTER TABLE dates ADD COLUMN next_opening_date TEXT")
 
     existing_seasons = {row["name"] for row in conn.execute("PRAGMA table_info(seasons)").fetchall()}
     if "start_date" not in existing_seasons:
@@ -211,9 +214,17 @@ def create_date_version(
     program_published_at: Optional[str],
     status: str,
     warnings: Iterable[str] = (),
+    next_opening_date: Optional[str] = None,
 ) -> tuple[int, int]:
     """Insère une nouvelle version active pour `date_str` et désactive
     l'ancienne version active s'il en existe une.
+
+    `next_opening_date` : date ISO de réouverture annoncée par la source au
+    moment de la collecte (voir ParseResult.next_opening_date), stockée sur
+    la ligne elle-même — pas seulement utilisée pour combler les jours
+    suivants (voir Collector._backfill_closed_range) — pour que l'export
+    puisse l'afficher même quand CETTE date est directement connue (pas
+    seulement en repli "stale").
 
     Retourne (date_id, version).
     """
@@ -227,8 +238,8 @@ def create_date_version(
         INSERT INTO dates (
             date, season_id, source_url, source_file, source_hash, content_hash,
             retrieved_at, program_published_at, status, version, is_active,
-            warnings, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+            warnings, next_opening_date, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
         """,
         (
             date_str,
@@ -242,6 +253,7 @@ def create_date_version(
             status,
             new_version,
             json.dumps(list(warnings), ensure_ascii=False),
+            next_opening_date,
             now_iso(),
         ),
     )
