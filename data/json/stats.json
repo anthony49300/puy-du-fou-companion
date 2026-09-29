@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-29T21:14:38",
+  "updated_at": "2026-09-29T21:48:41",
   "global": {
     "total_spectacles": 17,
     "total_representations": 16772,
@@ -41,8 +41,8 @@
     ],
     "least_represented": [
       {
-        "slug": "frairie-2025",
-        "name": "Frairie 2025",
+        "slug": "la-frairie-de-la-toussaint",
+        "name": "La Frairie de la Toussaint",
         "count": 66
       },
       {
@@ -69,20 +69,6 @@
     "continuous_count": 1694,
     "nocturnal_count": 265
   },
-  "by_season": [
-    {
-      "year": 2025,
-      "total_representations": 8923,
-      "total_spectacles": 17,
-      "days_collected": 183
-    },
-    {
-      "year": 2026,
-      "total_representations": 7849,
-      "total_spectacles": 16,
-      "days_collected": 159
-    }
-  ],
   "charts": {
     "representations_per_spectacle": [
       {
@@ -150,7 +136,7 @@
         "count": 252
       },
       {
-        "name": "Frairie 2025",
+        "name": "La Frairie de la Toussaint",
         "count": 66
       }
     ],
@@ -3004,7 +2990,7 @@
     ],
     "bottom_spectacles": [
       {
-        "name": "Frairie 2025",
+        "name": "La Frairie de la Toussaint",
         "count": 66
       },
       {
@@ -3044,5 +3030,19 @@
         "count": 1183
       }
     ]
-  }
+  },
+  "by_season": [
+    {
+      "year": 2025,
+      "total_representations": 8923,
+      "total_spectacles": 17,
+      "days_collected": 183
+    },
+    {
+      "year": 2026,
+      "total_representations": 7849,
+      "total_spectacles": 16,
+      "days_collected": 159
+    }
+  ]
 }

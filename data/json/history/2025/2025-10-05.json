@@ -6,7 +6,7 @@
     "start_date": "2025-04-05",
     "end_date": "2025-11-11"
   },
-  "updated_at": "2026-09-29T21:14:39",
+  "updated_at": "2026-09-29T21:48:41",
   "status": "ok",
   "warnings": [],
   "source": {
@@ -18,34 +18,6 @@
   "representation_count": 39,
   "nocturne": null,
   "spectacles": [
-    {
-      "name": "Frairie 2025",
-      "slug": "frairie-2025",
-      "category": "autre",
-      "representations": [
-        {
-          "start": "15:45",
-          "end": "16:17",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "Frairie 2025 15:45-16:17"
-        },
-        {
-          "start": "17:00",
-          "end": "17:32",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "Frairie 2025 17:00-17:32"
-        },
-        {
-          "start": "18:15",
-          "end": "18:47",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "Frairie 2025 18:15-18:47"
-        }
-      ]
-    },
     {
       "name": "L'Épée du Roi Arthur",
       "slug": "lepee-du-roi-arthur",
@@ -78,6 +50,34 @@
           "is_continuous": false,
           "status": "scheduled",
           "source_text": "L'Épée du Roi Arthur 17:00-17:22"
+        }
+      ]
+    },
+    {
+      "name": "La Frairie de la Toussaint",
+      "slug": "la-frairie-de-la-toussaint",
+      "category": "spectacle",
+      "representations": [
+        {
+          "start": "15:45",
+          "end": "16:17",
+          "is_continuous": false,
+          "status": "scheduled",
+          "source_text": "Frairie 2025 15:45-16:17"
+        },
+        {
+          "start": "17:00",
+          "end": "17:32",
+          "is_continuous": false,
+          "status": "scheduled",
+          "source_text": "Frairie 2025 17:00-17:32"
+        },
+        {
+          "start": "18:15",
+          "end": "18:47",
+          "is_continuous": false,
+          "status": "scheduled",
+          "source_text": "Frairie 2025 18:15-18:47"
         }
       ]
     },

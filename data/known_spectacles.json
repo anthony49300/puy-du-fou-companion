@@ -86,8 +86,11 @@
   "la-frairie-de-la-toussaint": {
     "name": "La Frairie de la Toussaint",
     "category": "spectacle",
-    "aliases": ["La Frairie de la Toussaint", "LA FRAIRIE DE LA TOUSSAINT"],
-    "active_periods": [{"from": "2026-10-03", "to": "2026-10-31"}]
+    "aliases": ["La Frairie de la Toussaint", "LA FRAIRIE DE LA TOUSSAINT", "Frairie 2025"],
+    "active_periods": [
+      {"from": "2025-10-03", "to": "2025-11-01"},
+      {"from": "2026-10-03", "to": "2026-10-31"}
+    ]
   },
   "le-mystere-de-noel": {
     "name": "Le Mystère de Noël",

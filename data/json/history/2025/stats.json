@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-29T21:37:42",
+  "updated_at": "2026-09-29T21:48:41",
   "global": {
     "total_spectacles": 17,
     "total_representations": 8923,
@@ -41,8 +41,8 @@
     ],
     "least_represented": [
       {
-        "slug": "frairie-2025",
-        "name": "Frairie 2025",
+        "slug": "la-frairie-de-la-toussaint",
+        "name": "La Frairie de la Toussaint",
         "count": 66
       },
       {
@@ -136,7 +136,7 @@
         "count": 133
       },
       {
-        "name": "Frairie 2025",
+        "name": "La Frairie de la Toussaint",
         "count": 66
       }
     ],
@@ -1718,7 +1718,7 @@
     ],
     "bottom_spectacles": [
       {
-        "name": "Frairie 2025",
+        "name": "La Frairie de la Toussaint",
         "count": 66
       },
       {
