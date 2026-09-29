@@ -370,14 +370,30 @@
    * paramètre supplémentaire propre à ce seul cas.
    */
   function seasonClosedBannerHtml(payload) {
-    if (!payload || payload.status !== "out_of_season") return null;
-    const message = payload.next_opening
-      ? "Saison terminée — réouverture prévue le " + formatDateLongFR(payload.next_opening) + "."
-      : "Saison terminée — date de réouverture pas encore annoncée.";
-    return (
-      '<div class="status-banner status-stale"><span aria-hidden="true">🌙</span>' +
-      "<span>" + escapeHtml(message) + "</span></div>"
-    );
+    if (!payload) return null;
+    if (payload.status === "out_of_season") {
+      const message = payload.next_opening
+        ? "Saison terminée — réouverture prévue le " + formatDateLongFR(payload.next_opening) + "."
+        : "Saison terminée — date de réouverture pas encore annoncée.";
+      return (
+        '<div class="status-banner status-stale"><span aria-hidden="true">🌙</span>' +
+        "<span>" + escapeHtml(message) + "</span></div>"
+      );
+    }
+    if (payload.status === "closed_day") {
+      // Fermeture ponctuelle EN saison (voir DATE_STATUS_CLOSED_DAY) : même
+      // logique que ci-dessus mais avec la date du jour fermé lui-même,
+      // pas seulement celle de réouverture (utile même quand elle est
+      // inconnue) — voir next_opening_date côté export (src/exporter.py).
+      const message = payload.next_opening
+        ? "Fermé le " + formatDateLongFR(payload.date) + " — prochaine ouverture le " + formatDateLongFR(payload.next_opening) + "."
+        : "Le Puy du Fou est fermé le " + formatDateLongFR(payload.date) + ".";
+      return (
+        '<div class="status-banner status-stale"><span aria-hidden="true">🚧</span>' +
+        "<span>" + escapeHtml(message) + "</span></div>"
+      );
+    }
+    return null;
   }
 
   /* ----------------------------------------------------------------------

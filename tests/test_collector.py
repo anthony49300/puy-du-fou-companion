@@ -247,10 +247,15 @@ def test_collect_backfills_the_whole_closure_range_from_the_announced_reopening_
 
     assert outcome.status == config.DATE_STATUS_CLOSED_DAY
     with database.connect(db_path) as conn:
-        for d in ("2026-09-08", "2026-09-09"):
+        # Le jour directement collecté ET les jours comblés doivent tous
+        # exposer la même réouverture annoncée (voir next_opening_date,
+        # utilisé par l'export pour afficher "prochaine ouverture le ..."
+        # même quand la date fermée est connue directement, pas en repli).
+        for d in ("2026-09-07", "2026-09-08", "2026-09-09"):
             row = database.get_active_date(conn, d)
             assert row is not None, f"{d} devrait avoir été rempli par le comblement"
             assert row["status"] == config.DATE_STATUS_CLOSED_DAY
+            assert row["next_opening_date"] == "2026-09-10"
         # La date de réouverture elle-même n'est PAS marquée fermée (exclue,
         # c'est justement le jour où ça rouvre).
         assert database.get_active_date(conn, "2026-09-10") is None

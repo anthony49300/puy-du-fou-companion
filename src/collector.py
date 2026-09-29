@@ -256,6 +256,7 @@ def _backfill_closed_range(conn, *, season_id: int, source_url: str, from_date: 
                 program_published_at=None,
                 status=config.DATE_STATUS_CLOSED_DAY,
                 warnings=[f'Fermeture déduite de l\'annonce "Prochaine ouverture le {until_date.isoformat()}" sur la page officielle.'],
+                next_opening_date=until_date.isoformat(),
             )
             created += 1
         current += timedelta(days=1)
@@ -495,6 +496,7 @@ class Collector:
                 program_published_at=fetch_result.program_published_at,
                 status=status,
                 warnings=warnings,
+                next_opening_date=parse_result.next_opening_date,
             )
 
             for info, rep in resolved:

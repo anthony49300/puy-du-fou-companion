@@ -6,7 +6,7 @@
     "start_date": "2026-04-04",
     "end_date": "2027-01-03"
   },
-  "updated_at": "2026-09-15T13:00:30",
+  "updated_at": "2026-09-29T23:41:57",
   "status": "closed_day",
   "warnings": [
     "Fermeture deduite de l'annonce \"Prochaine ouverture le 2026-09-17\" sur la page officielle (correction manuelle : la collecte automatique du jour meme avait ecrase ce statut par une recollecte redondante, voir fix cmd_collect_daily)."
@@ -19,5 +19,6 @@
   "spectacle_count": 0,
   "representation_count": 0,
   "nocturne": null,
-  "spectacles": []
+  "spectacles": [],
+  "next_opening": "2026-09-17"
 }

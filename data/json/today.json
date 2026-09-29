@@ -6,7 +6,7 @@
     "start_date": "2026-04-04",
     "end_date": "2027-01-03"
   },
-  "updated_at": "2026-09-28T22:00:18",
+  "updated_at": "2026-09-29T23:30:46",
   "status": "closed_day",
   "warnings": [
     "Fermeture déduite de l'annonce \"Prochaine ouverture le 2026-10-03\" sur la page officielle."
@@ -21,5 +21,5 @@
   "nocturne": null,
   "spectacles": [],
   "season_window": null,
-  "next_opening": null
+  "next_opening": "2026-10-03"
 }

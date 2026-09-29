@@ -136,6 +136,23 @@ def test_create_date_version_deactivates_previous_version(conn):
     assert [v["version"] for v in versions] == [1, 2]
 
 
+def test_create_date_version_stores_next_opening_date(conn):
+    season_id = database.get_or_create_season(conn, 2026)
+    database.create_date_version(
+        conn, date_str="2026-09-29", season_id=season_id, source_url="https://example.test",
+        source_file=None, source_hash="hash", retrieved_at=now_iso(), program_published_at=None,
+        status="closed_day", next_opening_date="2026-10-03",
+    )
+    active = database.get_active_date(conn, "2026-09-29")
+    assert active["next_opening_date"] == "2026-10-03"
+
+
+def test_create_date_version_next_opening_date_defaults_to_none(conn):
+    date_id, _ = _make_date_version(conn, "2026-08-26", "hash1")
+    active = database.get_active_date(conn, "2026-08-26")
+    assert active["next_opening_date"] is None
+
+
 def test_date_version_unique_constraint(conn):
     _make_date_version(conn, "2026-08-26", "hash1")
     with pytest.raises(sqlite3.IntegrityError):

@@ -648,13 +648,15 @@ main { flex: 1; }
   flex-wrap: wrap;
 }
 .rep-card.is-nocturne { border-left-color: var(--badge-nocturne); }
+.rep-card.is-past { opacity: 0.55; }
+.rep-time-wrap { min-width: 4.6rem; }
 .rep-time {
   font-family: "Trajan Pro", "Cinzel", Georgia, serif;
   font-weight: 700;
   font-size: 1.1rem;
   color: var(--text);
-  min-width: 4.6rem;
 }
+.rep-duration { font-size: 0.72rem; color: var(--text-soft); }
 /* Ouverture des portes (carnet uniquement) : un jalon à part entière avant
    la carte de la séance — pas juste une donnée officielle parmi d'autres,
    d'où sa mise à part visuelle plutôt qu'une sous-ligne dans la carte. */
@@ -675,6 +677,71 @@ main { flex: 1; }
 .timeline > .gate-marker:first-child { margin-top: 0; }
 .rep-name { font-weight: 600; flex: 1 1 180px; }
 .rep-badges { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+
+/* Séances déjà commencées (jour réel du visiteur uniquement) : repliées
+   plutôt que mélangées aux séances à venir — voir programme.js. */
+.past-sessions {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.85rem;
+}
+.past-sessions summary {
+  cursor: pointer;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  padding: 0.35rem 0;
+}
+.past-sessions[open] summary { margin-bottom: 0.5rem; }
+.past-sessions .timeline-hour-group { gap: 0.6rem; }
+
+/* Séances commençant dans l'heure : mise en avant, pas de sous-titrage par
+   heure (une seule séance suffit à comprendre "maintenant"). */
+.within-hour-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: var(--accent-2-soft);
+  border: 1px solid var(--accent-2);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+}
+.within-hour-label {
+  font-family: "Trajan Pro", "Cinzel", Georgia, serif;
+  font-size: 0.95rem;
+  color: var(--accent);
+}
+.rep-countdown { font-size: 0.72rem; color: var(--accent); font-weight: 600; }
+
+/* Barre d'heures collante : navigation rapide sur une page potentiellement
+   très longue (nombreuses séances/jour) — surtout utile sur mobile. */
+.hour-nav {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-soft);
+}
+.hour-nav::-webkit-scrollbar { display: none; }
+.hour-nav-btn {
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-soft);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.hour-nav-btn.active {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border-color: var(--accent);
+}
 
 /* ---------- 11. Spectacle cards ---------- */
 .spectacle-card {
@@ -934,7 +1001,7 @@ table.data-table tr.is-changed td:first-child { font-weight: 600; }
 }
 
 @media (max-width: 640px) {
-  .rep-time { min-width: auto; }
+  .rep-time-wrap { min-width: auto; }
   .header-inner { padding: 0.7rem 1rem; }
 }
 
@@ -1033,7 +1100,7 @@ table.visit-grid tfoot td { font-weight: 700; background: var(--bg-elevated); }
 
 /* Impression (ex: le programme de la journée depuis le carnet) */
 @media print {
-  .site-header, .site-footer, .no-print, .chip-row, .decorative-rule { display: none !important; }
+  .site-header, .site-footer, .no-print, .chip-row, .hour-nav, .decorative-rule { display: none !important; }
   body { background: #fff; color: #000; }
   .card, .rep-card { border-color: #bbb; box-shadow: none; break-inside: avoid; }
 }

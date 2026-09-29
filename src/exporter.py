@@ -112,6 +112,12 @@ def _build_date_payload(conn: sqlite3.Connection, date_row: sqlite3.Row) -> dict
         "representation_count": len(reps),
         "nocturne": nocturne,
         "spectacles": spectacles_list,
+        # Réouverture annoncée à la collecte pour un jour fermé (voir
+        # next_opening_date, Collector) : utile sur n'importe quel export de
+        # cette date (today.json comme history/{date}.json), pas seulement
+        # le jour même — export_today peut l'écraser pour son propre repli
+        # "hors saison" (plage de dates, pas une date précise).
+        "next_opening": date_row["next_opening_date"] if date_row["status"] == config.DATE_STATUS_CLOSED_DAY else None,
     }
 
 
@@ -230,7 +236,9 @@ def export_today(conn: sqlite3.Connection, *, reference_date: Optional[str] = No
 
     payload = _build_date_payload(conn, row)
     payload["season_window"] = None
-    payload["next_opening"] = None
+    # "next_opening" est déjà rempli par _build_date_payload pour un
+    # closed_day connu directement ; seul le repli "stale" hors saison
+    # (plage de dates, pas une date précise) doit l'écraser ci-dessous.
     if stale:
         if out_of_season:
             payload["status"] = config.DATE_STATUS_OUT_OF_SEASON
