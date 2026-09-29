@@ -475,6 +475,15 @@ main { flex: 1; }
 .nav-card h3 { margin-bottom: 0.15rem; }
 .nav-card p { color: var(--text-soft); font-size: 0.9rem; margin-bottom: 0; }
 
+/* Fait doublon avec le menu "Explorer" du header : gardé pour la
+   découvrabilité (premier visiteur sur l'accueil), mais volontairement
+   discret plutôt qu'aussi imposant qu'une vraie section de contenu. */
+.explore-section h2 { font-size: 1.05rem; color: var(--text-soft); }
+.explore-grid { margin: 0.75rem 0 1rem; gap: 0.6rem; }
+.explore-grid .nav-card { padding: 0.85rem; }
+.explore-grid .nav-card-icon { font-size: 1.3rem; }
+.explore-grid .nav-card p { font-size: 0.8rem; }
+
 /* ---------- 7. Stat tiles ---------- */
 .stat-grid {
   display: grid;
@@ -1003,6 +1012,18 @@ table.data-table tr.is-changed td:first-child { font-weight: 600; }
 @media (max-width: 640px) {
   .rep-time-wrap { min-width: auto; }
   .header-inner { padding: 0.7rem 1rem; }
+  /* Hero + tuiles de l'accueil : moins hauts sur mobile pour remonter le
+     contenu du jour, qui doit rester visible sans défiler. */
+  .page-hero { padding: 1.25rem 0 0.75rem; }
+  .page-hero h1 { font-size: 1.35rem; }
+  .page-hero p.lede { font-size: 0.85rem; }
+  #today-stats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+  #today-stats .stat-tile { padding: 0.6rem 0.5rem; }
+  #today-stats .stat-label { font-size: 0.65rem; }
+  #today-stats .stat-value { font-size: 1.15rem; }
 }
 
 /* ---------- 15. Carnet personnel (planificateur, visites, bilan, pass) ---------
