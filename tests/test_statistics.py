@@ -165,6 +165,36 @@ def test_compute_spectacle_stats_restricts_absence_to_the_configured_active_peri
     assert len(stats["history"]) == 1
 
 
+def test_compute_spectacle_stats_exposes_active_periods_for_the_badge(sample_conn, _with_active_periods):
+    _with_active_periods({
+        "la-toussaint-fantastique": {
+            "name": "La Toussaint Fantastique",
+            "category": "spectacle",
+            "aliases": [],
+            "active_periods": [
+                {"from": "2025-10-03", "to": "2025-11-01"},
+                {"from": "2026-08-27", "to": "2026-08-27"},
+            ],
+        }
+    })
+    _add_day(sample_conn, "2026-08-27", [
+        ("La Toussaint Fantastique", "la-toussaint-fantastique", "spectacle", "20:00", None, False, config.REPR_STATUS_SCHEDULED),
+    ])
+
+    global_stats = statistics.compute_spectacle_stats(sample_conn, "la-toussaint-fantastique")
+    scoped_2026 = statistics.compute_spectacle_stats(sample_conn, "la-toussaint-fantastique", season_year=2026)
+    scoped_2025 = statistics.compute_spectacle_stats(sample_conn, "la-toussaint-fantastique", season_year=2025)
+
+    assert len(global_stats["active_periods"]) == 2  # vue globale : toutes les périodes
+    assert scoped_2026["active_periods"] == [{"from": "2026-08-27", "to": "2026-08-27"}]
+    assert scoped_2025["active_periods"] == [{"from": "2025-10-03", "to": "2025-11-01"}]
+
+
+def test_compute_spectacle_stats_active_periods_empty_for_a_permanent_spectacle(sample_conn):
+    stats = statistics.compute_spectacle_stats(sample_conn, "les-vikings")
+    assert stats["active_periods"] == []
+
+
 def test_hourly_distribution(sample_conn):
     dist = statistics.hourly_distribution(sample_conn)
     hours = {d["hour"]: d["count"] for d in dist}

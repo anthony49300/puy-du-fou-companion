@@ -166,11 +166,20 @@ def compute_spectacle_stats(
     today_str = datetime.now().date().isoformat()
     today_count = per_day_count.get(today_str, 0)
 
+    # Ne garde que la (les) période(s) pertinente(s) pour la saison affichée
+    # (une vue par saison n'a pas besoin de voir la plage des AUTRES années) ;
+    # sans season_year (vue globale), toutes les périodes configurées.
+    relevant_periods = [
+        {"from": start, "to": end} for start, end in active_periods
+        if season_year is None or str(season_year) in (start[:4], end[:4])
+    ]
+
     return {
         "slug": slug,
         "name": spectacle["name"],
         "category": spectacle["category"],
         "active": bool(spectacle["active"]),
+        "active_periods": relevant_periods,
         "stats": {
             "today_count": today_count,
             "avg_per_day": round(avg_per_day, 2),

@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-29T21:48:40",
+  "updated_at": "2026-09-29T21:54:18",
   "categories": [
     "spectacle",
     "spectacle_nocturne",
@@ -12,6 +12,7 @@
       "name": "L'Épée du Roi Arthur",
       "category": "spectacle",
       "active": true,
+      "active_periods": [],
       "stats": {
         "today_count": 0,
         "avg_per_day": 5.75,
@@ -1395,6 +1396,16 @@
       "name": "La Frairie de la Toussaint",
       "category": "spectacle",
       "active": true,
+      "active_periods": [
+        {
+          "from": "2025-10-03",
+          "to": "2025-11-01"
+        },
+        {
+          "from": "2026-10-03",
+          "to": "2026-10-31"
+        }
+      ],
       "stats": {
         "today_count": 0,
         "avg_per_day": 3.14,
@@ -1494,6 +1505,7 @@
       "name": "La Renaissance du Château",
       "category": "spectacle_immersif",
       "active": true,
+      "active_periods": [],
       "stats": {
         "today_count": 0,
         "avg_per_day": 1.9,
@@ -2877,6 +2889,12 @@
       "name": "Le Bal des Oiseaux Fantômes",
       "category": "spectacle",
       "active": true,
+      "active_periods": [
+        {
+          "from": "2026-04-04",
+          "to": "2026-11-01"
+        }
+      ],
       "stats": {
         "today_count": 0,
         "avg_per_day": 3.5,
@@ -3528,6 +3546,7 @@
       "name": "Le Dernier Panache",
       "category": "spectacle",
       "active": true,
+      "active_periods": [],
       "stats": {
         "today_count": 0,
         "avg_per_day": 4.6,
@@ -4911,6 +4930,7 @@
       "name": "Le Grand Carillon",
       "category": "spectacle",
       "active": true,
+      "active_periods": [],
       "stats": {
         "today_count": 0,
         "avg_per_day": 4.78,
@@ -6294,6 +6314,7 @@
       "name": "Le Mime et l'Étoile",
       "category": "spectacle",
       "active": true,
+      "active_periods": [],
       "stats": {
         "today_count": 0,
         "avg_per_day": 4.81,
@@ -7677,6 +7698,7 @@
       "name": "Le Mystère de la Pérouse",
       "category": "spectacle_immersif",
       "active": true,
+      "active_periods": [],
       "stats": {
         "today_count": 0,
         "avg_per_day": 1.0,
@@ -9060,6 +9082,7 @@
       "name": "Le Premier Royaume",
       "category": "spectacle_immersif",
       "active": true,
+      "active_periods": [],
       "stats": {
         "today_count": 0,
         "avg_per_day": 1.0,
@@ -10443,6 +10466,7 @@
       "name": "Le Secret de la Lance",
       "category": "spectacle",
       "active": true,
+      "active_periods": [],
       "stats": {
         "today_count": 0,
         "avg_per_day": 2.92,
@@ -11826,6 +11850,7 @@
       "name": "Le Signe du Triomphe",
       "category": "spectacle",
       "active": true,
+      "active_periods": [],
       "stats": {
         "today_count": 0,
         "avg_per_day": 1.87,
@@ -13209,6 +13234,7 @@
       "name": "Les Amoureux de Verdun",
       "category": "spectacle_immersif",
       "active": true,
+      "active_periods": [],
       "stats": {
         "today_count": 0,
         "avg_per_day": 1.13,
@@ -14592,6 +14618,7 @@
       "name": "Les Automates Musiciens",
       "category": "spectacle",
       "active": true,
+      "active_periods": [],
       "stats": {
         "today_count": 0,
         "avg_per_day": 5.27,
@@ -15975,6 +16002,7 @@
       "name": "Les Grandes Eaux",
       "category": "spectacle",
       "active": true,
+      "active_periods": [],
       "stats": {
         "today_count": 0,
         "avg_per_day": 3.02,
@@ -17358,6 +17386,7 @@
       "name": "Les Noces de Feu",
       "category": "spectacle_nocturne",
       "active": true,
+      "active_periods": [],
       "stats": {
         "today_count": 0,
         "avg_per_day": 1.05,
@@ -18741,6 +18770,7 @@
       "name": "Les Vikings",
       "category": "spectacle",
       "active": true,
+      "active_periods": [],
       "stats": {
         "today_count": 0,
         "avg_per_day": 3.49,
@@ -20124,6 +20154,7 @@
       "name": "Mousquetaire de Richelieu",
       "category": "spectacle",
       "active": true,
+      "active_periods": [],
       "stats": {
         "today_count": 0,
         "avg_per_day": 3.49,

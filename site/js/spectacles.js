@@ -83,6 +83,20 @@
     return (state.data.spectacles || []).find(function (s) { return s.slug === slug; });
   }
 
+  // Spectacle éphémère (Toussaint, Noël...) : badge avec sa plage de dates
+  // pour la saison affichée (voir active_periods, src/statistics.py).
+  // Permanent (aucune période configurée) : pas de badge.
+  function activePeriodsBadgeHtml(periods) {
+    if (!periods || !periods.length) return "";
+    return periods.map(function (p) {
+      return (
+        '<span class="badge badge-default">📅 ' +
+        PDF.escapeHtml(PDF.formatDateFR(p.from)) + " → " + PDF.escapeHtml(PDF.formatDateFR(p.to)) +
+        "</span>"
+      );
+    }).join("");
+  }
+
   function renderDetail() {
     var panel = document.getElementById("detail-panel");
     var s = state.selectedSlug ? findSpectacle(state.selectedSlug) : null;
@@ -98,7 +112,8 @@
     var stats = s.stats || {};
     panel.innerHTML =
       '<div class="detail-panel-head">' +
-      "<div><h2>" + PDF.escapeHtml(s.name) + "</h2>" + PDF.categoryBadgeHtml(s.category) + "</div>" +
+      "<div><h2>" + PDF.escapeHtml(s.name) + "</h2>" + PDF.categoryBadgeHtml(s.category) +
+      activePeriodsBadgeHtml(s.active_periods) + "</div>" +
       '<button type="button" class="btn btn-outline" id="close-detail">Fermer ✕</button>' +
       "</div>" +
       '<div class="stat-grid">' +
