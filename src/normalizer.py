@@ -81,6 +81,14 @@ def clear_cache() -> None:
     _build_alias_index.cache_clear()
 
 
+def get_active_periods(slug: str) -> list[tuple[str, str]]:
+    """Plages ["from", "to"] (YYYY-MM-DD) où `slug` est un spectacle
+    éphémère réellement programmé (voir known_spectacles.json) — liste
+    vide si non configuré (spectacle permanent, cas par défaut)."""
+    info = _load_known_spectacles().get(slug, {})
+    return [(p["from"], p["to"]) for p in info.get("active_periods", [])]
+
+
 def resolve_spectacle(raw_name: str) -> SpectacleInfo:
     """Résout un nom brut extrait du PDF vers un SpectacleInfo canonique."""
     cleaned = re.sub(r"\s+", " ", raw_name).strip()

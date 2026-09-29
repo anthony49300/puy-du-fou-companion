@@ -1,5 +1,5 @@
 {
-  "_comment": "Fichier de configuration des spectacles connus du Puy du Fou. Chaque clé est le slug canonique du spectacle. 'name' est le nom d'affichage officiel. 'category' doit être une des catégories définies dans src/config.py (CATEGORIES). 'aliases' liste toutes les variantes de graphie rencontrées dans les programmes officiels (casse différente, orthographe alternative, abréviations...) qui doivent être résolues vers ce spectacle. Ajoutez librement de nouvelles entrées ou de nouveaux alias sans modifier le code Python.",
+  "_comment": "Fichier de configuration des spectacles connus du Puy du Fou. Chaque clé est le slug canonique du spectacle. 'name' est le nom d'affichage officiel. 'category' doit être une des catégories définies dans src/config.py (CATEGORIES). 'aliases' liste toutes les variantes de graphie rencontrées dans les programmes officiels (casse différente, orthographe alternative, abréviations...) qui doivent être résolues vers ce spectacle. 'active_periods' (optionnel) liste les plages [\"from\", \"to\"] (YYYY-MM-DD, bornes incluses) où un spectacle ÉPHÉMÈRE (Toussaint, Noël...) est réellement programmé : en dehors de ces plages, les jours d'ouverture du parc ne comptent pas comme des jours d'absence pour ce spectacle dans les statistiques (voir src/statistics.py). À mettre à jour chaque année (les dates de Toussaint/Noël changent) ; absent ou vide = spectacle permanent, comportement inchangé. Ajoutez librement de nouvelles entrées, alias ou périodes sans modifier le code Python.",
 
   "les-vikings": {
     "name": "Les Vikings",
@@ -81,5 +81,23 @@
     "name": "Les Noces de Feu",
     "category": "spectacle_nocturne",
     "aliases": ["Les Noces de Feu", "LES NOCES DE FEU"]
+  },
+  "la-frairie-de-la-toussaint": {
+    "name": "La Frairie de la Toussaint",
+    "category": "spectacle",
+    "aliases": ["La Frairie de la Toussaint", "LA FRAIRIE DE LA TOUSSAINT"],
+    "active_periods": [{"from": "2026-10-03", "to": "2026-10-31"}]
+  },
+  "le-mystere-de-noel": {
+    "name": "Le Mystère de Noël",
+    "category": "spectacle_nocturne",
+    "aliases": ["Le Mystère de Noël", "Le Mystere de Noel", "LE MYSTÈRE DE NOËL"],
+    "active_periods": [{"from": "2026-12-19", "to": "2027-01-03"}]
+  },
+  "le-noel-du-carillon": {
+    "name": "Le Noël du Carillon",
+    "category": "spectacle",
+    "aliases": ["Le Noël du Carillon", "Le Noel du Carillon", "LE NOËL DU CARILLON"],
+    "active_periods": [{"from": "2026-12-19", "to": "2027-01-03"}]
   }
 }
