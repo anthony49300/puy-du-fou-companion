@@ -1,6 +1,8 @@
 """Tests du module src.normalizer (slugs, alias, résolution canonique)."""
 
-from src import normalizer
+import json
+
+from src import config, normalizer
 
 
 def setup_function(_):
@@ -53,3 +55,23 @@ def test_normalize_search_text_used_for_fuzzy_search():
     # ici on vérifie juste la normalisation qui rend cela possible.
     assert normalizer.normalize_search_text("Vikings") in normalizer.normalize_search_text("Les Vikings")
     assert normalizer.normalize_search_text("ÉTOILE") == "etoile"
+
+
+def test_get_active_periods_empty_for_a_permanent_spectacle():
+    assert normalizer.get_active_periods("les-vikings") == []
+
+
+def test_get_active_periods_reads_configured_ranges(tmp_path, monkeypatch):
+    path = tmp_path / "known.json"
+    path.write_text(json.dumps({
+        "la-toussaint-fantastique": {
+            "name": "La Toussaint Fantastique",
+            "category": "spectacle",
+            "aliases": [],
+            "active_periods": [{"from": "2026-10-17", "to": "2026-11-02"}],
+        }
+    }), encoding="utf-8")
+    monkeypatch.setattr(config, "KNOWN_SPECTACLES_PATH", path)
+    normalizer.clear_cache()
+
+    assert normalizer.get_active_periods("la-toussaint-fantastique") == [("2026-10-17", "2026-11-02")]

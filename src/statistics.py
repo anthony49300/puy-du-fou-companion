@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from src import config, database
+from src import config, database, normalizer
 
 
 def _duration_minutes(start: str, end: Optional[str]) -> int:
@@ -133,6 +133,18 @@ def compute_spectacle_stats(conn: sqlite3.Connection, slug: str) -> Optional[dic
         d for d in database.list_active_dates(conn)
         if d["status"] not in (config.DATE_STATUS_CLOSED_DAY, config.DATE_STATUS_OUT_OF_SEASON)
     ]
+
+    # Spectacle éphémère (Toussaint, Noël...) : en dehors de ses
+    # active_periods configurées, un jour d'ouverture du parc n'est pas une
+    # "absence" de ce spectacle (il n'est simplement pas censé y jouer) —
+    # sans ça, days_absent/avg_per_day seraient faussés sur toute la saison.
+    active_periods = normalizer.get_active_periods(slug)
+    if active_periods:
+        all_active_dates = [
+            d for d in all_active_dates
+            if any(start <= d["date"] <= end for start, end in active_periods)
+        ]
+
     total_days = len(all_active_dates)
 
     per_day_count: dict[str, int] = defaultdict(int)
@@ -209,7 +221,7 @@ def rarely_programmed(conn: sqlite3.Connection, max_days_present: int = 5) -> li
     result = [
         {"slug": slug, "name": names[slug], "days_present": len(days)}
         for slug, days in per_spectacle_days.items()
-        if len(days) <= max_days_present
+        if len(days) <= max_days_present and not normalizer.get_active_periods(slug)
     ]
     return sorted(result, key=lambda x: x["days_present"])
 

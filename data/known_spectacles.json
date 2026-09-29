@@ -1,5 +1,5 @@
 {
-  "_comment": "Fichier de configuration des spectacles connus du Puy du Fou. Chaque clé est le slug canonique du spectacle. 'name' est le nom d'affichage officiel. 'category' doit être une des catégories définies dans src/config.py (CATEGORIES). 'aliases' liste toutes les variantes de graphie rencontrées dans les programmes officiels (casse différente, orthographe alternative, abréviations...) qui doivent être résolues vers ce spectacle. Ajoutez librement de nouvelles entrées ou de nouveaux alias sans modifier le code Python.",
+  "_comment": "Fichier de configuration des spectacles connus du Puy du Fou. Chaque clé est le slug canonique du spectacle. 'name' est le nom d'affichage officiel. 'category' doit être une des catégories définies dans src/config.py (CATEGORIES). 'aliases' liste toutes les variantes de graphie rencontrées dans les programmes officiels (casse différente, orthographe alternative, abréviations...) qui doivent être résolues vers ce spectacle. 'active_periods' (optionnel) liste les plages [\"from\", \"to\"] (YYYY-MM-DD, bornes incluses) où un spectacle est réellement censé être programmé : soit un spectacle ÉPHÉMÈRE (Toussaint, Noël...), soit un spectacle permanent RETIRÉ en cours de saison (dans ce cas 'to' est sa dernière date prévue) — en dehors de ces plages, les jours d'ouverture du parc ne comptent pas comme des jours d'absence pour ce spectacle dans les statistiques (voir src/statistics.py). À mettre à jour chaque année (dates de Toussaint/Noël, arrêts programmés) ; absent ou vide = spectacle permanent sans date de fin connue, comportement inchangé. Ajoutez librement de nouvelles entrées, alias ou périodes sans modifier le code Python.",
 
   "les-vikings": {
     "name": "Les Vikings",
@@ -29,7 +29,8 @@
   "le-bal-des-oiseaux-fantomes": {
     "name": "Le Bal des Oiseaux Fantômes",
     "category": "spectacle",
-    "aliases": ["Le Bal des Oiseaux Fantômes", "Bal des Oiseaux Fantômes", "Le Bal des Oiseaux Fantomes", "BAL"]
+    "aliases": ["Le Bal des Oiseaux Fantômes", "Bal des Oiseaux Fantômes", "Le Bal des Oiseaux Fantomes", "BAL"],
+    "active_periods": [{"from": "2026-04-04", "to": "2026-11-01"}]
   },
   "la-renaissance-du-chateau": {
     "name": "La Renaissance du Château",
@@ -80,6 +81,24 @@
   "les-noces-de-feu": {
     "name": "Les Noces de Feu",
     "category": "spectacle_nocturne",
-    "aliases": ["Les Noces de Feu", "LES NOCES DE FEU"]
+    "aliases": ["Les Noces de Feu", "LES NOCES DE FEU", "NDF"]
+  },
+  "la-frairie-de-la-toussaint": {
+    "name": "La Frairie de la Toussaint",
+    "category": "spectacle",
+    "aliases": ["La Frairie de la Toussaint", "LA FRAIRIE DE LA TOUSSAINT"],
+    "active_periods": [{"from": "2026-10-03", "to": "2026-10-31"}]
+  },
+  "le-mystere-de-noel": {
+    "name": "Le Mystère de Noël",
+    "category": "spectacle_nocturne",
+    "aliases": ["Le Mystère de Noël", "Le Mystere de Noel", "LE MYSTÈRE DE NOËL"],
+    "active_periods": [{"from": "2026-12-19", "to": "2027-01-03"}]
+  },
+  "le-noel-du-carillon": {
+    "name": "Le Noël du Carillon",
+    "category": "spectacle",
+    "aliases": ["Le Noël du Carillon", "Le Noel du Carillon", "LE NOËL DU CARILLON"],
+    "active_periods": [{"from": "2026-12-19", "to": "2027-01-03"}]
   }
 }

@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from src import config, database, exporter, season_config, statistics
+from src import config, database, exporter, normalizer, season_config, statistics
 from src.models import now_iso
 
 
@@ -51,6 +51,19 @@ def _add_day(conn, date_str, entries, *, status="ok"):
             is_continuous=is_continuous, status=rep_status, source_text=f"{start} {name}",
         )
     return date_id
+
+
+@pytest.fixture()
+def _with_active_periods(tmp_path, monkeypatch):
+    """Remplace known_spectacles.json par un contenu de test définissant des
+    `active_periods` (voir data/known_spectacles.json)."""
+    def _apply(config_dict):
+        path = tmp_path / "known-with-periods.json"
+        path.write_text(json.dumps(config_dict), encoding="utf-8")
+        monkeypatch.setattr(config, "KNOWN_SPECTACLES_PATH", path)
+        normalizer.clear_cache()
+    yield _apply
+    normalizer.clear_cache()
 
 
 @pytest.fixture()
@@ -113,6 +126,28 @@ def test_compute_spectacle_stats_ignores_park_closed_days(sample_conn):
     assert all(h["date"] != "2026-08-27" for h in stats["history"])
 
 
+def test_compute_spectacle_stats_restricts_absence_to_the_configured_active_period(sample_conn, _with_active_periods):
+    # Spectacle éphémère (Toussaint/Noël) : sa période ne couvre que le 27,
+    # les jours 25/26 (hors période) ne doivent pas compter comme absence.
+    _with_active_periods({
+        "la-toussaint-fantastique": {
+            "name": "La Toussaint Fantastique",
+            "category": "spectacle",
+            "aliases": [],
+            "active_periods": [{"from": "2026-08-27", "to": "2026-08-27"}],
+        }
+    })
+    _add_day(sample_conn, "2026-08-27", [
+        ("La Toussaint Fantastique", "la-toussaint-fantastique", "spectacle", "20:00", None, False, config.REPR_STATUS_SCHEDULED),
+    ])
+
+    stats = statistics.compute_spectacle_stats(sample_conn, "la-toussaint-fantastique")
+
+    assert stats["stats"]["days_present"] == 1
+    assert stats["stats"]["days_absent"] == 0  # et non 2 (25 et 26, hors période)
+    assert len(stats["history"]) == 1
+
+
 def test_hourly_distribution(sample_conn):
     dist = statistics.hourly_distribution(sample_conn)
     hours = {d["hour"]: d["count"] for d in dist}
@@ -125,6 +160,26 @@ def test_rarely_programmed(sample_conn):
     slugs = {r["slug"] for r in rare}
     assert "le-dernier-panache" in slugs
     assert "les-vikings" not in slugs  # présent 2 jours
+
+
+def test_rarely_programmed_excludes_a_spectacle_with_a_configured_active_period(sample_conn, _with_active_periods):
+    # Un spectacle éphémère présent 1 seul jour n'est pas "rare" par
+    # accident : sa rareté est voulue (active_periods configurée).
+    _with_active_periods({
+        "la-toussaint-fantastique": {
+            "name": "La Toussaint Fantastique",
+            "category": "spectacle",
+            "aliases": [],
+            "active_periods": [{"from": "2026-08-27", "to": "2026-08-27"}],
+        }
+    })
+    _add_day(sample_conn, "2026-08-27", [
+        ("La Toussaint Fantastique", "la-toussaint-fantastique", "spectacle", "20:00", None, False, config.REPR_STATUS_SCHEDULED),
+    ])
+
+    rare = statistics.rarely_programmed(sample_conn, max_days_present=1)
+
+    assert "la-toussaint-fantastique" not in {r["slug"] for r in rare}
 
 
 def test_co_programmed_spectacles(sample_conn):
