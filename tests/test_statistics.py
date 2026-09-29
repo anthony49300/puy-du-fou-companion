@@ -195,6 +195,33 @@ def test_compute_spectacle_stats_active_periods_empty_for_a_permanent_spectacle(
     assert stats["active_periods"] == []
 
 
+def test_compute_spectacle_stats_ignores_an_active_period_from_another_season(sample_conn, _with_active_periods):
+    # Régression : un spectacle retiré une SEULE année (ex: Bal des Oiseaux
+    # Fantômes, arrêté après le 02/11/2025 mais aussi après le 01/11/2026,
+    # une période par saison) ne doit pas voir son historique 2025 vidé par
+    # la période configurée pour 2026. Avant le fix, active_periods était
+    # appliqué tel quel (toutes années confondues) à all_active_dates : la
+    # période 2026 ne recoupant AUCUNE date de 2025, all_active_dates (donc
+    # history) tombait à 0 malgré une vraie représentation ce jour-là.
+    _add_day(sample_conn, "2025-08-25", [
+        ("Les Vikings", "les-vikings", "spectacle", "11:30", None, False, config.REPR_STATUS_SCHEDULED),
+    ])
+    _with_active_periods({
+        "les-vikings": {
+            "name": "Les Vikings",
+            "category": "spectacle",
+            "aliases": ["Les Vikings"],
+            "active_periods": [{"from": "2026-04-04", "to": "2026-08-25"}],
+        }
+    })
+
+    stats_2025 = statistics.compute_spectacle_stats(sample_conn, "les-vikings", season_year=2025)
+
+    assert stats_2025["active_periods"] == []  # la période 2026 ne s'applique pas à la vue 2025
+    assert stats_2025["stats"]["days_present"] == 1
+    assert len(stats_2025["history"]) == 1  # et non 0 (voir la régression ci-dessus)
+
+
 def test_hourly_distribution(sample_conn):
     dist = statistics.hourly_distribution(sample_conn)
     hours = {d["hour"]: d["count"] for d in dist}

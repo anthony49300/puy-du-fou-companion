@@ -144,11 +144,21 @@ def compute_spectacle_stats(
     # active_periods configurées, un jour d'ouverture du parc n'est pas une
     # "absence" de ce spectacle (il n'est simplement pas censé y jouer) —
     # sans ça, days_absent/avg_per_day seraient faussés sur toute la saison.
+    # Ne garder que la (les) période(s) de LA SAISON AFFICHÉE : un spectacle
+    # retiré une seule année donnée (ex: Bal des Oiseaux Fantômes, arrêté
+    # après le 02/11/2025 puis à nouveau le 01/11/2026) a une période par
+    # année — appliquer celle de 2026 à la vue 2025 viderait à tort tout son
+    # historique cette année-là (régression constatée : days_present correct
+    # mais history=[] pour 2025, faute de ce filtrage par année).
     active_periods = normalizer.get_active_periods(slug)
-    if active_periods:
+    relevant_periods = [
+        (start, end) for start, end in active_periods
+        if season_year is None or str(season_year) in (start[:4], end[:4])
+    ]
+    if relevant_periods:
         all_active_dates = [
             d for d in all_active_dates
-            if any(start <= d["date"] <= end for start, end in active_periods)
+            if any(start <= d["date"] <= end for start, end in relevant_periods)
         ]
 
     total_days = len(all_active_dates)
@@ -166,20 +176,12 @@ def compute_spectacle_stats(
     today_str = datetime.now().date().isoformat()
     today_count = per_day_count.get(today_str, 0)
 
-    # Ne garde que la (les) période(s) pertinente(s) pour la saison affichée
-    # (une vue par saison n'a pas besoin de voir la plage des AUTRES années) ;
-    # sans season_year (vue globale), toutes les périodes configurées.
-    relevant_periods = [
-        {"from": start, "to": end} for start, end in active_periods
-        if season_year is None or str(season_year) in (start[:4], end[:4])
-    ]
-
     return {
         "slug": slug,
         "name": spectacle["name"],
         "category": spectacle["category"],
         "active": bool(spectacle["active"]),
-        "active_periods": relevant_periods,
+        "active_periods": [{"from": start, "to": end} for start, end in relevant_periods],
         "stats": {
             "today_count": today_count,
             "avg_per_day": round(avg_per_day, 2),
