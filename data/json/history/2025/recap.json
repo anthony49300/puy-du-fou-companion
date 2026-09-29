@@ -5,14 +5,13 @@
   "end_date": "2025-11-11",
   "final": true,
   "as_of_date": "2025-11-11",
-  "generated_at": "2026-09-29T21:14:40",
+  "generated_at": "2026-09-29T22:05:46",
   "days_collected": 183,
-  "closed_days_count": 0,
+  "closed_days_count": 38,
   "representations_by_category": {
     "spectacle_immersif": 917,
-    "spectacle": 7807,
-    "spectacle_nocturne": 133,
-    "autre": 66
+    "spectacle": 7873,
+    "spectacle_nocturne": 133
   },
   "total_spectacles": 17,
   "total_representations": 8923,
@@ -54,8 +53,8 @@
   ],
   "least_represented": [
     {
-      "slug": "frairie-2025",
-      "name": "Frairie 2025",
+      "slug": "la-frairie-de-la-toussaint",
+      "name": "La Frairie de la Toussaint",
       "count": 66
     },
     {

@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-29T21:14:38",
+  "updated_at": "2026-09-29T22:05:28",
   "dates": [
     {
       "date": "2025-04-05",
@@ -268,6 +268,20 @@
       "representation_count": 28
     },
     {
+      "date": "2025-05-13",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-05-14",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
       "date": "2025-05-15",
       "season_year": 2025,
       "status": "ok",
@@ -296,6 +310,27 @@
       "representation_count": 47
     },
     {
+      "date": "2025-05-19",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-05-20",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-05-21",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
       "date": "2025-05-22",
       "season_year": 2025,
       "status": "ok",
@@ -322,6 +357,20 @@
       "status": "ok",
       "spectacle_count": 16,
       "representation_count": 47
+    },
+    {
+      "date": "2025-05-26",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-05-27",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
     },
     {
       "date": "2025-05-28",
@@ -373,6 +422,13 @@
       "representation_count": 28
     },
     {
+      "date": "2025-06-04",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
       "date": "2025-06-05",
       "season_year": 2025,
       "status": "ok",
@@ -413,6 +469,13 @@
       "status": "ok",
       "spectacle_count": 15,
       "representation_count": 27
+    },
+    {
+      "date": "2025-06-11",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
     },
     {
       "date": "2025-06-12",
@@ -989,6 +1052,20 @@
       "representation_count": 28
     },
     {
+      "date": "2025-09-02",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-09-03",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
       "date": "2025-09-04",
       "season_year": 2025,
       "status": "ok",
@@ -1015,6 +1092,27 @@
       "status": "ok",
       "spectacle_count": 16,
       "representation_count": 47
+    },
+    {
+      "date": "2025-09-08",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-09-09",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-09-10",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
     },
     {
       "date": "2025-09-11",
@@ -1045,6 +1143,27 @@
       "representation_count": 54
     },
     {
+      "date": "2025-09-15",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-09-16",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-09-17",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
       "date": "2025-09-18",
       "season_year": 2025,
       "status": "ok",
@@ -1071,6 +1190,27 @@
       "status": "ok",
       "spectacle_count": 15,
       "representation_count": 52
+    },
+    {
+      "date": "2025-09-22",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-09-23",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-09-24",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
     },
     {
       "date": "2025-09-25",
@@ -1101,6 +1241,34 @@
       "representation_count": 67
     },
     {
+      "date": "2025-09-29",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-09-30",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-10-01",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-10-02",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
       "date": "2025-10-03",
       "season_year": 2025,
       "status": "ok",
@@ -1122,6 +1290,34 @@
       "representation_count": 39
     },
     {
+      "date": "2025-10-06",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-10-07",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-10-08",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-10-09",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
       "date": "2025-10-10",
       "season_year": 2025,
       "status": "ok",
@@ -1141,6 +1337,41 @@
       "status": "ok",
       "spectacle_count": 16,
       "representation_count": 39
+    },
+    {
+      "date": "2025-10-13",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-10-14",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-10-15",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-10-16",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-10-17",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
     },
     {
       "date": "2025-10-18",
@@ -1253,6 +1484,41 @@
       "status": "ok",
       "spectacle_count": 14,
       "representation_count": 32
+    },
+    {
+      "date": "2025-11-03",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-11-04",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-11-05",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-11-06",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2025-11-07",
+      "season_year": 2025,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
     },
     {
       "date": "2025-11-08",
