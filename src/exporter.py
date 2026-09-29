@@ -338,12 +338,19 @@ def maybe_export_season_recaps(conn: sqlite3.Connection, *, today: Optional[str]
     return generated
 
 
-def export_spectacles(conn: sqlite3.Connection) -> dict:
+def export_spectacles(conn: sqlite3.Connection, season_year: Optional[int] = None) -> dict:
+    """`season_year=None` (défaut) : fichier global data/json/spectacles.json,
+    tous les spectacles connus, toutes saisons confondues (comportement
+    historique, inchangé). `season_year` donné : fichier par saison
+    (data/json/history/{année}/spectacles.json, voir
+    `export_per_year_views`) ne gardant que les spectacles réellement
+    représentés cette saison-là (sinon des entrées à 0 partout pour des
+    spectacles d'une autre année viendraient polluer la liste)."""
     spectacles = database.list_spectacles(conn)
     payload_spectacles = []
     for s in spectacles:
-        stats = statistics.compute_spectacle_stats(conn, s["slug"])
-        if stats:
+        stats = statistics.compute_spectacle_stats(conn, s["slug"], season_year)
+        if stats and (season_year is None or stats["stats"]["days_present"] > 0):
             payload_spectacles.append(stats)
 
     payload = {
@@ -351,7 +358,8 @@ def export_spectacles(conn: sqlite3.Connection) -> dict:
         "categories": list(config.CATEGORIES.keys()),
         "spectacles": payload_spectacles,
     }
-    _write_json(config.SPECTACLES_JSON, payload)
+    path = config.HISTORY_JSON_DIR / str(season_year) / "spectacles.json" if season_year else config.SPECTACLES_JSON
+    _write_json(path, payload)
     return payload
 
 
@@ -375,11 +383,16 @@ def export_dates(conn: sqlite3.Connection) -> dict:
     return payload
 
 
-def export_stats(conn: sqlite3.Connection) -> dict:
-    global_stats = statistics.compute_global_stats(conn)
-    by_season = statistics.compute_stats_by_season(conn)
+def export_stats(conn: sqlite3.Connection, season_year: Optional[int] = None) -> dict:
+    """`season_year=None` (défaut) : fichier global data/json/stats.json,
+    toutes saisons confondues (comportement historique, inchangé — inclut
+    `by_season`, le tableau comparatif par saison). `season_year` donné :
+    fichier par saison (data/json/history/{année}/stats.json, voir
+    `export_per_year_views`), mêmes graphiques mais scopés à cette seule
+    saison ; pas de `by_season` (n'aurait pas de sens ici)."""
+    global_stats = statistics.compute_global_stats(conn, season_year)
 
-    reps = database.get_all_active_representations(conn)
+    reps = database.get_all_active_representations(conn, season_year)
     per_spectacle: dict[str, dict] = {}
     for r in reps:
         entry = per_spectacle.setdefault(r["spectacle_slug"], {"name": r["spectacle_name"], "count": 0})
@@ -388,16 +401,40 @@ def export_stats(conn: sqlite3.Connection) -> dict:
 
     charts = {
         "representations_per_spectacle": per_spectacle_list,
-        "spectacles_per_day": statistics.spectacles_per_day(conn),
-        "seasonal_evolution": statistics.seasonal_evolution(conn),
-        "hourly_distribution": statistics.hourly_distribution(conn),
+        "spectacles_per_day": statistics.spectacles_per_day(conn, season_year),
+        "seasonal_evolution": statistics.seasonal_evolution(conn, season_year),
+        "hourly_distribution": statistics.hourly_distribution(conn, season_year),
         "top_spectacles": per_spectacle_list[:10],
         "bottom_spectacles": per_spectacle_list[-10:][::-1],
     }
 
-    payload = {"updated_at": now_iso(), "global": global_stats, "by_season": by_season, "charts": charts}
-    _write_json(config.STATS_JSON, payload)
+    payload = {"updated_at": now_iso(), "global": global_stats, "charts": charts}
+    if season_year is None:
+        payload["by_season"] = statistics.compute_stats_by_season(conn)
+        path = config.STATS_JSON
+    else:
+        path = config.HISTORY_JSON_DIR / str(season_year) / "stats.json"
+    _write_json(path, payload)
     return payload
+
+
+def export_per_year_views(conn: sqlite3.Connection, *, today: Optional[str] = None) -> list[int]:
+    """Génère les vues "Statistiques"/"Spectacles" PAR SAISON
+    (data/json/history/{année}/{stats,spectacles}.json — voir
+    export_stats/export_spectacles), en plus des fichiers globaux
+    (toutes saisons confondues) : permet au frontend de proposer un
+    sélecteur d'année (par défaut la saison en cours) plutôt que de tout
+    mélanger dès qu'il y a plus d'une saison en base. Retourne les années
+    traitées."""
+    today = today or today_paris().isoformat()
+    processed = []
+    for season in database.list_seasons(conn):
+        if not season["start_date"] or season["start_date"] > today:
+            continue  # saison pas encore commencée : rien à afficher
+        export_stats(conn, season["year"])
+        export_spectacles(conn, season["year"])
+        processed.append(season["year"])
+    return processed
 
 
 def export_all(conn: sqlite3.Connection, *, reference_date: Optional[str] = None) -> dict:
@@ -408,6 +445,7 @@ def export_all(conn: sqlite3.Connection, *, reference_date: Optional[str] = None
     stats_payload = export_stats(conn)
     history_count = export_history(conn)
     season_recaps_generated = maybe_export_season_recaps(conn)
+    export_per_year_views(conn)
     return {
         "today_status": today_payload["status"],
         "spectacle_count": len(spectacles_payload["spectacles"]),

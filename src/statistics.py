@@ -118,19 +118,25 @@ def compute_stats_by_season(conn: sqlite3.Connection) -> list[dict]:
 # Statistiques par spectacle
 # ---------------------------------------------------------------------------
 
-def compute_spectacle_stats(conn: sqlite3.Connection, slug: str) -> Optional[dict]:
+def compute_spectacle_stats(
+    conn: sqlite3.Connection, slug: str, season_year: Optional[int] = None
+) -> Optional[dict]:
     spectacle = database.get_spectacle_by_slug(conn, slug)
     if not spectacle:
         return None
 
     reps = database.get_representations_for_spectacle(conn, spectacle["id"])
+    if season_year is not None:
+        season_dates = {d["date"] for d in database.list_active_dates(conn, season_year)}
+        reps = [r for r in reps if r["date"] in season_dates]
+
     # Un jour de fermeture ponctuelle du parc (closed_day) ne compte pas
     # comme un jour où CE spectacle serait "absent" : ce jour-là, AUCUN
     # spectacle n'a lieu, ce n'est pas spécifique à celui-ci. Il ne doit
     # donc pas gonfler le dénominateur days_present + days_absent, ni
     # apparaître dans l'historique journalier de ce spectacle.
     all_active_dates = [
-        d for d in database.list_active_dates(conn)
+        d for d in database.list_active_dates(conn, season_year)
         if d["status"] not in (config.DATE_STATUS_CLOSED_DAY, config.DATE_STATUS_OUT_OF_SEASON)
     ]
 
@@ -226,8 +232,8 @@ def rarely_programmed(conn: sqlite3.Connection, max_days_present: int = 5) -> li
     return sorted(result, key=lambda x: x["days_present"])
 
 
-def hourly_distribution(conn: sqlite3.Connection) -> list[dict]:
-    reps = database.get_all_active_representations(conn)
+def hourly_distribution(conn: sqlite3.Connection, season_year: Optional[int] = None) -> list[dict]:
+    reps = database.get_all_active_representations(conn, season_year)
     counter: Counter[str] = Counter()
     for r in reps:
         if r["start_time"]:
@@ -236,9 +242,9 @@ def hourly_distribution(conn: sqlite3.Connection) -> list[dict]:
     return [{"hour": h, "count": c} for h, c in sorted(counter.items())]
 
 
-def spectacles_per_day(conn: sqlite3.Connection) -> list[dict]:
+def spectacles_per_day(conn: sqlite3.Connection, season_year: Optional[int] = None) -> list[dict]:
     """Nombre de spectacles DIFFÉRENTS disponibles chaque jour (pas le nb de représentations)."""
-    reps = database.get_all_active_representations(conn)
+    reps = database.get_all_active_representations(conn, season_year)
     per_day: dict[str, set] = defaultdict(set)
     for r in reps:
         per_day[r["date"]].add(r["spectacle_slug"])

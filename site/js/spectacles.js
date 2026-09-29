@@ -12,6 +12,8 @@
     query: "",
     category: "",
     selectedSlug: null,
+    years: [],
+    year: null,
   };
 
   var chartInstance = null;
@@ -167,6 +169,41 @@
     });
   }
 
+  // Charge la liste des spectacles d'UNE saison (ou le fichier global si
+  // year est absent/inconnu) — data/json/history/{year}/spectacles.json,
+  // même forme que spectacles.json (voir src/exporter.py:export_spectacles).
+  function loadYear(year) {
+    var path = year ? "history/" + year + "/spectacles.json" : "spectacles.json";
+    return PDF.fetchJSON(path).then(function (data) {
+      state.data = data;
+      state.selectedSlug = null; // la sélection ne survit pas à un changement de saison
+      renderGrid();
+      renderDetail();
+    });
+  }
+
+  function renderYearSelect() {
+    var wrap = document.getElementById("spectacles-year-select");
+    if (!wrap) return;
+    if (state.years.length <= 1) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+    wrap.innerHTML = state.years.map(function (y) {
+      return '<button type="button" class="chip' + (y === state.year ? " active" : "") + '" data-year="' + y + '">' + y + "</button>";
+    }).join("");
+    wrap.querySelectorAll(".chip").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        state.year = +btn.getAttribute("data-year");
+        renderYearSelect();
+        loadYear(state.year).catch(function (err) {
+          PDF.renderErrorMessage(
+            document.getElementById("spectacles-grid"),
+            "Impossible de charger les spectacles de " + state.year + " (" + err.message + ")."
+          );
+        });
+      });
+    });
+  }
+
   function populateCategoryFilter() {
     var select = document.getElementById("category-filter");
     var cats = state.data.categories || [];
@@ -191,11 +228,16 @@
       },
     });
 
-    PDF.fetchJSON("spectacles.json")
-      .then(function (data) {
-        state.data = data;
-        populateCategoryFilter();
-        renderGrid();
+    PDF.fetchJSON("dates.json")
+      .then(function (datesData) {
+        state.years = Array.from(new Set((datesData.dates || []).map(function (d) { return d.season_year; }).filter(Boolean)))
+          .sort(function (a, b) { return b - a; });
+        state.year = state.years[0] || null;
+        renderYearSelect();
+        return loadYear(state.year);
+      })
+      .then(function () {
+        populateCategoryFilter(); // catégories identiques quelle que soit la saison : une seule fois suffit
       })
       .catch(function (err) {
         PDF.renderErrorMessage(

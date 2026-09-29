@@ -126,6 +126,23 @@ def test_compute_spectacle_stats_ignores_park_closed_days(sample_conn):
     assert all(h["date"] != "2026-08-27" for h in stats["history"])
 
 
+def test_compute_spectacle_stats_scoped_to_a_season_excludes_other_years(sample_conn):
+    # Une autre saison (2025) avec les mêmes horaires ne doit pas gonfler
+    # les stats 2026, ni l'inverse (voir la demande d'un sélecteur d'année
+    # une fois plusieurs saisons en base).
+    _add_day(sample_conn, "2025-08-25", [
+        ("Les Vikings", "les-vikings", "spectacle", "11:30", None, False, config.REPR_STATUS_SCHEDULED),
+    ])
+
+    stats_2026 = statistics.compute_spectacle_stats(sample_conn, "les-vikings", season_year=2026)
+    stats_2025 = statistics.compute_spectacle_stats(sample_conn, "les-vikings", season_year=2025)
+
+    assert stats_2026["stats"]["total_representations"] == 3  # inchangé, le jour de 2025 est exclu
+    assert stats_2026["stats"]["days_present"] == 2
+    assert stats_2025["stats"]["total_representations"] == 1
+    assert stats_2025["stats"]["days_present"] == 1
+
+
 def test_compute_spectacle_stats_restricts_absence_to_the_configured_active_period(sample_conn, _with_active_periods):
     # Spectacle éphémère (Toussaint/Noël) : sa période ne couvre que le 27,
     # les jours 25/26 (hors période) ne doivent pas compter comme absence.
