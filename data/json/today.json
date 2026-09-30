@@ -1,12 +1,12 @@
 {
-  "date": "2026-09-29",
+  "date": "2026-09-30",
   "season": {
     "year": 2026,
     "name": "Saison 2026",
     "start_date": "2026-04-04",
     "end_date": "2027-01-03"
   },
-  "updated_at": "2026-09-29T23:30:46",
+  "updated_at": "2026-09-30T13:43:03",
   "status": "closed_day",
   "warnings": [
     "Fermeture déduite de l'annonce \"Prochaine ouverture le 2026-10-03\" sur la page officielle."
@@ -20,6 +20,6 @@
   "representation_count": 0,
   "nocturne": null,
   "spectacles": [],
-  "season_window": null,
-  "next_opening": "2026-10-03"
+  "next_opening": "2026-10-03",
+  "season_window": null
 }
