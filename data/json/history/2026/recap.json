@@ -4,18 +4,18 @@
   "start_date": "2026-04-04",
   "end_date": "2027-01-03",
   "final": false,
-  "as_of_date": "2026-09-05",
-  "generated_at": "2026-09-05T18:22:56",
-  "days_collected": 147,
-  "closed_days_count": 9,
+  "as_of_date": "2026-10-01",
+  "generated_at": "2026-10-01T06:35:47",
+  "days_collected": 160,
+  "closed_days_count": 23,
   "representations_by_category": {
-    "spectacle_immersif": 726,
-    "spectacle": 6399,
-    "spectacle_nocturne": 113
+    "spectacle_immersif": 781,
+    "spectacle": 7002,
+    "spectacle_nocturne": 120
   },
-  "total_spectacles": 16,
-  "total_representations": 7238,
-  "avg_per_day": 49.24,
+  "total_spectacles": 17,
+  "total_representations": 7903,
+  "avg_per_day": 49.39,
   "min_per_day": {
     "date": "2026-08-31",
     "count": 27
@@ -28,56 +28,56 @@
     {
       "slug": "lepee-du-roi-arthur",
       "name": "L'Épée du Roi Arthur",
-      "count": 856
+      "count": 936
     },
     {
       "slug": "les-automates-musiciens",
       "name": "Les Automates Musiciens",
-      "count": 793
+      "count": 861
     },
     {
       "slug": "le-mime-et-letoile",
       "name": "Le Mime et l'Étoile",
-      "count": 706
+      "count": 773
     },
     {
       "slug": "le-grand-carillon",
       "name": "Le Grand Carillon",
-      "count": 691
+      "count": 756
     },
     {
       "slug": "le-dernier-panache",
       "name": "Le Dernier Panache",
-      "count": 681
+      "count": 743
     }
   ],
   "least_represented": [
     {
+      "slug": "la-frairie-de-la-toussaint",
+      "name": "La Frairie de la Toussaint",
+      "count": 4
+    },
+    {
       "slug": "les-noces-de-feu",
       "name": "Les Noces de Feu",
-      "count": 113
+      "count": 120
     },
     {
       "slug": "le-mystere-de-la-perouse",
       "name": "Le Mystère de la Pérouse",
-      "count": 147
+      "count": 160
     },
     {
       "slug": "le-premier-royaume",
       "name": "Le Premier Royaume",
-      "count": 147
+      "count": 160
     },
     {
       "slug": "les-amoureux-de-verdun",
       "name": "Les Amoureux de Verdun",
-      "count": 154
-    },
-    {
-      "slug": "le-signe-du-triomphe",
-      "name": "Le Signe du Triomphe",
-      "count": 276
+      "count": 168
     }
   ],
-  "continuous_count": 726,
-  "nocturnal_count": 118
+  "continuous_count": 781,
+  "nocturnal_count": 125
 }
