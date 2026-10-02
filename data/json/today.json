@@ -1,12 +1,12 @@
 {
-  "date": "2026-10-01",
+  "date": "2026-10-02",
   "season": {
     "year": 2026,
     "name": "Saison 2026",
     "start_date": "2026-04-04",
     "end_date": "2027-01-03"
   },
-  "updated_at": "2026-10-01T06:35:46",
+  "updated_at": "2026-10-02T06:48:17",
   "status": "closed_day",
   "warnings": [
     "Fermeture déduite de l'annonce \"Prochaine ouverture le 2026-10-03\" sur la page officielle."
