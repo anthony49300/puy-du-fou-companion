@@ -1,26 +1,22 @@
 {
-  "date": "2026-10-03",
+  "date": "2026-10-04",
   "season": {
     "year": 2026,
     "name": "Saison 2026",
     "start_date": "2026-04-04",
     "end_date": "2027-01-03"
   },
-  "updated_at": "2026-10-03T12:33:42",
+  "updated_at": "2026-10-03T22:07:41",
   "status": "ok",
   "warnings": [],
   "source": {
     "url": "https://www.puydufou.com/france/fr/programme-du-jour",
-    "retrieved_at": "2026-10-01T06:35:46",
+    "retrieved_at": "2026-10-02T06:48:17",
     "program_published_at": null
   },
-  "spectacle_count": 17,
-  "representation_count": 54,
-  "nocturne": {
-    "name": "Les Noces de Feu",
-    "slug": "les-noces-de-feu",
-    "start": "21:30"
-  },
+  "spectacle_count": 16,
+  "representation_count": 38,
+  "nocturne": null,
   "spectacles": [
     {
       "name": "L'Épée du Roi Arthur",
@@ -35,32 +31,18 @@
           "source_text": "L'Épée du Roi Arthur 22' 10:00-10:22"
         },
         {
-          "start": "11:15",
-          "end": "11:37",
+          "start": "12:15",
+          "end": "12:37",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "L'Épée du Roi Arthur 22' 11:15-11:37"
+          "source_text": "L'Épée du Roi Arthur 22' 12:15-12:37"
         },
         {
-          "start": "13:30",
-          "end": "13:52",
+          "start": "16:00",
+          "end": "16:22",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "L'Épée du Roi Arthur 22' 13:30-13:52"
-        },
-        {
-          "start": "14:30",
-          "end": "14:52",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "L'Épée du Roi Arthur 22' 14:30-14:52"
-        },
-        {
-          "start": "15:30",
-          "end": "15:52",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "L'Épée du Roi Arthur 22' 15:30-15:52"
+          "source_text": "L'Épée du Roi Arthur 22' 16:00-16:22"
         },
         {
           "start": "17:00",
@@ -77,32 +59,25 @@
       "category": "spectacle",
       "representations": [
         {
-          "start": "16:00",
-          "end": "16:32",
+          "start": "16:15",
+          "end": "16:47",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "La Frairie de la Toussaint 32' 16:00-16:32"
+          "source_text": "La Frairie de la Toussaint 32' 16:15-16:47"
         },
         {
-          "start": "17:00",
-          "end": "17:32",
+          "start": "17:15",
+          "end": "17:47",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "La Frairie de la Toussaint 32' 17:00-17:32"
+          "source_text": "La Frairie de la Toussaint 32' 17:15-17:47"
         },
         {
-          "start": "19:00",
-          "end": "19:32",
+          "start": "18:15",
+          "end": "18:47",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "La Frairie de la Toussaint 32' 19:00-19:32"
-        },
-        {
-          "start": "20:00",
-          "end": "20:32",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "La Frairie de la Toussaint 32' 20:00-20:32"
+          "source_text": "La Frairie de la Toussaint 32' 18:15-18:47"
         }
       ]
     },
@@ -133,25 +108,18 @@
           "source_text": "Le Bal des Oiseaux Fantômes 33' 10:45-11:18"
         },
         {
-          "start": "13:15",
-          "end": "13:48",
+          "start": "13:45",
+          "end": "14:18",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Le Bal des Oiseaux Fantômes 33' 13:15-13:48"
+          "source_text": "Le Bal des Oiseaux Fantômes 33' 13:45-14:18"
         },
         {
-          "start": "14:45",
-          "end": "15:18",
+          "start": "16:45",
+          "end": "17:18",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Le Bal des Oiseaux Fantômes 33' 14:45-15:18"
-        },
-        {
-          "start": "16:15",
-          "end": "16:48",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "Le Bal des Oiseaux Fantômes 33' 16:15-16:48"
+          "source_text": "Le Bal des Oiseaux Fantômes 33' 16:45-17:18"
         }
       ]
     },
@@ -161,39 +129,25 @@
       "category": "spectacle",
       "representations": [
         {
-          "start": "11:00",
-          "end": "11:34",
+          "start": "10:15",
+          "end": "10:49",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Le Dernier Panache 34' 11:00-11:34"
+          "source_text": "Le Dernier Panache 34' 10:15-10:49"
         },
         {
-          "start": "12:15",
-          "end": "12:49",
+          "start": "11:30",
+          "end": "12:04",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Le Dernier Panache 34' 12:15-12:49"
+          "source_text": "Le Dernier Panache 34' 11:30-12:04"
         },
         {
-          "start": "15:30",
-          "end": "16:04",
+          "start": "14:30",
+          "end": "15:04",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Le Dernier Panache 34' 15:30-16:04"
-        },
-        {
-          "start": "17:15",
-          "end": "17:49",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "Le Dernier Panache 34' 17:15-17:49"
-        },
-        {
-          "start": "18:30",
-          "end": "19:04",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "Le Dernier Panache 34' 18:30-19:04"
+          "source_text": "Le Dernier Panache 34' 14:30-15:04"
         }
       ]
     },
@@ -203,11 +157,11 @@
       "category": "spectacle",
       "representations": [
         {
-          "start": "11:30",
-          "end": "11:40",
+          "start": "11:45",
+          "end": "11:55",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Le Grand Carillon 10' 11:30-11:40"
+          "source_text": "Le Grand Carillon 10' 11:45-11:55"
         },
         {
           "start": "14:15",
@@ -217,25 +171,11 @@
           "source_text": "Le Grand Carillon 10' 14:15-14:25"
         },
         {
-          "start": "16:30",
-          "end": "16:40",
+          "start": "17:15",
+          "end": "17:25",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Le Grand Carillon 10' 16:30-16:40"
-        },
-        {
-          "start": "18:15",
-          "end": "18:25",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "Le Grand Carillon 10' 18:15-18:25"
-        },
-        {
-          "start": "19:00",
-          "end": "19:10",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "Le Grand Carillon 10' 19:00-19:10"
+          "source_text": "Le Grand Carillon 10' 17:15-17:25"
         }
       ]
     },
@@ -245,39 +185,25 @@
       "category": "spectacle",
       "representations": [
         {
-          "start": "09:45",
-          "end": "10:13",
+          "start": "11:15",
+          "end": "11:43",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Le Mime et L'Étoile 28' 09:45-10:13"
+          "source_text": "Le Mime et L'Étoile 28' 11:15-11:43"
         },
         {
-          "start": "12:45",
-          "end": "13:13",
+          "start": "16:30",
+          "end": "16:58",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Le Mime et L'Étoile 28' 12:45-13:13"
+          "source_text": "Le Mime et L'Étoile 28' 16:30-16:58"
         },
         {
-          "start": "14:00",
-          "end": "14:28",
+          "start": "17:45",
+          "end": "18:13",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Le Mime et L'Étoile 28' 14:00-14:28"
-        },
-        {
-          "start": "16:45",
-          "end": "17:13",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "Le Mime et L'Étoile 28' 16:45-17:13"
-        },
-        {
-          "start": "18:00",
-          "end": "18:28",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "Le Mime et L'Étoile 28' 18:00-18:28"
+          "source_text": "Le Mime et L'Étoile 28' 17:45-18:13"
         }
       ]
     },
@@ -287,11 +213,11 @@
       "category": "spectacle_immersif",
       "representations": [
         {
-          "start": "11:45",
-          "end": "20:00",
+          "start": "11:30",
+          "end": "18:00",
           "is_continuous": true,
           "status": "scheduled",
-          "source_text": "Le Mystère de La Pérouse 20' 11:45-20:00"
+          "source_text": "Le Mystère de La Pérouse 20' 11:30-18:00"
         }
       ]
     },
@@ -302,10 +228,10 @@
       "representations": [
         {
           "start": "11:00",
-          "end": "18:00",
+          "end": "17:30",
           "is_continuous": true,
           "status": "scheduled",
-          "source_text": "Le Premier Royaume 18' 11:00-18:00"
+          "source_text": "Le Premier Royaume 18' 11:00-17:30"
         }
       ]
     },
@@ -315,25 +241,18 @@
       "category": "spectacle",
       "representations": [
         {
-          "start": "10:15",
-          "end": "10:44",
+          "start": "12:30",
+          "end": "12:59",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Le Secret de la Lance 29' 10:15-10:44"
+          "source_text": "Le Secret de la Lance 29' 12:30-12:59"
         },
         {
-          "start": "14:00",
-          "end": "14:29",
+          "start": "15:45",
+          "end": "16:14",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Le Secret de la Lance 29' 14:00-14:29"
-        },
-        {
-          "start": "16:00",
-          "end": "16:29",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "Le Secret de la Lance 29' 16:00-16:29"
+          "source_text": "Le Secret de la Lance 29' 15:45-16:14"
         }
       ]
     },
@@ -343,18 +262,11 @@
       "category": "spectacle",
       "representations": [
         {
-          "start": "11:30",
-          "end": "12:05",
+          "start": "14:30",
+          "end": "15:05",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Le Signe du Triomphe 35' 11:30-12:05"
-        },
-        {
-          "start": "15:00",
-          "end": "15:35",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "Le Signe du Triomphe 35' 15:00-15:35"
+          "source_text": "Le Signe du Triomphe 35' 14:30-15:05"
         }
       ]
     },
@@ -364,11 +276,11 @@
       "category": "spectacle_immersif",
       "representations": [
         {
-          "start": "10:30",
-          "end": "19:00",
+          "start": "12:00",
+          "end": "18:00",
           "is_continuous": true,
           "status": "scheduled",
-          "source_text": "Les Amoureux de Verdun 15' 10:30-19:00"
+          "source_text": "Les Amoureux de Verdun 15' 12:00-18:00"
         }
       ]
     },
@@ -385,13 +297,6 @@
           "source_text": "Les Automates Musiciens 7' 09:45-09:52"
         },
         {
-          "start": "10:30",
-          "end": "10:37",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "Les Automates Musiciens 7' 10:30-10:37"
-        },
-        {
           "start": "14:00",
           "end": "14:07",
           "is_continuous": false,
@@ -399,11 +304,11 @@
           "source_text": "Les Automates Musiciens 7' 14:00-14:07"
         },
         {
-          "start": "19:15",
-          "end": "19:22",
+          "start": "18:15",
+          "end": "18:22",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Les Automates Musiciens 7' 19:15-19:22"
+          "source_text": "Les Automates Musiciens 7' 18:15-18:22"
         }
       ]
     },
@@ -436,30 +341,16 @@
       ]
     },
     {
-      "name": "Les Noces de Feu",
-      "slug": "les-noces-de-feu",
-      "category": "spectacle_nocturne",
-      "representations": [
-        {
-          "start": "21:30",
-          "end": "22:00",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "Les Noces de Feu 30' 21:30-22:00"
-        }
-      ]
-    },
-    {
       "name": "Les Vikings",
       "slug": "les-vikings",
       "category": "spectacle",
       "representations": [
         {
-          "start": "10:30",
-          "end": "10:56",
+          "start": "11:00",
+          "end": "11:26",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Les Vikings 26' 10:30-10:56"
+          "source_text": "Les Vikings 26' 11:00-11:26"
         },
         {
           "start": "12:30",
@@ -469,18 +360,11 @@
           "source_text": "Les Vikings 26' 12:30-12:56"
         },
         {
-          "start": "15:45",
-          "end": "16:11",
+          "start": "15:30",
+          "end": "15:56",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Les Vikings 26' 15:45-16:11"
-        },
-        {
-          "start": "17:15",
-          "end": "17:41",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "Les Vikings 26' 17:15-17:41"
+          "source_text": "Les Vikings 26' 15:30-15:56"
         }
       ]
     },
@@ -490,32 +374,25 @@
       "category": "spectacle",
       "representations": [
         {
-          "start": "11:30",
-          "end": "12:02",
+          "start": "13:30",
+          "end": "14:02",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Mousquetaire de Richelieu 32' 11:30-12:02"
+          "source_text": "Mousquetaire de Richelieu 32' 13:30-14:02"
         },
         {
-          "start": "12:45",
-          "end": "13:17",
+          "start": "17:30",
+          "end": "18:02",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Mousquetaire de Richelieu 32' 12:45-13:17"
+          "source_text": "Mousquetaire de Richelieu 32' 17:30-18:02"
         },
         {
-          "start": "16:45",
-          "end": "17:17",
+          "start": "18:45",
+          "end": "19:17",
           "is_continuous": false,
           "status": "scheduled",
-          "source_text": "Mousquetaire de Richelieu 32' 16:45-17:17"
-        },
-        {
-          "start": "18:00",
-          "end": "18:32",
-          "is_continuous": false,
-          "status": "scheduled",
-          "source_text": "Mousquetaire de Richelieu 32' 18:00-18:32"
+          "source_text": "Mousquetaire de Richelieu 32' 18:45-19:17"
         }
       ]
     }
