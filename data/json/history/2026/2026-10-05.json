@@ -6,20 +6,19 @@
     "start_date": "2026-04-04",
     "end_date": "2027-01-03"
   },
-  "updated_at": "2026-10-03T12:33:43",
-  "status": "partial",
+  "updated_at": "2026-10-05T11:12:11",
+  "status": "closed_day",
   "warnings": [
-    "Aucune donnée publiée pour 2026-10-05 sur la page (dates disponibles : 2026-10-03, 2026-10-04).",
-    "Aucune représentation détectée dans le programme récupéré."
+    "Le Puy du Fou est fermé le 2026-10-05."
   ],
   "source": {
     "url": "https://www.puydufou.com/france/fr/programme-du-jour",
-    "retrieved_at": "2026-10-03T12:33:42",
+    "retrieved_at": "2026-10-05T11:12:11",
     "program_published_at": null
   },
   "spectacle_count": 0,
   "representation_count": 0,
   "nocturne": null,
   "spectacles": [],
-  "next_opening": null
+  "next_opening": "2026-10-09"
 }
