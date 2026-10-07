@@ -159,10 +159,28 @@
 
   function renderChart(def) {
     var canvas = document.getElementById(def.id);
-    if (!canvas || typeof Chart === "undefined") return;
+    if (!canvas) return;
     var rows = (statsData.charts && statsData.charts[def.dataKey]) || [];
     if (def.isDate) rows = filterByPeriod(rows);
+    // Le tableau de repli est toujours rempli, que Chart.js soit chargé ou
+    // non — sinon un CDN en panne laisserait le canvas ET le tableau vides.
     renderChartTable(def, rows);
+
+    if (typeof Chart === "undefined") {
+      // Chart.js indisponible (CDN hors service, bloqueur de script,
+      // future version majeure cassant l'intégrité épinglée...) : le
+      // tableau devient la seule vue possible, donc on l'ouvre directement
+      // plutôt que de laisser deviner pourquoi le graphique est vide.
+      var card = canvas.closest(".chart-card");
+      var details = card && card.querySelector(".chart-table-details");
+      if (details) details.open = true;
+      var chartWrap = canvas.closest(".chart-wrap");
+      if (chartWrap) {
+        chartWrap.innerHTML = '<div class="empty-state"><p>Graphique indisponible (bibliothèque non chargée) — voir le tableau ci-dessous.</p></div>';
+      }
+      return;
+    }
+
     var theme = PDF.getChartTheme();
     var color = colorFor(theme, def.color);
 
