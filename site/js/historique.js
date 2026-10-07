@@ -165,6 +165,33 @@
     renderCompareCalendar(which);
     document.getElementById("compare-" + which + "-label").textContent = PDF.formatDateFR(dateStr);
     document.getElementById("compare-btn").disabled = !(state.compare.a.date && state.compare.b.date);
+    // Sur mobile (un seul calendrier visible à la fois, voir setCompareMode) :
+    // après avoir choisi la date A, enchaîner directement sur B plutôt que de
+    // forcer un aller-retour manuel sur la bascule.
+    if (which === "a" && !state.compare.b.date) setCompareMode("b");
+  }
+
+  // Bascule quel calendrier (A ou B) est visible sur mobile — les deux
+  // restent visibles en permanence sur desktop (voir la media query dans
+  // style.css), cet état n'a donc d'effet que sous ce point de rupture.
+  function setCompareMode(which) {
+    var toggle = document.getElementById("compare-mode-toggle");
+    if (toggle) {
+      toggle.querySelectorAll(".chip").forEach(function (btn) {
+        btn.classList.toggle("active", btn.getAttribute("data-which") === which);
+      });
+    }
+    document.querySelectorAll(".compare-cal-slot").forEach(function (slot) {
+      slot.classList.toggle("is-inactive-mobile", slot.getAttribute("data-which") !== which);
+    });
+  }
+
+  function initCompareModeToggle() {
+    var toggle = document.getElementById("compare-mode-toggle");
+    if (!toggle) return;
+    toggle.querySelectorAll(".chip").forEach(function (btn) {
+      btn.addEventListener("click", function () { setCompareMode(btn.getAttribute("data-which")); });
+    });
   }
 
   function fetchDayOrNull(dateStr) {
@@ -290,7 +317,14 @@
         state.dateMap = map;
         state.sortedDates = Object.keys(map).sort();
 
-        var latest = state.sortedDates[state.sortedDates.length - 1];
+        // La dernière date CONNUE peut être une fermeture déjà déduite pour
+        // les jours suivants (voir Collector._backfill_closed_range) : le
+        // calendrier s'ouvrirait alors sur un mois quasi vide. On préfère
+        // la dernière date avec un VRAI programme, à défaut la dernière
+        // connue tout court (ex: tout juste collecté, encore fermé partout).
+        var withData = state.sortedDates.filter(function (d) { return (map[d].representation_count || 0) > 0; });
+        var candidates = withData.length ? withData : state.sortedDates;
+        var latest = candidates[candidates.length - 1];
         var refDate = latest ? PDF.parseISODate(latest) : new Date();
         state.viewYear = refDate.getFullYear();
         state.viewMonth = refDate.getMonth();
@@ -303,6 +337,7 @@
         renderCompareCalendar("b");
 
         document.getElementById("compare-btn").addEventListener("click", runCompare);
+        initCompareModeToggle();
       })
       .catch(function (err) {
         PDF.renderErrorMessage(

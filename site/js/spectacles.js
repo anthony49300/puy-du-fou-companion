@@ -141,7 +141,9 @@
       '<div class="stat-tile"><div class="stat-label">Jours absents</div><div class="stat-value">' + (stats.days_absent != null ? stats.days_absent : "—") + "</div></div>" +
       "</div>" +
       (s.history && s.history.length
-        ? '<div class="chart-wrap"><canvas id="spectacle-history-chart" role="img" aria-label="Historique du nombre de représentations par jour pour ' + PDF.escapeHtml(s.name) + '"></canvas></div>'
+        ? '<div class="chart-wrap"><canvas id="spectacle-history-chart" role="img" aria-label="Historique du nombre de représentations par jour pour ' + PDF.escapeHtml(s.name) + '"></canvas></div>' +
+          '<details class="chart-table-details"><summary>Voir les données en tableau</summary>' +
+          '<div class="table-wrap"><table class="data-table" id="spectacle-history-table"></table></div></details>'
         : '<p class="text-muted">Aucun historique disponible pour ce spectacle.</p>');
 
     var closeBtn = document.getElementById("close-detail");
@@ -152,9 +154,35 @@
     }
   }
 
+  // Rempli dans tous les cas (voir renderDetail) : seule vue possible si
+  // Chart.js ne s'est pas chargé (CDN hors service, bloqueur de script...).
+  function renderHistoryTable(s) {
+    var table = document.getElementById("spectacle-history-table");
+    if (!table) return;
+    table.innerHTML =
+      "<thead><tr><th>Date</th><th>Représentations</th></tr></thead><tbody>" +
+      s.history.map(function (h) {
+        return "<tr><td>" + PDF.escapeHtml(PDF.formatDateFR(h.date)) + "</td><td>" + h.count + "</td></tr>";
+      }).join("") +
+      "</tbody>";
+  }
+
   function drawHistoryChart(s) {
     var canvas = document.getElementById("spectacle-history-chart");
-    if (!canvas || typeof Chart === "undefined") return;
+    if (!canvas) return;
+    renderHistoryTable(s);
+
+    if (typeof Chart === "undefined") {
+      var panel = document.getElementById("detail-panel");
+      var details = panel && panel.querySelector(".chart-table-details");
+      if (details) details.open = true;
+      var chartWrap = canvas.closest(".chart-wrap");
+      if (chartWrap) {
+        chartWrap.innerHTML = '<div class="empty-state"><p>Graphique indisponible (bibliothèque non chargée) — voir le tableau ci-dessous.</p></div>';
+      }
+      return;
+    }
+
     if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
 
     var theme = PDF.getChartTheme();

@@ -986,9 +986,15 @@ table.data-table tr.is-changed td:first-child { font-weight: 600; }
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
 }
+/* Bascule A/B : seulement utile quand les deux calendriers ne tiennent plus
+   côte à côte (voir media query ci-dessous) — sur desktop les deux restent
+   visibles en permanence, pas besoin de choisir. */
+.compare-mode-toggle { display: none; margin-bottom: 0.75rem; }
 @media (max-width: 640px) {
   .compare-grid { grid-template-columns: 1fr; }
   .compare-calendars { grid-template-columns: 1fr; }
+  .compare-mode-toggle { display: flex; }
+  .compare-cal-slot.is-inactive-mobile { display: none; }
 }
 .compare-col {
   background: var(--bg-surface);
