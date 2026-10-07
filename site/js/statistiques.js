@@ -258,7 +258,7 @@
     el.innerHTML =
       tile("Spectacles au total", g.total_spectacles) +
       tile("Représentations au total", g.total_representations) +
-      tile("Moyenne / jour", g.avg_per_day) +
+      tile("Moyenne / jour", PDF.formatNumberFR(g.avg_per_day)) +
       tile("Minimum / jour", g.min_per_day ? g.min_per_day.count : null, minSub) +
       tile("Maximum / jour", g.max_per_day ? g.max_per_day.count : null, maxSub) +
       tile("Représentations en continu", g.continuous_count) +

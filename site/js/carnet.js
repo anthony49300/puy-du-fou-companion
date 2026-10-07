@@ -1297,7 +1297,7 @@
     $("bilanKpis").innerHTML = [
       ["Visites", st.vs.length],
       ["Séances", st.seances],
-      ["Par visite", st.moyenne.toFixed(1)],
+      ["Par visite", PDF.formatNumberFR(st.moyenne, { minimumFractionDigits: 1, maximumFractionDigits: 1 })],
       ["Cinéscénies", st.cines],
       ["Spectacles vus", st.differents + '<small style="font-size:0.55em;color:var(--text-soft)"> / ' + st.cols.length + "</small>"],
     ].map(function (kv) {

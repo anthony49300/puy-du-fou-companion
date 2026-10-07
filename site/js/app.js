@@ -107,6 +107,16 @@
     return m[1].padStart(2, "0") + "h" + m[2];
   }
 
+  // Un nombre à décimales inséré tel quel (JS -> chaîne) garde un point
+  // ("5.85"), jamais une virgule française — sans conséquence pour un
+  // calcul, mais visible dès qu'il atterrit dans l'UI (stats "Moyenne /
+  // jour"...). Ici pour TOUT nombre affiché, pas seulement les devises
+  // (déjà couvertes par eur(), carnet.js).
+  function formatNumberFR(n, options) {
+    if (n == null || typeof n !== "number" || isNaN(n)) return "—";
+    return new Intl.NumberFormat("fr-FR", options).format(n);
+  }
+
   /* ----------------------------------------------------------------------
    * 2bis. Heure/date réelle du visiteur (horloge du navigateur)
    *    Les fichiers JSON sont des exports statiques, figés au moment de la
@@ -751,6 +761,7 @@
     formatDateLongFR,
     formatDateTimeFR,
     formatTimeFR,
+    formatNumberFR,
     historyJsonPath,
     isoDateToday,
     isDataForToday,
