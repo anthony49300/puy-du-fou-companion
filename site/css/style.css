@@ -589,7 +589,8 @@ main { flex: 1; }
 }
 .search-input:focus { border-color: var(--accent-2); }
 
-.filter-select, select, input[type="date"] {
+.filter-select, select,
+input[type="date"], input[type="time"], input[type="number"], input[type="text"] {
   padding: 0.6rem 0.85rem;
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -597,6 +598,8 @@ main { flex: 1; }
   color: var(--text);
   font-size: 0.9rem;
 }
+input[type="date"]:focus, input[type="time"]:focus, input[type="number"]:focus,
+input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline: none; }
 
 .chip-row {
   display: flex;
@@ -615,6 +618,37 @@ main { flex: 1; }
   background: var(--accent);
   color: var(--text-on-accent);
   border-color: var(--accent);
+}
+
+/* Vrai tab bar (ex: onglets du Carnet) : soulignement plutôt que des chips
+   remplies, pour ne pas se confondre avec les filtres/sélecteurs de même
+   style ailleurs sur le site. Collant sur mobile (voir syncStickyOffsets,
+   carnet.js, pour le décalage sous le header lui-même sticky). */
+.tab-bar {
+  display: flex;
+  gap: 1.5rem;
+  border-bottom: 2px solid var(--border-soft);
+  overflow-x: auto;
+}
+.tab-bar .tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  padding: 0.65rem 0.1rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+.tab-bar .tab:hover { color: var(--text); }
+.tab-bar .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+@media (max-width: 640px) {
+  .tab-bar {
+    position: sticky;
+    z-index: 4;
+    background: var(--bg);
+  }
 }
 
 .empty-state {
@@ -901,28 +935,26 @@ table.data-table tr.is-changed td:first-child { font-weight: 600; }
 .calendar-grid button.cal-day.has-data:hover { background: var(--accent-3); color: var(--text-on-accent); }
 /* Fermeture ponctuelle : contour marqué + pastille "🚧" bien visible, pour
    ne pas passer inaperçue à côté des jours ouverts (simple fond teinté). */
+/* Fermeture ponctuelle : hachures + petit point dans l'angle, à l'intérieur
+   de la case (contrairement à l'ancien badge "🚧" positionné en négatif,
+   qui débordait sur les cases voisines sur une grille déjà serrée) — voir
+   calendar-legend ci-dessous pour la légende associée. */
 .calendar-grid button.cal-day.is-closed {
-  background: var(--accent-2-soft);
-  border: 2px solid var(--cal-closed-outline);
+  background: repeating-linear-gradient(135deg, var(--accent-2-soft), var(--accent-2-soft) 4px, transparent 4px, transparent 8px);
+  border: 1.5px solid var(--cal-closed-outline);
   color: var(--text);
   font-weight: 700;
 }
 .calendar-grid button.cal-day.is-closed:hover { background: var(--accent-2); color: var(--text-on-accent); }
 .calendar-grid button.cal-day.is-closed::after {
-  content: "🚧";
+  content: "";
   position: absolute;
-  top: -0.45rem;
-  right: -0.45rem;
-  width: 1.1rem;
-  height: 1.1rem;
-  line-height: 1;
-  font-size: 0.62rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-surface);
-  border: 1.5px solid var(--cal-closed-outline);
+  bottom: 0.2rem;
+  right: 0.25rem;
+  width: 0.3rem;
+  height: 0.3rem;
   border-radius: 999px;
+  background: var(--cal-closed-outline);
 }
 .calendar-grid button.cal-day.is-selected { background: var(--accent); color: var(--text-on-accent); border-color: var(--accent); }
 .calendar-grid button.cal-day:disabled {
@@ -931,6 +963,21 @@ table.data-table tr.is-changed td:first-child { font-weight: 600; }
   cursor: not-allowed;
 }
 .calendar-grid .cal-empty { visibility: hidden; }
+.calendar-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-soft);
+}
+.cal-legend-dot {
+  display: inline-block;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--cal-closed-outline);
+}
 
 .compare-grid {
   display: grid;
@@ -1000,14 +1047,46 @@ table.data-table tr.is-changed td:first-child { font-weight: 600; }
   color: var(--accent);
   border: 1px solid var(--accent);
 }
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+/* Action destructive "lourde" (ex: vider tout le carnet) : trop proche du
+   bouton primaire en plein (même teinte bordeaux/rouge) pour rester rempli
+   — un contour, comme btn-outline mais dans la couleur d'erreur. */
+.btn.btn-outline-danger {
+  background: transparent;
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+}
+.btn.btn-outline-danger:hover { background: var(--color-error); color: var(--text-on-accent); }
+.danger-zone {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border);
+}
 
 .season-select-row {
   display: flex;
-  align-items: center;
-  gap: 0.6rem;
+  align-items: flex-end; /* aligne les champs entre eux, pas le texte des labels (longueurs variables) */
+  gap: 0.6rem 1rem;
   margin: 1rem 0;
   flex-wrap: wrap;
 }
+/* Les labels du carnet gardent un <br> dans le HTML (repli texte brut sans
+   JS/CSS) entre le texte et le champ : cette mise en page par flex colonne
+   prend le dessus, le <br> est donc masqué pour ne pas ajouter un espace
+   en double. */
+.season-select-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+.season-select-row label br { display: none; }
 
 @media (max-width: 640px) {
   .rep-time-wrap { min-width: auto; }
@@ -1117,11 +1196,41 @@ table.visit-grid tfoot td { font-weight: 700; background: var(--bg-elevated); }
   position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%);
   background: var(--accent); color: var(--text-on-accent);
   padding: 0.6rem 1.2rem; border-radius: 999px; font-size: 0.88rem; z-index: 100; box-shadow: var(--shadow-lg);
+  max-width: calc(100vw - 2rem);
 }
+/* Variante avec action "Annuler" (suppressions) : voir toastUndo, carnet.js. */
+.toast-msg-action { display: flex; align-items: center; gap: 0.75rem; border-radius: 999px; }
+.toast-undo-btn {
+  background: transparent;
+  color: inherit;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.toast-undo-btn:hover { background: rgba(255, 255, 255, 0.15); }
+
+/* <dialog> stylé remplaçant window.confirm() natif — voir confirmDialog,
+   carnet.js. */
+.confirm-dialog {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  background: var(--bg-surface);
+  color: var(--text);
+  padding: 1.25rem;
+  max-width: 400px;
+  width: calc(100vw - 2.5rem);
+}
+.confirm-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+.confirm-dialog p { margin: 0 0 1.1rem; }
+.confirm-dialog-actions { display: flex; justify-content: flex-end; gap: 0.6rem; }
 
 /* Impression (ex: le programme de la journée depuis le carnet) */
 @media print {
-  .site-header, .site-footer, .no-print, .chip-row, .hour-nav, .decorative-rule { display: none !important; }
+  .site-header, .site-footer, .no-print, .chip-row, .hour-nav, .tab-bar, .decorative-rule { display: none !important; }
   body { background: #fff; color: #000; }
   .card, .rep-card { border-color: #bbb; box-shadow: none; break-inside: avoid; }
 }

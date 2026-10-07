@@ -25,15 +25,15 @@
       <span>Données 100% locales : elles ne quittent jamais votre appareil. Pensez à <strong>exporter</strong> une sauvegarde de temps en temps (bouton en bas de page) si vous changez de navigateur ou d'appareil.</span>
     </div>
 
-    <div class="chip-row" role="tablist" id="carnet-tabs">
-      <button type="button" class="chip active" role="tab" data-tab="jour" aria-selected="true">Journée</button>
-      <button type="button" class="chip" role="tab" data-tab="visites" aria-selected="false">Visites</button>
-      <button type="button" class="chip" role="tab" data-tab="bilan" aria-selected="false">Bilan</button>
-      <button type="button" class="chip" role="tab" data-tab="pass" aria-selected="false">Pass</button>
+    <div class="tab-bar" role="tablist" id="carnet-tabs" aria-label="Sections du carnet">
+      <button type="button" class="tab active" role="tab" id="tab-btn-jour" data-tab="jour" aria-selected="true" aria-controls="tab-jour" tabindex="0">Journée</button>
+      <button type="button" class="tab" role="tab" id="tab-btn-visites" data-tab="visites" aria-selected="false" aria-controls="tab-visites" tabindex="-1">Visites</button>
+      <button type="button" class="tab" role="tab" id="tab-btn-bilan" data-tab="bilan" aria-selected="false" aria-controls="tab-bilan" tabindex="-1">Bilan</button>
+      <button type="button" class="tab" role="tab" id="tab-btn-pass" data-tab="pass" aria-selected="false" aria-controls="tab-pass" tabindex="-1">Pass</button>
     </div>
 
     <!-- ========== Onglet Journée ========== -->
-    <section class="tabpane" id="tab-jour">
+    <section class="tabpane" id="tab-jour" role="tabpanel" aria-labelledby="tab-btn-jour">
       <div class="card">
         <div class="flex-between">
           <h2 class="mt-0">Composer la journée</h2>
@@ -109,7 +109,7 @@
     </section>
 
     <!-- ========== Onglet Visites ========== -->
-    <section class="tabpane" id="tab-visites" hidden>
+    <section class="tabpane" id="tab-visites" role="tabpanel" aria-labelledby="tab-btn-visites" hidden>
       <div class="flex-between">
         <h2>Mes visites</h2>
         <button type="button" class="btn btn-outline" id="btnAddVisit">Ajouter une visite</button>
@@ -144,7 +144,7 @@
     </section>
 
     <!-- ========== Onglet Bilan ========== -->
-    <section class="tabpane" id="tab-bilan" hidden>
+    <section class="tabpane" id="tab-bilan" role="tabpanel" aria-labelledby="tab-btn-bilan" hidden>
       <h2>Ma saison en chiffres</h2>
       <div class="stat-grid" id="bilanKpis"></div>
 
@@ -172,7 +172,7 @@
     </section>
 
     <!-- ========== Onglet Pass ========== -->
-    <section class="tabpane" id="tab-pass" hidden>
+    <section class="tabpane" id="tab-pass" role="tabpanel" aria-labelledby="tab-btn-pass" hidden>
       <h2>Pass &amp; budget</h2>
       <p class="text-muted">Tarifs à ajuster selon votre situation — rien n'est officiel ni mis à jour automatiquement ici.</p>
       <div class="season-select-row">
@@ -212,7 +212,10 @@
         <button type="button" class="btn btn-outline" id="btnExport">Exporter mes données</button>
         <button type="button" class="btn btn-outline" id="btnImport">Importer une sauvegarde</button>
         <input type="file" id="fileImport" accept="application/json" hidden>
-        <button type="button" class="btn" style="background:var(--color-error)" id="btnResetAll">Vider le carnet</button>
+      </div>
+      <div class="danger-zone">
+        <p class="text-muted" style="margin:0 0 0.5rem">Zone irréversible : supprime définitivement toutes vos données locales (plans, visites, réglages).</p>
+        <button type="button" class="btn btn-outline-danger" id="btnResetAll">Vider le carnet</button>
       </div>
     </section>
   </div>

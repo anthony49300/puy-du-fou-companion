@@ -440,9 +440,11 @@
     DOW_LABELS.forEach((d) => { html += '<div class="cal-dow">' + d + "</div>"; });
     for (let i = 0; i < startOffset; i++) html += '<div class="cal-empty"></div>';
 
+    let anyClosed = false;
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = isoDate(year, month, day);
       const info = dayCellInfo(dateMap[dateStr], dateStr === selectedDate, dateStr);
+      if (info.cls.indexOf("is-closed") !== -1) anyClosed = true;
       html +=
         '<button type="button" class="' + info.cls + '" data-date="' + dateStr + '"' +
         (info.disabled ? " disabled" : "") +
@@ -450,6 +452,12 @@
         day + "</button>";
     }
     html += "</div>";
+    // Légende du petit point "fermeture" (voir .cal-day.is-closed dans
+    // style.css) : affichée seulement quand ce mois en contient au moins
+    // un, pas en permanence sur un mois sans rien à expliquer.
+    if (anyClosed) {
+      html += '<div class="calendar-legend"><span class="cal-legend-dot" aria-hidden="true"></span> Fermeture ponctuelle du parc</div>';
+    }
     wrap.innerHTML = html;
 
     wrap.querySelector(".cal-nav-prev").addEventListener("click", () => onNav(-1));
