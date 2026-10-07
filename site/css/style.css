@@ -795,16 +795,13 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
 }
 .spectacle-card-head {
   display: flex;
-  justify-content: space-between;
+  /* Badge au-dessus du titre (ordre visuel inversé ; le titre reste
+     annoncé en premier à la lecture, ordre du DOM inchangé) plutôt que
+     côte à côte : sur une carte étroite, un badge large ("Spectacle
+     nocturne") écrasait sinon le titre un mot par ligne. */
+  flex-direction: column-reverse;
   align-items: flex-start;
-  gap: 0.5rem;
-}
-.spectacle-card-head h3 {
-  /* Sans ça, un flex-item avec du texte refuse par défaut de rétrécir en
-     dessous de son "min-content" et pousse le badge voisin hors de son
-     espace disponible (voir le flex-shrink:0 du badge, ci-dessus) : le
-     titre doit pouvoir rétrécir/passer à la ligne en premier. */
-  min-width: 0;
+  gap: 0.35rem;
 }
 .spectacle-stats-mini {
   display: flex;

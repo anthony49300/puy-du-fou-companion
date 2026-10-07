@@ -11,25 +11,38 @@
     data: null,
     query: "",
     category: "",
+    sort: "name",
     selectedSlug: null,
     years: [],
     year: null,
+    todayClosed: false, // voir fetchTodayStatus : "Aujourd'hui : 0" ne veut rien dire un jour de fermeture
   };
 
   var chartInstance = null;
 
   function filteredSpectacles() {
-    return (state.data.spectacles || []).filter(function (s) {
+    var list = (state.data.spectacles || []).filter(function (s) {
       if (state.category && s.category !== state.category) return false;
       if (state.query && !PDF.matchesSearch(s.name, state.query)) return false;
       return true;
     });
+    if (state.sort === "most") {
+      list = list.slice().sort(function (a, b) {
+        return ((b.stats && b.stats.total_representations) || 0) - ((a.stats && a.stats.total_representations) || 0);
+      });
+    } else {
+      list = list.slice().sort(function (a, b) { return a.name.localeCompare(b.name, "fr"); });
+    }
+    return list;
   }
 
   function renderCard(s) {
     var stats = s.stats || {};
     var selectedCls = s.slug === state.selectedSlug ? " is-selected" : "";
     var inactiveCls = s.active === false ? " is-inactive" : "";
+    var todayLabel = state.todayClosed
+      ? "Aujourd'hui : <strong>Fermé</strong>"
+      : "Aujourd'hui : <strong>" + (stats.today_count != null ? stats.today_count : "—") + "</strong>";
     return (
       '<div class="card spectacle-card' + selectedCls + inactiveCls + '" data-slug="' + PDF.escapeHtml(s.slug) + '" tabindex="0" role="button" aria-pressed="' + (s.slug === state.selectedSlug) + '">' +
       '<div class="spectacle-card-head"><h3>' + PDF.escapeHtml(s.name) + "</h3>" +
@@ -37,8 +50,8 @@
       "</div>" +
       (s.active === false ? '<span class="badge badge-default">Inactif</span>' : "") +
       '<div class="spectacle-stats-mini">' +
-      '<span>Aujourd\'hui : <strong>' + (stats.today_count != null ? stats.today_count : "—") + "</strong></span>" +
-      '<span>Moyenne/jour : <strong>' + (stats.avg_per_day != null ? stats.avg_per_day : "—") + "</strong></span>" +
+      "<span>" + todayLabel + "</span>" +
+      '<span>Moyenne/jour : <strong>' + PDF.formatNumberFR(stats.avg_per_day) + "</strong></span>" +
       '<span>Jours présents : <strong>' + (stats.days_present != null ? stats.days_present : "—") + "</strong></span>" +
       '<span>Jours absents : <strong>' + (stats.days_absent != null ? stats.days_absent : "—") + "</strong></span>" +
       "</div>" +
@@ -69,10 +82,15 @@
     });
   }
 
+  // L'ancre reflète la sélection (lien partageable vers un spectacle précis)
+  // via replaceState plutôt qu'un simple location.hash = ... : ce dernier
+  // déclenche un saut natif du navigateur qui romprait le scroll "smooth"
+  // juste en dessous, et empilerait une entrée d'historique à chaque clic.
   function selectSpectacle(slug) {
     state.selectedSlug = slug;
     renderGrid();
     renderDetail();
+    history.replaceState(null, "", slug ? "#" + slug : location.pathname + location.search);
     var panel = document.getElementById("detail-panel");
     if (panel && !panel.hidden) {
       panel.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -118,7 +136,7 @@
       "</div>" +
       '<div class="stat-grid">' +
       '<div class="stat-tile"><div class="stat-label">Représentations totales</div><div class="stat-value">' + (stats.total_representations != null ? stats.total_representations : "—") + "</div></div>" +
-      '<div class="stat-tile"><div class="stat-label">Moyenne / jour</div><div class="stat-value">' + (stats.avg_per_day != null ? stats.avg_per_day : "—") + "</div></div>" +
+      '<div class="stat-tile"><div class="stat-label">Moyenne / jour</div><div class="stat-value">' + PDF.formatNumberFR(stats.avg_per_day) + "</div></div>" +
       '<div class="stat-tile"><div class="stat-label">Jours présents</div><div class="stat-value">' + (stats.days_present != null ? stats.days_present : "—") + "</div></div>" +
       '<div class="stat-tile"><div class="stat-label">Jours absents</div><div class="stat-value">' + (stats.days_absent != null ? stats.days_absent : "—") + "</div></div>" +
       "</div>" +
@@ -234,6 +252,24 @@
     });
   }
 
+  // "Aujourd'hui : 0" sur chaque carte n'a aucun sens un jour de fermeture
+  // (0 partout, sans rapport avec la popularité du spectacle) : on vérifie
+  // le statut du jour une fois, à part du reste (indépendant de la saison
+  // affichée par le sélecteur d'année).
+  function fetchTodayClosedStatus() {
+    return PDF.fetchJSON("today.json")
+      .then(function (today) { state.todayClosed = today.status === "closed_day" || today.status === "out_of_season"; })
+      .catch(function () { state.todayClosed = false; });
+  }
+
+  // Ouvre directement le spectacle désigné par l'ancre de l'URL (lien
+  // partagé) une fois les données chargées — sans ça, un lien vers
+  // "#les-vikings" n'ouvrirait rien de plus qu'un chargement normal.
+  function openFromHash() {
+    var slug = location.hash.replace(/^#/, "");
+    if (slug && findSpectacle(slug)) selectSpectacle(slug);
+  }
+
   function init() {
     PDF.createSearchBar(document.getElementById("search-slot"), {
       placeholder: "Rechercher un spectacle (ex: Vikings)…",
@@ -242,17 +278,25 @@
         renderGrid();
       },
     });
+    document.getElementById("sort-select").addEventListener("change", function (e) {
+      state.sort = e.target.value;
+      renderGrid();
+    });
 
-    PDF.fetchJSON("dates.json")
-      .then(function (datesData) {
+    Promise.all([
+      PDF.fetchJSON("dates.json").then(function (datesData) {
         state.years = Array.from(new Set((datesData.dates || []).map(function (d) { return d.season_year; }).filter(Boolean)))
           .sort(function (a, b) { return b - a; });
         state.year = state.years[0] || null;
         renderYearSelect();
         return loadYear(state.year);
-      })
+      }),
+      fetchTodayClosedStatus(),
+    ])
       .then(function () {
         populateCategoryFilter(); // catégories identiques quelle que soit la saison : une seule fois suffit
+        renderGrid(); // re-rendu : fetchTodayClosedStatus peut avoir résolu après le premier rendu de loadYear
+        openFromHash();
       })
       .catch(function (err) {
         PDF.renderErrorMessage(
