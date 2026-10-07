@@ -77,6 +77,56 @@
     document.body.appendChild(t);
     setTimeout(function () { t.remove(); }, 2600);
   }
+  // Variante pour une suppression : l'action a déjà eu lieu (pas de blocage
+  // façon confirm()), mais reste annulable depuis le toast pendant quelques
+  // secondes — plus agréable qu'une confirmation systématique avant un geste
+  // facilement réversible.
+  function toastUndo(msg, onUndo) {
+    document.querySelectorAll(".toast-msg").forEach(function (t) { t.remove(); });
+    var t = document.createElement("div");
+    t.className = "toast-msg toast-msg-action";
+    t.setAttribute("role", "status");
+    var span = document.createElement("span");
+    span.textContent = msg;
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "toast-undo-btn";
+    btn.textContent = "Annuler";
+    t.appendChild(span);
+    t.appendChild(btn);
+    document.body.appendChild(t);
+    var timer = setTimeout(function () { t.remove(); }, 6000);
+    btn.addEventListener("click", function () {
+      clearTimeout(timer);
+      t.remove();
+      onUndo();
+    });
+  }
+  // Remplace window.confirm() (natif, non stylé, bloque le fil d'exécution)
+  // par un <dialog> cohérent avec le reste de l'UI. Résout `true`/`false` ;
+  // jamais rejetée.
+  function confirmDialog(message, okLabel) {
+    return new Promise(function (resolve) {
+      var dlg = document.createElement("dialog");
+      dlg.className = "confirm-dialog";
+      dlg.innerHTML =
+        "<p>" + PDF.escapeHtml(message) + "</p>" +
+        '<div class="confirm-dialog-actions">' +
+        '<button type="button" class="btn btn-outline" data-act="cancel">Annuler</button>' +
+        '<button type="button" class="btn btn-danger" data-act="ok">' + PDF.escapeHtml(okLabel || "Confirmer") + "</button>" +
+        "</div>";
+      document.body.appendChild(dlg);
+      function close(result) {
+        dlg.close();
+        dlg.remove();
+        resolve(result);
+      }
+      dlg.querySelector('[data-act="ok"]').addEventListener("click", function () { close(true); });
+      dlg.querySelector('[data-act="cancel"]').addEventListener("click", function () { close(false); });
+      dlg.addEventListener("cancel", function (e) { e.preventDefault(); close(false); }); // touche Échap
+      dlg.showModal();
+    });
+  }
   function $(id) { return document.getElementById(id); }
 
   /* ----------------------------------------------------------------------
@@ -166,10 +216,13 @@
    * -------------------------------------------------------------------- */
 
   function switchTab(tab) {
-    document.querySelectorAll("#carnet-tabs .chip").forEach(function (b) {
+    document.querySelectorAll("#carnet-tabs .tab").forEach(function (b) {
       var active = b.getAttribute("data-tab") === tab;
       b.classList.toggle("active", active);
       b.setAttribute("aria-selected", active ? "true" : "false");
+      // Roving tabindex (pattern ARIA tablist) : seul l'onglet actif est
+      // atteignable par Tab, les flèches gauche/droite font le reste.
+      b.setAttribute("tabindex", active ? "0" : "-1");
     });
     ["jour", "visites", "bilan", "pass"].forEach(function (name) {
       $("tab-" + name).hidden = name !== tab;
@@ -177,6 +230,35 @@
     if (tab === "visites") renderVisites();
     if (tab === "bilan") renderBilan();
     if (tab === "pass") renderPass();
+  }
+
+  // Déplace le focus et active l'onglet ciblé par les flèches — Gauche/
+  // Droite cyclent, Home/Fin vont aux extrémités (pattern ARIA tablist
+  // "activation automatique" : la flèche change l'onglet affiché, pas
+  // seulement le focus).
+  function initTabKeyboardNav() {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll("#carnet-tabs .tab"));
+    tabs.forEach(function (tabBtn, i) {
+      tabBtn.addEventListener("keydown", function (e) {
+        var targetIndex = null;
+        if (e.key === "ArrowRight") targetIndex = (i + 1) % tabs.length;
+        else if (e.key === "ArrowLeft") targetIndex = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === "Home") targetIndex = 0;
+        else if (e.key === "End") targetIndex = tabs.length - 1;
+        if (targetIndex == null) return;
+        e.preventDefault();
+        tabs[targetIndex].focus();
+        switchTab(tabs[targetIndex].getAttribute("data-tab"));
+      });
+    });
+  }
+
+  // Décalage sous le header (lui-même sticky, voir style.css) pour que la
+  // barre d'onglets collante sur mobile ne disparaisse pas dessous.
+  function syncStickyOffsets() {
+    var header = document.getElementById("site-header");
+    var tabs = $("carnet-tabs");
+    if (tabs) tabs.style.top = (header ? header.offsetHeight : 0) + "px";
   }
 
   /* ----------------------------------------------------------------------
@@ -426,6 +508,16 @@
       ? '<div class="status-banner status-stale"><span aria-hidden="true">🚧</span><span>Le Puy du Fou est fermé le ' +
         PDF.escapeHtml(PDF.formatDateFR(dateStr)) + ".</span></div>"
       : "";
+    // Rien à charger/proposer un jour fermé (voir le message déjà renvoyé
+    // par ces boutons dans ce cas) : autant le signaler avant le clic.
+    $("btnLoadReal").disabled = !!isClosed;
+    $("btnAutoPlan").disabled = !!isClosed;
+    // Rien à enregistrer/exporter/imprimer/vider pour une journée vide.
+    var hasItems = plan.items.length > 0;
+    $("btnSaveVisit").disabled = !hasItems;
+    $("btnExportIcs").disabled = !hasItems;
+    $("btnPrintDay").disabled = !hasItems;
+    $("btnClearDay").disabled = !hasItems;
 
     var tous = plan.items.slice().sort(function (a, b) {
       if (a.is_continuous && b.is_continuous) return 0;
@@ -811,21 +903,31 @@
       var mandatorySlugs = Array.prototype.slice
         .call($("autoPlanChecklist").querySelectorAll("input[type=checkbox]:checked"))
         .map(function (cb) { return cb.value; });
-      if (plan.items.length && !confirm("Remplacer le programme actuel de cette journée par une proposition automatique ?")) return;
-      var propose = buildAutoPlan(slots, S.gate, mandatorySlugs);
-      if (!propose.length) {
-        toast("Aucune séance ne peut être proposée pour cette date (toutes complètes, ou incompatibles entre elles).");
-        return;
+
+      function applyPlan() {
+        var propose = buildAutoPlan(slots, S.gate, mandatorySlugs);
+        if (!propose.length) {
+          toast("Aucune séance ne peut être proposée pour cette date (toutes complètes, ou incompatibles entre elles).");
+          return;
+        }
+        plan.items = propose.map(function (s) {
+          return {
+            slug: s.slug, name: s.name, category: s.category,
+            start: s.start, end: s.end, is_continuous: s.is_continuous, status: s.status, uid: uid(),
+          };
+        });
+        sauver();
+        renderJour();
+        renderAutoPlanResult(mandatorySlugs, slots, propose);
       }
-      plan.items = propose.map(function (s) {
-        return {
-          slug: s.slug, name: s.name, category: s.category,
-          start: s.start, end: s.end, is_continuous: s.is_continuous, status: s.status, uid: uid(),
-        };
-      });
-      sauver();
-      renderJour();
-      renderAutoPlanResult(mandatorySlugs, slots, propose);
+
+      if (plan.items.length) {
+        confirmDialog("Remplacer le programme actuel de cette journée par une proposition automatique ?", "Remplacer").then(function (ok) {
+          if (ok) applyPlan();
+        });
+      } else {
+        applyPlan();
+      }
     });
 
     $("btnAddReal").addEventListener("click", function () {
@@ -868,11 +970,15 @@
       var dateStr = $("planDate").value;
       var plan = S.plans[dateStr];
       if (!plan || !plan.items.length) return;
-      if (confirm("Vider le programme de cette journée ?")) {
-        plan.items = [];
+      var previousItems = plan.items;
+      plan.items = [];
+      sauver();
+      renderJour();
+      toastUndo("Journée vidée.", function () {
+        plan.items = previousItems;
         sauver();
         renderJour();
-      }
+      });
     });
 
     $("btnSaveVisit").addEventListener("click", function () {
@@ -949,6 +1055,23 @@
     if (n >= 2) delete seen[key]; else seen[key] = n + 1;
   }
 
+  // Supprime une visite immédiatement (pas de confirm() bloquant — une
+  // suppression reste facilement annulable, voir toastUndo), partagé entre
+  // la grille et le panneau de détail.
+  function deleteVisit(v) {
+    if (!v) return;
+    S.visites = S.visites.filter(function (x) { return x !== v; });
+    sauver();
+    if (state.currentVisit === v) closeVisitDetail();
+    renderVisites();
+    toastUndo("Visite du " + PDF.formatDateFR(v.date) + " supprimée.", function () {
+      S.visites.push(v);
+      S.visites.sort(function (a, b) { return a.date.localeCompare(b.date); });
+      sauver();
+      renderVisites();
+    });
+  }
+
   function renderVisites() {
     var table = $("tblVisites");
     var cols = toutesLesColonnes();
@@ -1004,13 +1127,7 @@
     });
     table.querySelectorAll("[data-delv]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        var v = vs[+btn.getAttribute("data-delv")];
-        if (confirm("Supprimer la visite du " + PDF.formatDateFR(v.date) + " ?")) {
-          S.visites = S.visites.filter(function (x) { return x !== v; });
-          sauver();
-          if (state.currentVisit === v) closeVisitDetail();
-          renderVisites();
-        }
+        deleteVisit(vs[+btn.getAttribute("data-delv")]);
       });
     });
     table.querySelectorAll("[data-editv]").forEach(function (btn) {
@@ -1120,13 +1237,7 @@
     });
 
     $("btnDeleteVisitDetail").addEventListener("click", function () {
-      var v = state.currentVisit;
-      if (!v) return;
-      if (!confirm("Supprimer la visite du " + PDF.formatDateFR(v.date) + " ?")) return;
-      S.visites = S.visites.filter(function (x) { return x !== v; });
-      sauver();
-      closeVisitDetail();
-      renderVisites();
+      deleteVisit(state.currentVisit);
     });
   }
 
@@ -1322,11 +1433,16 @@
     });
 
     $("btnResetAll").addEventListener("click", function () {
-      if (!confirm("Vider le carnet et repartir de zéro ? Toutes vos données seront perdues.")) return;
-      S = etatInitial();
-      sauver();
-      refreshAll();
-      toast("Carnet vidé.");
+      // Confirmation bloquante (pas un toast "Annuler") : contrairement aux
+      // suppressions ponctuelles, ceci efface TOUT sans filet de rattrapage
+      // possible après coup (pas d'état précédent à restaurer partiellement).
+      confirmDialog("Vider le carnet et repartir de zéro ? Toutes vos données seront perdues.", "Tout vider").then(function (ok) {
+        if (!ok) return;
+        S = etatInitial();
+        sauver();
+        refreshAll();
+        toast("Carnet vidé.");
+      });
     });
   }
 
@@ -1335,9 +1451,12 @@
    * -------------------------------------------------------------------- */
 
   function init() {
-    document.querySelectorAll("#carnet-tabs .chip").forEach(function (btn) {
+    document.querySelectorAll("#carnet-tabs .tab").forEach(function (btn) {
       btn.addEventListener("click", function () { switchTab(btn.getAttribute("data-tab")); });
     });
+    initTabKeyboardNav();
+    syncStickyOffsets();
+    window.addEventListener("resize", syncStickyOffsets);
 
     initJourListeners();
     initVisitesListeners();
