@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-09T14:22:02",
+  "updated_at": "2026-10-10T13:41:05",
   "categories": [
     "spectacle",
     "spectacle_nocturne",
@@ -14,10 +14,10 @@
       "active": true,
       "active_periods": [],
       "stats": {
-        "today_count": 2,
+        "today_count": 6,
         "avg_per_day": 5.8,
         "days_present": 164,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 952
       },
       "history": [
@@ -676,6 +676,10 @@
         {
           "date": "2026-10-11",
           "count": 4
+        },
+        {
+          "date": "2026-10-12",
+          "count": 0
         }
       ]
     },
@@ -691,10 +695,10 @@
         }
       ],
       "stats": {
-        "today_count": 2,
+        "today_count": 4,
         "avg_per_day": 3.2,
         "days_present": 5,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 16
       },
       "history": [
@@ -717,6 +721,10 @@
         {
           "date": "2026-10-11",
           "count": 3
+        },
+        {
+          "date": "2026-10-12",
+          "count": 0
         }
       ]
     },
@@ -730,7 +738,7 @@
         "today_count": 1,
         "avg_per_day": 1.9,
         "days_present": 156,
-        "days_absent": 8,
+        "days_absent": 9,
         "total_representations": 297
       },
       "history": [
@@ -1389,6 +1397,10 @@
         {
           "date": "2026-10-11",
           "count": 1
+        },
+        {
+          "date": "2026-10-12",
+          "count": 0
         }
       ]
     },
@@ -1404,10 +1416,10 @@
         }
       ],
       "stats": {
-        "today_count": 2,
+        "today_count": 4,
         "avg_per_day": 3.48,
         "days_present": 164,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 571
       },
       "history": [
@@ -2066,6 +2078,10 @@
         {
           "date": "2026-10-11",
           "count": 3
+        },
+        {
+          "date": "2026-10-12",
+          "count": 0
         }
       ]
     },
@@ -2076,10 +2092,10 @@
       "active": true,
       "active_periods": [],
       "stats": {
-        "today_count": 2,
+        "today_count": 5,
         "avg_per_day": 4.62,
         "days_present": 164,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 757
       },
       "history": [
@@ -2738,6 +2754,10 @@
         {
           "date": "2026-10-11",
           "count": 4
+        },
+        {
+          "date": "2026-10-12",
+          "count": 0
         }
       ]
     },
@@ -2748,10 +2768,10 @@
       "active": true,
       "active_periods": [],
       "stats": {
-        "today_count": 3,
+        "today_count": 5,
         "avg_per_day": 4.7,
         "days_present": 164,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 771
       },
       "history": [
@@ -3410,6 +3430,10 @@
         {
           "date": "2026-10-11",
           "count": 4
+        },
+        {
+          "date": "2026-10-12",
+          "count": 0
         }
       ]
     },
@@ -3420,10 +3444,10 @@
       "active": true,
       "active_periods": [],
       "stats": {
-        "today_count": 2,
+        "today_count": 5,
         "avg_per_day": 4.8,
         "days_present": 164,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 787
       },
       "history": [
@@ -4082,6 +4106,10 @@
         {
           "date": "2026-10-11",
           "count": 4
+        },
+        {
+          "date": "2026-10-12",
+          "count": 0
         }
       ]
     },
@@ -4095,7 +4123,7 @@
         "today_count": 1,
         "avg_per_day": 1.0,
         "days_present": 164,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 164
       },
       "history": [
@@ -4754,6 +4782,10 @@
         {
           "date": "2026-10-11",
           "count": 1
+        },
+        {
+          "date": "2026-10-12",
+          "count": 0
         }
       ]
     },
@@ -4767,7 +4799,7 @@
         "today_count": 1,
         "avg_per_day": 1.0,
         "days_present": 164,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 164
       },
       "history": [
@@ -5426,6 +5458,10 @@
         {
           "date": "2026-10-11",
           "count": 1
+        },
+        {
+          "date": "2026-10-12",
+          "count": 0
         }
       ]
     },
@@ -5436,10 +5472,10 @@
       "active": true,
       "active_periods": [],
       "stats": {
-        "today_count": 1,
+        "today_count": 3,
         "avg_per_day": 2.91,
         "days_present": 164,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 478
       },
       "history": [
@@ -6098,6 +6134,10 @@
         {
           "date": "2026-10-11",
           "count": 3
+        },
+        {
+          "date": "2026-10-12",
+          "count": 0
         }
       ]
     },
@@ -6108,10 +6148,10 @@
       "active": true,
       "active_periods": [],
       "stats": {
-        "today_count": 1,
+        "today_count": 2,
         "avg_per_day": 1.88,
         "days_present": 164,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 309
       },
       "history": [
@@ -6770,6 +6810,10 @@
         {
           "date": "2026-10-11",
           "count": 2
+        },
+        {
+          "date": "2026-10-12",
+          "count": 0
         }
       ]
     },
@@ -6783,7 +6827,7 @@
         "today_count": 1,
         "avg_per_day": 1.05,
         "days_present": 164,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 172
       },
       "history": [
@@ -7442,6 +7486,10 @@
         {
           "date": "2026-10-11",
           "count": 1
+        },
+        {
+          "date": "2026-10-12",
+          "count": 0
         }
       ]
     },
@@ -7452,10 +7500,10 @@
       "active": true,
       "active_periods": [],
       "stats": {
-        "today_count": 3,
+        "today_count": 4,
         "avg_per_day": 5.33,
         "days_present": 164,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 874
       },
       "history": [
@@ -8114,6 +8162,10 @@
         {
           "date": "2026-10-11",
           "count": 3
+        },
+        {
+          "date": "2026-10-12",
+          "count": 0
         }
       ]
     },
@@ -8124,10 +8176,10 @@
       "active": true,
       "active_periods": [],
       "stats": {
-        "today_count": 2,
+        "today_count": 3,
         "avg_per_day": 2.99,
         "days_present": 162,
-        "days_absent": 2,
+        "days_absent": 3,
         "total_representations": 485
       },
       "history": [
@@ -8786,6 +8838,10 @@
         {
           "date": "2026-10-11",
           "count": 3
+        },
+        {
+          "date": "2026-10-12",
+          "count": 0
         }
       ]
     },
@@ -8799,7 +8855,7 @@
         "today_count": 1,
         "avg_per_day": 1.05,
         "days_present": 116,
-        "days_absent": 48,
+        "days_absent": 49,
         "total_representations": 122
       },
       "history": [
@@ -9458,6 +9514,10 @@
         {
           "date": "2026-10-11",
           "count": 0
+        },
+        {
+          "date": "2026-10-12",
+          "count": 0
         }
       ]
     },
@@ -9468,10 +9528,10 @@
       "active": true,
       "active_periods": [],
       "stats": {
-        "today_count": 2,
+        "today_count": 4,
         "avg_per_day": 3.5,
         "days_present": 164,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 574
       },
       "history": [
@@ -10130,6 +10190,10 @@
         {
           "date": "2026-10-11",
           "count": 3
+        },
+        {
+          "date": "2026-10-12",
+          "count": 0
         }
       ]
     },
@@ -10140,10 +10204,10 @@
       "active": true,
       "active_periods": [],
       "stats": {
-        "today_count": 2,
+        "today_count": 4,
         "avg_per_day": 3.5,
         "days_present": 164,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 574
       },
       "history": [
@@ -10802,6 +10866,10 @@
         {
           "date": "2026-10-11",
           "count": 3
+        },
+        {
+          "date": "2026-10-12",
+          "count": 0
         }
       ]
     }
