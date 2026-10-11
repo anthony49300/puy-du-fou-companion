@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-10T13:41:04",
+  "updated_at": "2026-10-11T11:56:25",
   "dates": [
     {
       "date": "2025-04-05",
@@ -2887,6 +2887,13 @@
     },
     {
       "date": "2026-10-12",
+      "season_year": 2026,
+      "status": "partial",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-10-13",
       "season_year": 2026,
       "status": "partial",
       "spectacle_count": 0,
