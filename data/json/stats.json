@@ -1,9 +1,9 @@
 {
-  "updated_at": "2026-10-15T12:39:19",
+  "updated_at": "2026-10-15T22:17:44",
   "global": {
     "total_spectacles": 17,
-    "total_representations": 17063,
-    "avg_per_day": 48.89,
+    "total_representations": 17102,
+    "avg_per_day": 48.86,
     "min_per_day": {
       "date": "2025-06-10",
       "count": 27
@@ -16,128 +16,128 @@
       {
         "slug": "lepee-du-roi-arthur",
         "name": "L'Épée du Roi Arthur",
-        "count": 1993
+        "count": 1997
       },
       {
         "slug": "les-automates-musiciens",
         "name": "Les Automates Musiciens",
-        "count": 1825
+        "count": 1828
       },
       {
         "slug": "le-mime-et-letoile",
         "name": "Le Mime et l'Étoile",
-        "count": 1669
+        "count": 1672
       },
       {
         "slug": "le-grand-carillon",
         "name": "Le Grand Carillon",
-        "count": 1662
+        "count": 1665
       },
       {
         "slug": "le-dernier-panache",
         "name": "Le Dernier Panache",
-        "count": 1597
+        "count": 1600
       }
     ],
     "least_represented": [
       {
         "slug": "la-frairie-de-la-toussaint",
         "name": "La Frairie de la Toussaint",
-        "count": 87
+        "count": 90
       },
       {
         "slug": "les-noces-de-feu",
         "name": "Les Noces de Feu",
-        "count": 257
+        "count": 258
       },
       {
         "slug": "le-mystere-de-la-perouse",
         "name": "Le Mystère de la Pérouse",
-        "count": 349
+        "count": 350
       },
       {
         "slug": "le-premier-royaume",
         "name": "Le Premier Royaume",
-        "count": 349
+        "count": 350
       },
       {
         "slug": "les-amoureux-de-verdun",
         "name": "Les Amoureux de Verdun",
-        "count": 393
+        "count": 394
       }
     ],
-    "continuous_count": 1722,
-    "nocturnal_count": 270
+    "continuous_count": 1726,
+    "nocturnal_count": 271
   },
   "charts": {
     "representations_per_spectacle": [
       {
         "name": "L'Épée du Roi Arthur",
-        "count": 1993
+        "count": 1997
       },
       {
         "name": "Les Automates Musiciens",
-        "count": 1825
+        "count": 1828
       },
       {
         "name": "Le Mime et l'Étoile",
-        "count": 1669
+        "count": 1672
       },
       {
         "name": "Le Grand Carillon",
-        "count": 1662
+        "count": 1665
       },
       {
         "name": "Le Dernier Panache",
-        "count": 1597
+        "count": 1600
       },
       {
         "name": "Les Vikings",
-        "count": 1216
+        "count": 1219
       },
       {
         "name": "Mousquetaire de Richelieu",
-        "count": 1213
+        "count": 1216
       },
       {
         "name": "Le Bal des Oiseaux Fantômes",
-        "count": 1204
+        "count": 1207
       },
       {
         "name": "Le Secret de la Lance",
-        "count": 1016
+        "count": 1018
       },
       {
         "name": "Les Grandes Eaux",
-        "count": 952
+        "count": 955
       },
       {
         "name": "Le Signe du Triomphe",
-        "count": 650
+        "count": 651
       },
       {
         "name": "La Renaissance du Château",
-        "count": 631
+        "count": 632
       },
       {
         "name": "Les Amoureux de Verdun",
-        "count": 393
+        "count": 394
       },
       {
         "name": "Le Premier Royaume",
-        "count": 349
+        "count": 350
       },
       {
         "name": "Le Mystère de la Pérouse",
-        "count": 349
+        "count": 350
       },
       {
         "name": "Les Noces de Feu",
-        "count": 257
+        "count": 258
       },
       {
         "name": "La Frairie de la Toussaint",
-        "count": 87
+        "count": 90
       }
     ],
     "spectacles_per_day": [
@@ -1535,6 +1535,10 @@
       },
       {
         "date": "2026-10-17",
+        "count": 17
+      },
+      {
+        "date": "2026-10-18",
         "count": 17
       }
     ],
@@ -2934,6 +2938,10 @@
       {
         "date": "2026-10-17",
         "count": 44
+      },
+      {
+        "date": "2026-10-18",
+        "count": 39
       }
     ],
     "hourly_distribution": [
@@ -2943,55 +2951,55 @@
       },
       {
         "hour": "09:00",
-        "count": 830
+        "count": 832
       },
       {
         "hour": "10:00",
-        "count": 1897
+        "count": 1902
       },
       {
         "hour": "11:00",
-        "count": 2193
+        "count": 2198
       },
       {
         "hour": "12:00",
-        "count": 1964
+        "count": 1968
       },
       {
         "hour": "13:00",
-        "count": 1164
+        "count": 1167
       },
       {
         "hour": "14:00",
-        "count": 1615
+        "count": 1620
       },
       {
         "hour": "15:00",
-        "count": 1745
+        "count": 1747
       },
       {
         "hour": "16:00",
-        "count": 1464
+        "count": 1467
       },
       {
         "hour": "17:00",
-        "count": 1501
+        "count": 1506
       },
       {
         "hour": "18:00",
-        "count": 1213
+        "count": 1215
       },
       {
         "hour": "19:00",
-        "count": 842
+        "count": 843
       },
       {
         "hour": "20:00",
-        "count": 363
+        "count": 364
       },
       {
         "hour": "21:00",
-        "count": 137
+        "count": 138
       },
       {
         "hour": "22:00",
@@ -3005,85 +3013,85 @@
     "top_spectacles": [
       {
         "name": "L'Épée du Roi Arthur",
-        "count": 1993
+        "count": 1997
       },
       {
         "name": "Les Automates Musiciens",
-        "count": 1825
+        "count": 1828
       },
       {
         "name": "Le Mime et l'Étoile",
-        "count": 1669
+        "count": 1672
       },
       {
         "name": "Le Grand Carillon",
-        "count": 1662
+        "count": 1665
       },
       {
         "name": "Le Dernier Panache",
-        "count": 1597
+        "count": 1600
       },
       {
         "name": "Les Vikings",
-        "count": 1216
+        "count": 1219
       },
       {
         "name": "Mousquetaire de Richelieu",
-        "count": 1213
+        "count": 1216
       },
       {
         "name": "Le Bal des Oiseaux Fantômes",
-        "count": 1204
+        "count": 1207
       },
       {
         "name": "Le Secret de la Lance",
-        "count": 1016
+        "count": 1018
       },
       {
         "name": "Les Grandes Eaux",
-        "count": 952
+        "count": 955
       }
     ],
     "bottom_spectacles": [
       {
         "name": "La Frairie de la Toussaint",
-        "count": 87
+        "count": 90
       },
       {
         "name": "Les Noces de Feu",
-        "count": 257
+        "count": 258
       },
       {
         "name": "Le Mystère de la Pérouse",
-        "count": 349
+        "count": 350
       },
       {
         "name": "Le Premier Royaume",
-        "count": 349
+        "count": 350
       },
       {
         "name": "Les Amoureux de Verdun",
-        "count": 393
+        "count": 394
       },
       {
         "name": "La Renaissance du Château",
-        "count": 631
+        "count": 632
       },
       {
         "name": "Le Signe du Triomphe",
-        "count": 650
+        "count": 651
       },
       {
         "name": "Les Grandes Eaux",
-        "count": 952
+        "count": 955
       },
       {
         "name": "Le Secret de la Lance",
-        "count": 1016
+        "count": 1018
       },
       {
         "name": "Le Bal des Oiseaux Fantômes",
-        "count": 1204
+        "count": 1207
       }
     ]
   },
@@ -3096,9 +3104,9 @@
     },
     {
       "year": 2026,
-      "total_representations": 8140,
+      "total_representations": 8179,
       "total_spectacles": 17,
-      "days_collected": 166
+      "days_collected": 167
     }
   ]
 }
