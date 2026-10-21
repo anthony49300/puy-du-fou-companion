@@ -1,17 +1,17 @@
 {
-  "date": "2026-10-21",
+  "date": "2026-10-22",
   "season": {
     "year": 2026,
     "name": "Saison 2026",
     "start_date": "2026-04-04",
     "end_date": "2027-01-03"
   },
-  "updated_at": "2026-10-20T22:17:47",
+  "updated_at": "2026-10-21T22:21:16",
   "status": "ok",
   "warnings": [],
   "source": {
     "url": "https://www.puydufou.com/france/fr/programme-du-jour",
-    "retrieved_at": "2026-10-19T09:50:17",
+    "retrieved_at": "2026-10-20T12:43:10",
     "program_published_at": null
   },
   "spectacle_count": 17,
@@ -210,11 +210,11 @@
       "category": "spectacle_immersif",
       "representations": [
         {
-          "start": "11:45",
-          "end": "18:45",
+          "start": "12:30",
+          "end": "19:45",
           "is_continuous": true,
           "status": "scheduled",
-          "source_text": "Le Mystère de La Pérouse 20' 11:45-18:45"
+          "source_text": "Le Mystère de La Pérouse 20' 12:30-19:45"
         }
       ]
     },
