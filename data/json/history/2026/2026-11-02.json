@@ -1,0 +1,25 @@
+{
+  "date": "2026-11-02",
+  "season": {
+    "year": 2026,
+    "name": "Saison 2026",
+    "start_date": "2026-04-04",
+    "end_date": "2027-01-03"
+  },
+  "updated_at": "2026-10-31T13:39:13",
+  "status": "partial",
+  "warnings": [
+    "Aucune donnée publiée pour 2026-11-02 sur la page (dates disponibles : 2026-10-31, 2026-11-01).",
+    "Aucune représentation détectée dans le programme récupéré."
+  ],
+  "source": {
+    "url": "https://www.puydufou.com/france/fr/programme-du-jour",
+    "retrieved_at": "2026-10-31T13:39:12",
+    "program_published_at": null
+  },
+  "spectacle_count": 0,
+  "representation_count": 0,
+  "nocturne": null,
+  "spectacles": [],
+  "next_opening": null
+}
