@@ -42,6 +42,10 @@ TODAY_JSON = JSON_DIR / "today.json"
 SPECTACLES_JSON = JSON_DIR / "spectacles.json"
 DATES_JSON = JSON_DIR / "dates.json"
 STATS_JSON = JSON_DIR / "stats.json"
+# Historique journalier détaillé par spectacle, un petit fichier par slug —
+# séparé de SPECTACLES_JSON pour ne pas alourdir la liste principale avec
+# des centaines de points par spectacle (voir src/exporter.py:export_spectacles).
+SPECTACLE_HISTORY_DIR = JSON_DIR / "spectacle-history"
 
 for _d in (DATA_DIR, JSON_DIR, HISTORY_JSON_DIR, RAW_DIR):
     _d.mkdir(parents=True, exist_ok=True)

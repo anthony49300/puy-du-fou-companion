@@ -362,6 +362,46 @@ def test_export_spectacles_scoped_excludes_a_spectacle_absent_that_season(conn, 
     assert {s["slug"] for s in payload_2026["spectacles"]} == {"les-vikings", "le-bal-des-oiseaux-fantomes"}
 
 
+def test_export_spectacles_does_not_embed_history_in_the_main_listing(conn, tmp_path, monkeypatch):
+    # L'historique journalier détaillé (un point par jour) alourdissait
+    # spectacles.json de plusieurs centaines de Ko pour rien : seul le
+    # panneau de détail d'UN spectacle en a besoin à la fois (voir
+    # export_spectacles, _spectacle_history_dir).
+    monkeypatch.setattr(config, "HISTORY_JSON_DIR", tmp_path / "history")
+    _add_day(conn, "2026-08-26")
+
+    payload = exporter.export_spectacles(conn, 2026)
+
+    assert "history" not in payload["spectacles"][0]
+    assert "stats" in payload["spectacles"][0]  # le reste de la fiche (sans l'historique) reste là
+
+
+def test_export_spectacles_writes_a_separate_history_file_per_spectacle(conn, tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "HISTORY_JSON_DIR", tmp_path / "history")
+    _add_day(conn, "2026-08-26")
+
+    exporter.export_spectacles(conn, 2026)
+
+    history_path = tmp_path / "history" / "2026" / "spectacle-history" / "les-vikings.json"
+    assert history_path.exists()
+    payload = json.loads(history_path.read_text(encoding="utf-8"))
+    assert payload["slug"] == "les-vikings"
+    assert payload["history"] == [{"date": "2026-08-26", "count": 1}]
+
+
+def test_export_spectacles_global_history_dir_is_isolated_by_config(conn, tmp_path, monkeypatch):
+    # Le fichier global (season_year=None) utilise SPECTACLE_HISTORY_DIR, un
+    # chemin dédié — pas HISTORY_JSON_DIR — pour rester isolable dans les
+    # tests sans dépendre d'un autre réglage déjà monkeypatché par ailleurs.
+    monkeypatch.setattr(config, "SPECTACLES_JSON", tmp_path / "spectacles.json")
+    monkeypatch.setattr(config, "SPECTACLE_HISTORY_DIR", tmp_path / "spectacle-history")
+    _add_day(conn, "2026-08-26")
+
+    exporter.export_spectacles(conn)
+
+    assert (tmp_path / "spectacle-history" / "les-vikings.json").exists()
+
+
 def test_export_per_year_views_skips_a_season_not_yet_started(conn, tmp_path, monkeypatch):
     monkeypatch.setattr(config, "HISTORY_JSON_DIR", tmp_path / "history")
     database.set_season_dates(conn, 2026, start_date="2026-04-11", end_date="2026-11-08")

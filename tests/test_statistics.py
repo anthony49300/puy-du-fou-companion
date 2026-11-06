@@ -363,6 +363,7 @@ def test_export_all_produces_valid_json(sample_conn, tmp_path, monkeypatch):
     monkeypatch.setattr(config, "DATES_JSON", tmp_path / "dates.json")
     monkeypatch.setattr(config, "STATS_JSON", tmp_path / "stats.json")
     monkeypatch.setattr(config, "HISTORY_JSON_DIR", tmp_path / "history")
+    monkeypatch.setattr(config, "SPECTACLE_HISTORY_DIR", tmp_path / "spectacle-history")
 
     summary = exporter.export_all(sample_conn, reference_date="2026-08-26")
     assert summary["dates_count"] == 2

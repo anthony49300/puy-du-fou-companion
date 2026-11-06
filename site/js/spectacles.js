@@ -16,6 +16,7 @@
     years: [],
     year: null,
     todayClosed: false, // voir fetchTodayStatus : "Aujourd'hui : 0" ne veut rien dire un jour de fermeture
+    currentHistory: null, // historique du spectacle actuellement affiché (voir loadSpectacleHistory) — pour un redessin sans refetch (ex: pdf:themechange)
   };
 
   var chartInstance = null;
@@ -115,9 +116,21 @@
     }).join("");
   }
 
+  // data/json/history/{year}/spectacle-history/{slug}.json (ou
+  // data/json/spectacle-history/{slug}.json sans sélecteur d'année) : voir
+  // src/exporter.py:export_spectacles — l'historique détaillé (un point
+  // par jour) n'est plus embarqué dans la liste principale des spectacles,
+  // chargé seulement ici, à l'ouverture du panneau d'UN spectacle.
+  function spectacleHistoryPath(slug) {
+    return state.year
+      ? "history/" + state.year + "/spectacle-history/" + slug + ".json"
+      : "spectacle-history/" + slug + ".json";
+  }
+
   function renderDetail() {
     var panel = document.getElementById("detail-panel");
     var s = state.selectedSlug ? findSpectacle(state.selectedSlug) : null;
+    state.currentHistory = null; // voir le listener pdf:themechange plus bas
 
     if (!s) {
       panel.hidden = true;
@@ -140,37 +153,59 @@
       '<div class="stat-tile"><div class="stat-label">Jours présents</div><div class="stat-value">' + (stats.days_present != null ? stats.days_present : "—") + "</div></div>" +
       '<div class="stat-tile"><div class="stat-label">Jours absents</div><div class="stat-value">' + (stats.days_absent != null ? stats.days_absent : "—") + "</div></div>" +
       "</div>" +
-      (s.history && s.history.length
-        ? '<div class="chart-wrap"><canvas id="spectacle-history-chart" role="img" aria-label="Historique du nombre de représentations par jour pour ' + PDF.escapeHtml(s.name) + '"></canvas></div>' +
-          '<details class="chart-table-details"><summary>Voir les données en tableau</summary>' +
-          '<div class="table-wrap"><table class="data-table" id="spectacle-history-table"></table></div></details>'
-        : '<p class="text-muted">Aucun historique disponible pour ce spectacle.</p>');
+      '<div id="spectacle-history-slot"><div class="empty-state"><div class="skeleton" style="height:14rem;"></div></div></div>';
 
     var closeBtn = document.getElementById("close-detail");
     if (closeBtn) closeBtn.addEventListener("click", function () { selectSpectacle(null); });
 
-    if (s.history && s.history.length) {
-      drawHistoryChart(s);
-    }
+    loadSpectacleHistory(s);
   }
 
-  // Rempli dans tous les cas (voir renderDetail) : seule vue possible si
-  // Chart.js ne s'est pas chargé (CDN hors service, bloqueur de script...).
-  function renderHistoryTable(s) {
+  // Charge l'historique détaillé d'UN spectacle à la demande (voir
+  // spectacleHistoryPath) plutôt que de compter sur `s.history`, qui
+  // n'existe plus dans la liste principale (voir spectacleHistoryPath).
+  function loadSpectacleHistory(s) {
+    var slot = document.getElementById("spectacle-history-slot");
+    PDF.fetchJSON(spectacleHistoryPath(s.slug))
+      .then(function (data) {
+        // La sélection a pu changer pendant le chargement (clic rapide sur
+        // une autre carte) : ne pas écraser le panneau d'un AUTRE spectacle.
+        if (state.selectedSlug !== s.slug || !slot.isConnected) return;
+        var history = data.history || [];
+        if (!history.length) {
+          slot.innerHTML = '<p class="text-muted">Aucun historique disponible pour ce spectacle.</p>';
+          return;
+        }
+        state.currentHistory = history;
+        slot.innerHTML =
+          '<div class="chart-wrap"><canvas id="spectacle-history-chart" role="img" aria-label="Historique du nombre de représentations par jour pour ' + PDF.escapeHtml(s.name) + '"></canvas></div>' +
+          '<details class="chart-table-details"><summary>Voir les données en tableau</summary>' +
+          '<div class="table-wrap"><table class="data-table" id="spectacle-history-table"></table></div></details>';
+        drawHistoryChart(history);
+      })
+      .catch(function (err) {
+        if (state.selectedSlug !== s.slug || !slot.isConnected) return;
+        PDF.renderErrorMessage(slot, "Impossible de charger l'historique de ce spectacle (" + err.message + ").");
+      });
+  }
+
+  // Rempli dans tous les cas (voir drawHistoryChart) : seule vue possible
+  // si Chart.js ne s'est pas chargé (CDN hors service, bloqueur de script...).
+  function renderHistoryTable(history) {
     var table = document.getElementById("spectacle-history-table");
     if (!table) return;
     table.innerHTML =
       "<thead><tr><th>Date</th><th>Représentations</th></tr></thead><tbody>" +
-      s.history.map(function (h) {
+      history.map(function (h) {
         return "<tr><td>" + PDF.escapeHtml(PDF.formatDateFR(h.date)) + "</td><td>" + h.count + "</td></tr>";
       }).join("") +
       "</tbody>";
   }
 
-  function drawHistoryChart(s) {
+  function drawHistoryChart(history) {
     var canvas = document.getElementById("spectacle-history-chart");
     if (!canvas) return;
-    renderHistoryTable(s);
+    renderHistoryTable(history);
 
     if (typeof Chart === "undefined") {
       var panel = document.getElementById("detail-panel");
@@ -186,8 +221,8 @@
     if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
 
     var theme = PDF.getChartTheme();
-    var labels = s.history.map(function (h) { return PDF.formatDateFR(h.date); });
-    var values = s.history.map(function (h) { return h.count; });
+    var labels = history.map(function (h) { return PDF.formatDateFR(h.date); });
+    var values = history.map(function (h) { return h.count; });
 
     chartInstance = new Chart(canvas.getContext("2d"), {
       type: "line",
@@ -334,10 +369,9 @@
       });
 
     window.addEventListener("pdf:themechange", function () {
-      if (state.selectedSlug) {
-        var s = findSpectacle(state.selectedSlug);
-        if (s && s.history && s.history.length) drawHistoryChart(s);
-      }
+      // Redessine avec l'historique déjà en mémoire (voir
+      // loadSpectacleHistory) plutôt que de le recharger pour rien.
+      if (state.selectedSlug && state.currentHistory) drawHistoryChart(state.currentHistory);
     });
   }
 
