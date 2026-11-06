@@ -1,0 +1,7 @@
+{
+  "_comment": "Creux planifiés À L'INTÉRIEUR d'une saison (voir data/seasons.json) où le parc n'est normalement PAS ouvert au public — ex: entre la fin de la saison principale et le début de Noël. Clé = année de la saison concernée (celle de data/seasons.json), valeur = liste de plages {\"from\", \"to\"} (YYYY-MM-DD, bornes incluses). Un jour dans une de ces plages est quand même collecté normalement (voir Collector.collect) : s'il ne se passe rien, c'est une fermeture normale (closed_day, comme avant) ; si de VRAIES représentations sont trouvées malgré tout, c'est marqué comme une privatisation (DATE_STATUS_PRIVATE_EVENT) plutôt qu'un jour ouvert normal — visible dans l'UI, exclu des statistiques par spectacle. Modifiable directement ici, sans commande Python, comme data/seasons.json.",
+
+  "2026": [
+    {"from": "2026-11-02", "to": "2026-12-17"}
+  ]
+}

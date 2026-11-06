@@ -31,6 +31,15 @@ test("dayCellInfo: out_of_season is treated the same as closed_day", () => {
   assert.match(info.cls, /is-closed/);
 });
 
+test("dayCellInfo: private_event gets its own is-private class, stays clickable", () => {
+  const hist = loadModule("historique.js");
+  const info = hist.dayCellInfo({ status: "private_event" }, false, "2026-11-07");
+  assert.strictEqual(info.disabled, false);
+  assert.strictEqual(info.cls, "cal-day has-data is-private");
+  assert.doesNotMatch(info.cls, /is-closed/);
+  assert.match(info.title, /Privatisation/);
+});
+
 test("dayCellInfo: selected day gets is-selected", () => {
   const hist = loadModule("historique.js");
   const info = hist.dayCellInfo({ status: "ok" }, true, "2026-08-26");

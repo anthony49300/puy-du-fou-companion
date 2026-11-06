@@ -135,7 +135,9 @@ def _is_resolved(conn, date_str: str) -> bool:
     même une fois que le site finit par publier le vrai programme (voir la
     note dans la docstring de cmd_collect_daily)."""
     row = database.get_active_date(conn, date_str)
-    return row is not None and row["status"] in (config.DATE_STATUS_OK, config.DATE_STATUS_CLOSED_DAY)
+    return row is not None and row["status"] in (
+        config.DATE_STATUS_OK, config.DATE_STATUS_CLOSED_DAY, config.DATE_STATUS_PRIVATE_EVENT,
+    )
 
 
 def cmd_collect_daily(args: argparse.Namespace) -> int:

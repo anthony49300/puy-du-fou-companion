@@ -130,15 +130,23 @@ def compute_spectacle_stats(
         season_dates = {d["date"] for d in database.list_active_dates(conn, season_year)}
         reps = [r for r in reps if r["date"] in season_dates]
 
-    # Un jour de fermeture ponctuelle du parc (closed_day) ne compte pas
-    # comme un jour où CE spectacle serait "absent" : ce jour-là, AUCUN
-    # spectacle n'a lieu, ce n'est pas spécifique à celui-ci. Il ne doit
-    # donc pas gonfler le dénominateur days_present + days_absent, ni
-    # apparaître dans l'historique journalier de ce spectacle.
+    # Un jour de fermeture ponctuelle du parc (closed_day), hors saison, ou
+    # une privatisation (private_event — voir data/planned_closures.json) ne
+    # compte pas comme un jour où CE spectacle serait "présent"/"absent" :
+    # ce n'est pas une journée normale de programmation. Ne doit donc ni
+    # gonfler le dénominateur days_present + days_absent, ni apparaître dans
+    # l'historique journalier de ce spectacle.
+    excluded_statuses = (config.DATE_STATUS_CLOSED_DAY, config.DATE_STATUS_OUT_OF_SEASON, config.DATE_STATUS_PRIVATE_EVENT)
     all_active_dates = [
         d for d in database.list_active_dates(conn, season_year)
-        if d["status"] not in (config.DATE_STATUS_CLOSED_DAY, config.DATE_STATUS_OUT_OF_SEASON)
+        if d["status"] not in excluded_statuses
     ]
+    # Une privatisation PEUT avoir de vraies représentations (contrairement
+    # à closed_day/out_of_season, toujours vides) : sans ce filtre, elles
+    # gonfleraient quand même total_representations/days_present tout en
+    # restant invisibles de l'historique ci-dessus (basé sur all_active_dates).
+    valid_dates = {d["date"] for d in all_active_dates}
+    reps = [r for r in reps if r["date"] in valid_dates]
 
     # Spectacle éphémère (Toussaint, Noël...) : en dehors de ses
     # active_periods configurées, un jour d'ouverture du parc n'est pas une

@@ -25,7 +25,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
-from src import config, database, normalizer, pdf_parser, schedule_json_parser, season_config
+from src import config, database, normalizer, pdf_parser, planned_closures, schedule_json_parser, season_config
 from src.models import now_iso, today_paris
 
 
@@ -435,7 +435,21 @@ class Collector:
                     dry_run_preview=preview,
                 )
 
-            if parse_result.park_closed:
+            if resolved and planned_closures.is_in_planned_gap(effective_date_str):
+                # Le parc n'est normalement pas ouvert au public à cette
+                # période (voir data/planned_closures.json, ex: creux entre
+                # la saison principale et Noël), mais la source publie de
+                # VRAIES représentations : signe d'une privatisation
+                # (événement d'entreprise...), pas d'une réouverture
+                # publique normale — ni "ok" (fausserait les stats de
+                # fréquence des spectacles concernés), ni "closed_day" (il y
+                # a bien un programme, ce n'est pas rien).
+                status = config.DATE_STATUS_PRIVATE_EVENT
+                warnings.append(
+                    f"Programme réel détecté le {effective_date_str} alors que le parc n'est normalement pas "
+                    "ouvert au public à cette période : probable privatisation (événement privé)."
+                )
+            elif parse_result.park_closed:
                 # Constaté sur la source (0 représentation, mais date bien
                 # reconnue par le site) : normal, pas une anomalie — statut
                 # dédié plutôt que "partial" (qui impliquerait un souci de

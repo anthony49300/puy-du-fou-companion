@@ -32,6 +32,11 @@ KNOWN_SPECTACLES_PATH = DATA_DIR / "known_spectacles.json"
 # que KNOWN_SPECTACLES_PATH ci-dessus pour les spectacles).
 SEASONS_CONFIG_PATH = DATA_DIR / "seasons.json"
 
+# Creux planifiés à l'intérieur d'une saison (ex: entre la saison principale
+# et Noël) où une collecte avec de vraies représentations signale une
+# privatisation plutôt qu'un jour ouvert normal (voir src/planned_closures.py).
+PLANNED_CLOSURES_PATH = DATA_DIR / "planned_closures.json"
+
 # Fichiers JSON générés pour le frontend
 TODAY_JSON = JSON_DIR / "today.json"
 SPECTACLES_JSON = JSON_DIR / "spectacles.json"
@@ -162,6 +167,16 @@ DATE_STATUS_OUT_OF_SEASON = "out_of_season"
 # bien créée, avec 0 représentation, pour garder une trace du fait "on a
 # vérifié, le parc était fermé" plutôt que de laisser la date inconnue.
 DATE_STATUS_CLOSED_DAY = "closed_day"
+# De vraies représentations constatées un jour qui tombe dans un creux
+# planifié de la saison (voir data/planned_closures.json) : le parc n'est
+# normalement pas ouvert au public à cette période (ex: entre la fin de la
+# saison principale et le début de Noël), mais la source publie un vrai
+# programme — signe d'une privatisation (événement d'entreprise...) plutôt
+# que d'une réouverture publique. Conservé et visible (voir l'export), mais
+# exclu des statistiques par spectacle comme DATE_STATUS_CLOSED_DAY/
+# DATE_STATUS_OUT_OF_SEASON (voir src/statistics.py) : ce n'est pas une
+# journée "normale" pour la fréquence de programmation d'un spectacle.
+DATE_STATUS_PRIVATE_EVENT = "private_event"
 
 DATE_STATUSES = (
     DATE_STATUS_OK,
@@ -170,6 +185,7 @@ DATE_STATUSES = (
     DATE_STATUS_PARTIAL,
     DATE_STATUS_OUT_OF_SEASON,
     DATE_STATUS_CLOSED_DAY,
+    DATE_STATUS_PRIVATE_EVENT,
 )
 
 # Statut d'une représentation individuelle (table `representations`)

@@ -3,12 +3,13 @@
 Utilise un SourceAdapter factice (pas de vrai réseau) pour rester rapide et
 déterministe.
 """
+import json
 from datetime import date, timedelta
 
 import pytest
 
 from src import collector as collector_module
-from src import config, database, season_config
+from src import config, database, planned_closures, season_config
 from src.collector import Collector, FetchResult, SourceAdapter
 from tests.fixtures import SAMPLE_SCHEDULE_HTML, build_schedule_html
 
@@ -23,6 +24,17 @@ def _isolate_seasons_config(tmp_path, monkeypatch):
     season_config.clear_cache()
     yield
     season_config.clear_cache()
+
+
+@pytest.fixture(autouse=True)
+def _isolate_planned_closures(tmp_path, monkeypatch):
+    # Même précaution que ci-dessus pour data/planned_closures.json : son
+    # contenu réel évoluera au fil des saisons, les tests ne doivent pas en
+    # dépendre.
+    monkeypatch.setattr(config, "PLANNED_CLOSURES_PATH", tmp_path / "planned-closures-unused.json")
+    planned_closures.clear_cache()
+    yield
+    planned_closures.clear_cache()
 
 
 class _FailIfCalledAdapter(SourceAdapter):
@@ -120,6 +132,76 @@ def test_collect_handles_season_spanning_new_year(db_path):
     # 2027-01-10 est réellement hors saison : doit être court-circuité.
     outcome = Collector(adapter=_FailIfCalledAdapter(), db_path=db_path).collect(date(2027, 1, 10))
     assert outcome.status == config.DATE_STATUS_OUT_OF_SEASON
+
+
+def test_collect_flags_private_event_when_real_data_found_in_a_planned_gap(db_path, monkeypatch, tmp_path):
+    """Cas réel (07-08/11/2026) : une date EN saison (voir data/seasons.json,
+    une seule plage continue) mais dans un creux planifié (voir
+    data/planned_closures.json, entre la fin de la saison principale et
+    Noël) où de vraies représentations sont quand même publiées : signe
+    d'une privatisation, pas d'une réouverture publique normale."""
+    with database.connect(db_path) as conn:
+        database.set_season_dates(conn, 2026, start_date="2026-04-04", end_date="2027-01-03")
+
+    closures_path = tmp_path / "planned-closures.json"
+    closures_path.write_text(
+        json.dumps({"2026": [{"from": "2026-11-02", "to": "2026-12-17"}]}), encoding="utf-8"
+    )
+    monkeypatch.setattr(config, "PLANNED_CLOSURES_PATH", closures_path)
+    planned_closures.clear_cache()
+
+    html = build_schedule_html({
+        "dates_open": ["2026-11-07"],
+        "sections": {"wzobj:show1": "<span class='entity-number'>1</span>Les Vikings"},
+        "events": {
+            "2026-11-07": {
+                "wzobj:show1": {
+                    "duration": "26minutes",
+                    "times": [{"start": {"hour": "11", "min": "30"}, "end": {"hour": 11, "min": 56}}],
+                },
+            },
+        },
+    })
+
+    class _HtmlAdapter(SourceAdapter):
+        source_url = "https://example.test/programme-du-jour"
+
+        def fetch(self, target_date):
+            return FetchResult(content=html.encode("utf-8"), content_type="html", source_url=self.source_url)
+
+    outcome = Collector(adapter=_HtmlAdapter(), db_path=db_path).collect(date(2026, 11, 7))
+
+    assert outcome.status == config.DATE_STATUS_PRIVATE_EVENT
+    assert outcome.representation_count == 1
+    assert any("privatisation" in w.lower() for w in outcome.warnings)
+
+
+def test_collect_keeps_closed_day_status_in_a_planned_gap_with_no_real_data(db_path, monkeypatch, tmp_path):
+    """Dans le même creux planifié, un jour SANS représentation reste un
+    closed_day normal (comportement inchangé) — le creux planifié ne change
+    le statut QUE si de vraies données apparaissent malgré tout."""
+    with database.connect(db_path) as conn:
+        database.set_season_dates(conn, 2026, start_date="2026-04-04", end_date="2027-01-03")
+
+    closures_path = tmp_path / "planned-closures.json"
+    closures_path.write_text(
+        json.dumps({"2026": [{"from": "2026-11-02", "to": "2026-12-17"}]}), encoding="utf-8"
+    )
+    monkeypatch.setattr(config, "PLANNED_CLOSURES_PATH", closures_path)
+    planned_closures.clear_cache()
+
+    empty_html = build_schedule_html({"dates_open": [], "events": {}, "sections": {}})
+
+    class _HtmlAdapter(SourceAdapter):
+        source_url = "https://example.test/programme-du-jour"
+
+        def fetch(self, target_date):
+            return FetchResult(content=empty_html.encode("utf-8"), content_type="html", source_url=self.source_url)
+
+    monkeypatch.setattr(collector_module, "today_paris", lambda: date(2026, 11, 4))
+    outcome = Collector(adapter=_HtmlAdapter(), db_path=db_path).collect(date(2026, 11, 4))
+
+    assert outcome.status == config.DATE_STATUS_CLOSED_DAY
 
 
 def test_collect_html_source_writes_representations_from_embedded_json(db_path):

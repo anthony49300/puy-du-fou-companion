@@ -29,8 +29,13 @@
   function dayCellInfo(record, isSelected, dateStr) {
     var hasData = !!record;
     var isClosed = hasData && (record.status === "closed_day" || record.status === "out_of_season");
-    var cls = "cal-day" + (hasData ? " has-data" : "") + (isClosed ? " is-closed" : "") + (isSelected ? " is-selected" : "");
-    var title = !hasData ? "Aucune donnée" : isClosed ? "Parc fermé le " + PDF.formatDateFR(dateStr) : PDF.formatDateFR(dateStr);
+    var isPrivate = hasData && record.status === "private_event";
+    var cls = "cal-day" + (hasData ? " has-data" : "") + (isClosed ? " is-closed" : "") + (isPrivate ? " is-private" : "") + (isSelected ? " is-selected" : "");
+    var title = !hasData
+      ? "Aucune donnée"
+      : isClosed ? "Parc fermé le " + PDF.formatDateFR(dateStr)
+      : isPrivate ? "Privatisation probable le " + PDF.formatDateFR(dateStr) + " (hors statistiques)"
+      : PDF.formatDateFR(dateStr);
     return { cls: cls, disabled: !hasData, title: title };
   }
 
