@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-29T22:00:07",
+  "updated_at": "2026-11-06T21:31:52",
   "categories": [
     "spectacle",
     "spectacle_nocturne",
@@ -3098,7 +3098,12 @@
       "name": "Le Grand Carillon",
       "category": "spectacle",
       "active": true,
-      "active_periods": [],
+      "active_periods": [
+        {
+          "from": "2025-04-05",
+          "to": "2025-11-11"
+        }
+      ],
       "stats": {
         "today_count": 0,
         "avg_per_day": 4.83,

@@ -164,10 +164,23 @@ def compute_spectacle_stats(
         if season_year is None or str(season_year) in (start[:4], end[:4])
     ]
     if relevant_periods:
-        all_active_dates = [
-            d for d in all_active_dates
-            if any(start <= d["date"] <= end for start, end in relevant_periods)
-        ]
+        # Une période ne restreint que les dates de SA PROPRE année : sur la
+        # vue globale (season_year=None, toutes saisons confondues), une
+        # année sans période définie du tout doit rester illimitée plutôt
+        # qu'exclue par le simple fait qu'une AUTRE année en a une — sinon
+        # ajouter une période pour une seule année (ex: Le Grand Carillon,
+        # qui ne joue pas pendant Noël seulement à partir de 2026) viderait
+        # à tort l'historique de toutes les autres années (régression
+        # constatée : 2025 disparu du graphique global dès l'ajout de la
+        # période 2026).
+        years_with_a_period = {start[:4] for start, end in relevant_periods} | {end[:4] for start, end in relevant_periods}
+
+        def _within_its_own_year_periods(date_str: str) -> bool:
+            if date_str[:4] not in years_with_a_period:
+                return True
+            return any(start <= date_str <= end for start, end in relevant_periods)
+
+        all_active_dates = [d for d in all_active_dates if _within_its_own_year_periods(d["date"])]
 
     total_days = len(all_active_dates)
 

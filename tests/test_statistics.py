@@ -254,6 +254,33 @@ def test_compute_spectacle_stats_ignores_an_active_period_from_another_season(sa
     assert len(stats_2025["history"]) == 1  # et non 0 (voir la régression ci-dessus)
 
 
+def test_compute_spectacle_stats_global_view_keeps_years_without_a_configured_period(sample_conn, _with_active_periods):
+    # Régression constatée en pratique (Le Grand Carillon, qui ne joue pas
+    # pendant Noël SEULEMENT à partir de 2026) : sur la vue GLOBALE (toutes
+    # saisons, season_year=None), ajouter une période pour une seule année
+    # ne doit pas vider l'historique des AUTRES années qui n'en ont aucune —
+    # ces années restent illimitées, pas exclues par défaut.
+    _add_day(sample_conn, "2025-08-25", [
+        ("Les Vikings", "les-vikings", "spectacle", "11:30", None, False, config.REPR_STATUS_SCHEDULED),
+    ])
+    _with_active_periods({
+        "les-vikings": {
+            "name": "Les Vikings",
+            "category": "spectacle",
+            "aliases": ["Les Vikings"],
+            # Aucune période pour 2025 : seule 2026 en a une.
+            "active_periods": [{"from": "2026-04-04", "to": "2026-08-26"}],
+        }
+    })
+
+    stats_global = statistics.compute_spectacle_stats(sample_conn, "les-vikings")
+
+    dates_in_history = {h["date"] for h in stats_global["history"]}
+    assert "2025-08-25" in dates_in_history  # pas vidé par la période 2026 (régression)
+    assert "2026-08-25" in dates_in_history
+    assert "2026-08-26" in dates_in_history  # dans la période 2026 (bornes incluses)
+
+
 def test_hourly_distribution(sample_conn):
     dist = statistics.hourly_distribution(sample_conn)
     hours = {d["hour"]: d["count"] for d in dist}
