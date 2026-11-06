@@ -89,6 +89,20 @@ def test_compute_global_stats_totals(sample_conn):
     assert stats["nocturnal_count"] == 2  # les-orgues-de-feu x2 (catégorie nocturne)
 
 
+def test_compute_global_stats_excludes_private_event_day(sample_conn):
+    # Une privatisation gonflerait les totaux globaux (pas seulement les
+    # stats par spectacle, voir test_compute_spectacle_stats_excludes_
+    # private_event_days) si ses représentations n'étaient pas exclues en
+    # amont, dans database.get_all_active_representations.
+    _add_day(sample_conn, "2026-08-27", [
+        ("Les Vikings", "les-vikings", "spectacle", "20:00", None, False, config.REPR_STATUS_SCHEDULED),
+    ], status=config.DATE_STATUS_PRIVATE_EVENT)
+
+    stats = statistics.compute_global_stats(sample_conn)
+
+    assert stats["total_representations"] == 7  # pas 8 : la privatisation est exclue
+
+
 def test_compute_global_stats_min_max_per_day(sample_conn):
     stats = statistics.compute_global_stats(sample_conn)
     assert stats["min_per_day"] == {"date": "2026-08-25", "count": 3}

@@ -4,10 +4,10 @@
   "start_date": "2026-04-04",
   "end_date": "2027-01-03",
   "final": false,
-  "as_of_date": "2026-11-01",
-  "generated_at": "2026-11-01T14:15:58",
+  "as_of_date": "2026-11-06",
+  "generated_at": "2026-11-06T21:20:36",
   "days_collected": 181,
-  "closed_days_count": 31,
+  "closed_days_count": 36,
   "representations_by_category": {
     "spectacle_immersif": 873,
     "spectacle": 7707,
