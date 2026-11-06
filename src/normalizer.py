@@ -89,6 +89,18 @@ def get_active_periods(slug: str) -> list[tuple[str, str]]:
     return [(p["from"], p["to"]) for p in info.get("active_periods", [])]
 
 
+def all_active_periods() -> dict[str, list[tuple[str, str]]]:
+    """{slug: [(from, to), ...]} pour tous les spectacles ayant au moins une
+    active_period configurée (les autres, permanents, sont omis) — utilisé
+    par src/config_consistency.py pour vérifier le fichier dans son
+    ensemble plutôt que spectacle par spectacle."""
+    return {
+        slug: [(p["from"], p["to"]) for p in info.get("active_periods", [])]
+        for slug, info in _load_known_spectacles().items()
+        if info.get("active_periods")
+    }
+
+
 def resolve_spectacle(raw_name: str) -> SpectacleInfo:
     """Résout un nom brut extrait du PDF vers un SpectacleInfo canonique."""
     cleaned = re.sub(r"\s+", " ", raw_name).strip()
