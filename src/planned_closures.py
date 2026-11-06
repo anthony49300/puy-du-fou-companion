@@ -42,3 +42,13 @@ def is_in_planned_gap(date_str: str) -> bool:
             if r["from"] <= date_str <= r["to"]:
                 return True
     return False
+
+
+def all_gaps() -> dict[str, list[tuple[str, str]]]:
+    """{année (clé du fichier): [(from, to), ...]} pour toutes les plages
+    configurées — utilisé par src/config_consistency.py pour vérifier le
+    fichier dans son ensemble plutôt qu'une seule date à la fois."""
+    return {
+        year: [(r["from"], r["to"]) for r in ranges]
+        for year, ranges in _load_config().items()
+    }
