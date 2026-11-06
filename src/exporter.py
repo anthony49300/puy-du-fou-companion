@@ -346,6 +346,14 @@ def maybe_export_season_recaps(conn: sqlite3.Connection, *, today: Optional[str]
     return generated
 
 
+def _spectacle_history_dir(season_year: Optional[int]) -> Path:
+    return (
+        config.HISTORY_JSON_DIR / str(season_year) / "spectacle-history"
+        if season_year
+        else config.SPECTACLE_HISTORY_DIR
+    )
+
+
 def export_spectacles(conn: sqlite3.Connection, season_year: Optional[int] = None) -> dict:
     """`season_year=None` (défaut) : fichier global data/json/spectacles.json,
     tous les spectacles connus, toutes saisons confondues (comportement
@@ -353,13 +361,29 @@ def export_spectacles(conn: sqlite3.Connection, season_year: Optional[int] = Non
     (data/json/history/{année}/spectacles.json, voir
     `export_per_year_views`) ne gardant que les spectacles réellement
     représentés cette saison-là (sinon des entrées à 0 partout pour des
-    spectacles d'une autre année viendraient polluer la liste)."""
+    spectacles d'une autre année viendraient polluer la liste).
+
+    L'historique journalier détaillé (`history`, un point par jour sur
+    toute la saison) n'est PAS inclus dans ce fichier : à 17 spectacles et
+    des mois de données, ça alourdissait spectacles.json de plusieurs
+    centaines de Ko téléchargés à chaque visite de la page, alors qu'un
+    seul spectacle à la fois en a besoin (son panneau de détail). Il est
+    exporté séparément, un petit fichier par spectacle (voir
+    `_spectacle_history_dir`), chargé par le frontend uniquement à
+    l'ouverture de ce panneau — même principe que history/{date}.json.
+    """
     spectacles = database.list_spectacles(conn)
     payload_spectacles = []
+    history_dir = _spectacle_history_dir(season_year)
     for s in spectacles:
         stats = statistics.compute_spectacle_stats(conn, s["slug"], season_year)
         if stats and (season_year is None or stats["stats"]["days_present"] > 0):
+            history = stats.pop("history")
             payload_spectacles.append(stats)
+            _write_json(
+                history_dir / f"{s['slug']}.json",
+                {"slug": s["slug"], "updated_at": now_iso(), "history": history},
+            )
 
     payload = {
         "updated_at": now_iso(),
