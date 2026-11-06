@@ -64,7 +64,14 @@
   "le-grand-carillon": {
     "name": "Le Grand Carillon",
     "category": "spectacle",
-    "aliases": ["Le Grand Carillon", "LE GRAND CARILLON"]
+    "aliases": ["Le Grand Carillon", "LE GRAND CARILLON"],
+    "active_periods": [{"from": "2026-04-04", "to": "2026-12-17"}]
+  },
+  "le-carillon-de-noel": {
+    "name": "Le Carillon de Noël",
+    "category": "spectacle",
+    "aliases": ["Le Carillon de Noël", "Le Carillon de Noel", "LE CARILLON DE NOËL"],
+    "active_periods": [{"from": "2026-12-18", "to": "2027-01-03"}]
   },
   "les-grandes-eaux": {
     "name": "Les Grandes Eaux",
@@ -99,12 +106,12 @@
     "name": "Le Mystère de Noël",
     "category": "spectacle_nocturne",
     "aliases": ["Le Mystère de Noël", "Le Mystere de Noel", "LE MYSTÈRE DE NOËL"],
-    "active_periods": [{"from": "2026-12-19", "to": "2027-01-03"}]
+    "active_periods": [{"from": "2026-12-18", "to": "2027-01-03"}]
   },
   "le-noel-du-carillon": {
     "name": "Le Noël du Carillon",
     "category": "spectacle",
     "aliases": ["Le Noël du Carillon", "Le Noel du Carillon", "LE NOËL DU CARILLON"],
-    "active_periods": [{"from": "2026-12-19", "to": "2027-01-03"}]
+    "active_periods": [{"from": "2026-12-18", "to": "2027-01-03"}]
   }
 }
