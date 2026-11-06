@@ -380,6 +380,13 @@ def get_representations_for_spectacle(conn: sqlite3.Connection, spectacle_id: in
 
 
 def get_all_active_representations(conn: sqlite3.Connection, season_year: Optional[int] = None) -> list[sqlite3.Row]:
+    # Exclut les représentations d'une privatisation (DATE_STATUS_PRIVATE_EVENT,
+    # voir data/planned_closures.json) : tous les appelants de cette fonction
+    # sont des agrégats statistiques (globaux, par saison...), jamais la vue
+    # détaillée d'UNE date précise (qui, elle, passe par
+    # get_representations_for_date_id et reste donc intacte/visible) — une
+    # privatisation ne doit fausser aucun de ces agrégats, pas seulement les
+    # stats par spectacle (voir compute_spectacle_stats).
     query = """
         SELECT r.*, d.date AS date, d.status AS date_status, s.name AS spectacle_name,
                s.slug AS spectacle_slug, s.category AS spectacle_category, se.year AS season_year
@@ -387,12 +394,12 @@ def get_all_active_representations(conn: sqlite3.Connection, season_year: Option
         JOIN dates d ON d.id = r.date_id
         JOIN spectacles s ON s.id = r.spectacle_id
         JOIN seasons se ON se.id = d.season_id
-        WHERE d.is_active = 1
+        WHERE d.is_active = 1 AND d.status != ?
     """
-    params: tuple = ()
+    params: tuple = (config.DATE_STATUS_PRIVATE_EVENT,)
     if season_year is not None:
         query += " AND se.year = ?"
-        params = (season_year,)
+        params = (config.DATE_STATUS_PRIVATE_EVENT, season_year)
     query += " ORDER BY d.date, (r.start_time IS NULL), r.start_time"
     return conn.execute(query, params).fetchall()
 

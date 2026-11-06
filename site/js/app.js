@@ -362,6 +362,15 @@
         "<span>Le Puy du Fou est fermé le " + dateFR + ".</span></div>"
       );
     }
+    if (status === "private_event") {
+      // Voir DATE_STATUS_PRIVATE_EVENT côté backend : repli générique pour
+      // les appelants qui n'utilisent pas seasonClosedBannerHtml (ex: une
+      // date passée consultée sur la page Historique).
+      return (
+        '<div class="status-banner status-stale"><span aria-hidden="true">🎪</span>' +
+        "<span>Le " + dateFR + ", le parc n'est normalement pas ouvert au public à cette période — probable privatisation. Exclu des statistiques officielles.</span></div>"
+      );
+    }
     if (status === "stale") {
       return (
         '<div class="status-banner status-stale"><span aria-hidden="true">🕰️</span>' +
@@ -403,6 +412,18 @@
       return (
         '<div class="status-banner status-stale"><span aria-hidden="true">🚧</span>' +
         "<span>" + escapeHtml(message) + "</span></div>"
+      );
+    }
+    if (payload.status === "private_event") {
+      // Le parc n'est normalement pas ouvert au public à cette période
+      // (voir DATE_STATUS_PRIVATE_EVENT, data/planned_closures.json), mais
+      // un vrai programme a été constaté : probable privatisation. Le
+      // programme du jour reste affiché normalement (voir le reste de la
+      // page) — ce bandeau prévient juste que ces données sont hors
+      // statistiques officielles (voir src/statistics.py).
+      return (
+        '<div class="status-banner status-stale"><span aria-hidden="true">🎪</span>' +
+        "<span>Le " + escapeHtml(formatDateFR(payload.date)) + ", le parc n'est normalement pas ouvert au public à cette période — probable privatisation (événement privé). Programme réel ci-dessous, mais exclu des statistiques officielles.</span></div>"
       );
     }
     return null;
@@ -451,10 +472,12 @@
     for (let i = 0; i < startOffset; i++) html += '<div class="cal-empty"></div>';
 
     let anyClosed = false;
+    let anyPrivate = false;
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = isoDate(year, month, day);
       const info = dayCellInfo(dateMap[dateStr], dateStr === selectedDate, dateStr);
       if (info.cls.indexOf("is-closed") !== -1) anyClosed = true;
+      if (info.cls.indexOf("is-private") !== -1) anyPrivate = true;
       html +=
         '<button type="button" class="' + info.cls + '" data-date="' + dateStr + '"' +
         (info.disabled ? " disabled" : "") +
@@ -462,11 +485,15 @@
         day + "</button>";
     }
     html += "</div>";
-    // Légende du petit point "fermeture" (voir .cal-day.is-closed dans
-    // style.css) : affichée seulement quand ce mois en contient au moins
-    // un, pas en permanence sur un mois sans rien à expliquer.
+    // Légende des petits points "fermeture"/"privatisation" (voir
+    // .cal-day.is-closed/.is-private dans style.css) : affichée seulement
+    // quand ce mois en contient au moins un, pas en permanence sur un mois
+    // sans rien à expliquer.
     if (anyClosed) {
       html += '<div class="calendar-legend"><span class="cal-legend-dot" aria-hidden="true"></span> Fermeture ponctuelle du parc</div>';
+    }
+    if (anyPrivate) {
+      html += '<div class="calendar-legend"><span class="cal-legend-dot cal-legend-dot-private" aria-hidden="true"></span> Privatisation probable (hors statistiques)</div>';
     }
     wrap.innerHTML = html;
 

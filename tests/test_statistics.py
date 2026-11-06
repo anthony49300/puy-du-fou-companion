@@ -89,6 +89,20 @@ def test_compute_global_stats_totals(sample_conn):
     assert stats["nocturnal_count"] == 2  # les-orgues-de-feu x2 (catégorie nocturne)
 
 
+def test_compute_global_stats_excludes_private_event_day(sample_conn):
+    # Une privatisation gonflerait les totaux globaux (pas seulement les
+    # stats par spectacle, voir test_compute_spectacle_stats_excludes_
+    # private_event_days) si ses représentations n'étaient pas exclues en
+    # amont, dans database.get_all_active_representations.
+    _add_day(sample_conn, "2026-08-27", [
+        ("Les Vikings", "les-vikings", "spectacle", "20:00", None, False, config.REPR_STATUS_SCHEDULED),
+    ], status=config.DATE_STATUS_PRIVATE_EVENT)
+
+    stats = statistics.compute_global_stats(sample_conn)
+
+    assert stats["total_representations"] == 7  # pas 8 : la privatisation est exclue
+
+
 def test_compute_global_stats_min_max_per_day(sample_conn):
     stats = statistics.compute_global_stats(sample_conn)
     assert stats["min_per_day"] == {"date": "2026-08-25", "count": 3}
@@ -122,6 +136,24 @@ def test_compute_spectacle_stats_ignores_park_closed_days(sample_conn):
     stats = statistics.compute_spectacle_stats(sample_conn, "les-vikings")
     assert stats["stats"]["days_present"] == 2
     assert stats["stats"]["days_absent"] == 0  # et non 1 à cause du jour fermé
+    assert len(stats["history"]) == 2
+    assert all(h["date"] != "2026-08-27" for h in stats["history"])
+
+
+def test_compute_spectacle_stats_excludes_private_event_days(sample_conn):
+    # Une privatisation (DATE_STATUS_PRIVATE_EVENT) a de VRAIES
+    # représentations (contrairement à closed_day, toujours vide) : elles ne
+    # doivent ni compter dans total_representations/days_present, ni
+    # apparaître dans l'historique — sans quoi une privatisation fausserait
+    # les stats du spectacle concerné tout en restant invisible du graphique.
+    _add_day(sample_conn, "2026-08-27", [
+        ("Les Vikings", "les-vikings", "spectacle", "20:00", None, False, config.REPR_STATUS_SCHEDULED),
+    ], status=config.DATE_STATUS_PRIVATE_EVENT)
+
+    stats = statistics.compute_spectacle_stats(sample_conn, "les-vikings")
+
+    assert stats["stats"]["days_present"] == 2  # pas 3 : le 27 (privatisation) est exclu
+    assert stats["stats"]["total_representations"] == 3  # pas 4 (3 normales + 1 pendant la privatisation)
     assert len(stats["history"]) == 2
     assert all(h["date"] != "2026-08-27" for h in stats["history"])
 

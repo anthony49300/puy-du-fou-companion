@@ -462,9 +462,12 @@
   function planDayCellInfo(record, isSelected, dateStr) {
     var hasData = !!record;
     var isClosed = hasData && (record.status === "closed_day" || record.status === "out_of_season");
-    var cls = "cal-day" + (hasData ? " has-data" : "") + (isClosed ? " is-closed" : "") + (isSelected ? " is-selected" : "");
+    var isPrivate = hasData && record.status === "private_event";
+    var cls = "cal-day" + (hasData ? " has-data" : "") + (isClosed ? " is-closed" : "") + (isPrivate ? " is-private" : "") + (isSelected ? " is-selected" : "");
     var title = isClosed
       ? "Puy du Fou fermé le " + PDF.formatDateFR(dateStr)
+      : isPrivate
+      ? "Privatisation probable le " + PDF.formatDateFR(dateStr) + " — programme réel disponible, hors statistiques"
       : PDF.formatDateFR(dateStr) + (hasData ? " — programme officiel disponible" : " — pas de programme officiel connu (ajout manuel possible)");
     return { cls: cls, disabled: false, title: title };
   }

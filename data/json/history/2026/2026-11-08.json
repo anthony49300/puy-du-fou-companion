@@ -6,9 +6,11 @@
     "start_date": "2026-04-04",
     "end_date": "2027-01-03"
   },
-  "updated_at": "2026-11-06T15:03:17",
-  "status": "ok",
-  "warnings": [],
+  "updated_at": "2026-11-06T21:12:33",
+  "status": "private_event",
+  "warnings": [
+    "Programme reel detecte le 2026-11-08 alors que le parc n'est normalement pas ouvert au public a cette periode : probable privatisation (evenement prive)."
+  ],
   "source": {
     "url": "https://www.puydufou.com/france/fr/programme-du-jour",
     "retrieved_at": "2026-11-06T15:03:17",
