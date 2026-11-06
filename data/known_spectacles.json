@@ -67,7 +67,7 @@
     "aliases": ["Le Grand Carillon", "LE GRAND CARILLON"],
     "active_periods": [
       {"from": "2025-04-05", "to": "2025-11-11"},
-      {"from": "2026-04-04", "to": "2026-12-17"}
+      {"from": "2026-04-04", "to": "2026-11-01"}
     ]
   },
   "le-carillon-de-noel": {
