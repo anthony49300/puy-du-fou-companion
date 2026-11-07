@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-06T21:50:26",
+  "updated_at": "2026-11-07T14:01:32",
   "categories": [
     "spectacle",
     "spectacle_nocturne",
@@ -17,7 +17,7 @@
         "today_count": 0,
         "avg_per_day": 5.64,
         "days_present": 364,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 2053
       }
     },
@@ -54,7 +54,7 @@
         "today_count": 0,
         "avg_per_day": 1.84,
         "days_present": 351,
-        "days_absent": 13,
+        "days_absent": 14,
         "total_representations": 647
       }
     },
@@ -91,7 +91,7 @@
         "today_count": 0,
         "avg_per_day": 4.52,
         "days_present": 364,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 1645
       }
     },
@@ -128,7 +128,7 @@
         "today_count": 0,
         "avg_per_day": 4.72,
         "days_present": 364,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 1717
       }
     },
@@ -142,7 +142,7 @@
         "today_count": 0,
         "avg_per_day": 1.0,
         "days_present": 364,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 364
       }
     },
@@ -156,7 +156,7 @@
         "today_count": 0,
         "avg_per_day": 1.0,
         "days_present": 364,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 364
       }
     },
@@ -170,7 +170,7 @@
         "today_count": 0,
         "avg_per_day": 2.88,
         "days_present": 364,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 1048
       }
     },
@@ -184,7 +184,7 @@
         "today_count": 0,
         "avg_per_day": 1.84,
         "days_present": 364,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 668
       }
     },
@@ -198,7 +198,7 @@
         "today_count": 0,
         "avg_per_day": 1.14,
         "days_present": 364,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 415
       }
     },
@@ -212,7 +212,7 @@
         "today_count": 0,
         "avg_per_day": 5.14,
         "days_present": 364,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 1871
       }
     },
@@ -226,7 +226,7 @@
         "today_count": 0,
         "avg_per_day": 2.99,
         "days_present": 331,
-        "days_absent": 33,
+        "days_absent": 34,
         "total_representations": 989
       }
     },
@@ -240,7 +240,7 @@
         "today_count": 0,
         "avg_per_day": 1.05,
         "days_present": 258,
-        "days_absent": 106,
+        "days_absent": 107,
         "total_representations": 271
       }
     },
@@ -254,7 +254,7 @@
         "today_count": 0,
         "avg_per_day": 3.45,
         "days_present": 364,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 1254
       }
     },
@@ -268,7 +268,7 @@
         "today_count": 0,
         "avg_per_day": 3.44,
         "days_present": 364,
-        "days_absent": 0,
+        "days_absent": 1,
         "total_representations": 1251
       }
     }
