@@ -1,6 +1,6 @@
 {
   "slug": "mousquetaire-de-richelieu",
-  "updated_at": "2026-11-08T14:17:12",
+  "updated_at": "2026-11-08T23:12:17",
   "history": [
     {
       "date": "2026-04-04",
@@ -732,6 +732,10 @@
     },
     {
       "date": "2026-11-10",
+      "count": 0
+    },
+    {
+      "date": "2026-11-11",
       "count": 0
     }
   ]
