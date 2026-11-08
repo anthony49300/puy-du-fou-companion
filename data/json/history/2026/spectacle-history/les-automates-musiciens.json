@@ -1,6 +1,6 @@
 {
   "slug": "les-automates-musiciens",
-  "updated_at": "2026-11-07T14:01:32",
+  "updated_at": "2026-11-08T14:17:12",
   "history": [
     {
       "date": "2026-04-04",
@@ -728,6 +728,10 @@
     },
     {
       "date": "2026-11-09",
+      "count": 0
+    },
+    {
+      "date": "2026-11-10",
       "count": 0
     }
   ]
