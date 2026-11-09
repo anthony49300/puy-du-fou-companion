@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-08T23:12:15",
+  "updated_at": "2026-11-09T09:16:52",
   "dates": [
     {
       "date": "2025-04-05",
@@ -3084,21 +3084,273 @@
     {
       "date": "2026-11-09",
       "season_year": 2026,
-      "status": "partial",
+      "status": "closed_day",
       "spectacle_count": 0,
       "representation_count": 0
     },
     {
       "date": "2026-11-10",
       "season_year": 2026,
-      "status": "partial",
+      "status": "closed_day",
       "spectacle_count": 0,
       "representation_count": 0
     },
     {
       "date": "2026-11-11",
       "season_year": 2026,
-      "status": "partial",
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-12",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-13",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-14",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-15",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-16",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-17",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-18",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-19",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-20",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-21",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-22",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-23",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-24",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-25",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-26",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-27",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-28",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-29",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-11-30",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-12-01",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-12-02",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-12-03",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-12-04",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-12-05",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-12-06",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-12-07",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-12-08",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-12-09",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-12-10",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-12-11",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-12-12",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-12-13",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-12-14",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-12-15",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-12-16",
+      "season_year": 2026,
+      "status": "closed_day",
+      "spectacle_count": 0,
+      "representation_count": 0
+    },
+    {
+      "date": "2026-12-17",
+      "season_year": 2026,
+      "status": "closed_day",
       "spectacle_count": 0,
       "representation_count": 0
     }
