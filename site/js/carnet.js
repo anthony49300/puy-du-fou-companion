@@ -14,7 +14,6 @@
   "use strict";
   var PDF = window.PDF;
 
-  var STORAGE_KEY = "pdf-carnet-v1";
   var MOIS = [
     "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
     "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
@@ -33,15 +32,17 @@
   }
 
   var stockageOk = true;
+  // Lecture/écriture déléguées à PDF (site/js/app.js) : même clé, même
+  // forme de données, partagée avec le bouton "+" de l'accueil/Programme
+  // (voir PDF.addToPlan). Le try/catch (et donc `stockageOk`) reste ici
+  // plutôt que dans PDF.*, pour que chaque appelant garde la main sur sa
+  // propre gestion d'erreur.
   function charger() {
-    try {
-      var brut = localStorage.getItem(STORAGE_KEY);
-      if (brut) return JSON.parse(brut);
-    } catch (e) { stockageOk = false; }
-    return null;
+    try { return PDF.loadCarnetState(); }
+    catch (e) { stockageOk = false; return null; }
   }
   function sauver() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(S)); }
+    try { PDF.saveCarnetState(S); }
     catch (e) { stockageOk = false; }
   }
 
@@ -341,15 +342,10 @@
     return pire;
   }
 
-  // Un item "identique" (même spectacle/nom, mêmes horaires) est déjà dans
-  // le plan : évite les doublons quand on clique deux fois sur "Ajouter".
+  // Règle de dédoublonnage partagée avec PDF.addToPlan (accueil/Programme) :
+  // voir PDF.planItemExists, site/js/app.js, pour la logique elle-même.
   function planItemExists(plan, candidate) {
-    var cle = candidate.slug || candidate.name;
-    return plan.items.some(function (it) {
-      return (it.slug || it.name) === cle &&
-        it.start === candidate.start && it.end === candidate.end &&
-        !!it.is_continuous === !!candidate.is_continuous;
-    });
+    return PDF.planItemExists(plan, candidate);
   }
 
   // Deux séances à heure fixe sont compatibles si l'une se termine avant
@@ -586,28 +582,24 @@
    * Export .ics de la journée composée
    * -------------------------------------------------------------------- */
 
-  // Échappement texte ICS (RFC 5545) : backslash, virgule, point-virgule et
-  // retour à la ligne doivent être préfixés d'un backslash.
+  // Échappement texte / horodatage ICS : délégués à PDF (site/js/app.js),
+  // partagés avec le bouton "Agenda .ics" de la carte "jour fermé" de
+  // l'accueil (voir PDF.buildAllDayIcs).
   function icsEscape(text) {
-    return String(text == null ? "" : text)
-      .replace(/\\/g, "\\\\")
-      .replace(/;/g, "\\;")
-      .replace(/,/g, "\\,")
-      .replace(/\n/g, "\\n");
+    return PDF.icsEscape(text);
   }
 
   // "2026-08-26" + "10:45" -> "20260826T104500" (heure locale, sans "Z" ni
   // TZID : le spectacle a lieu en France quel que soit le fuseau du
   // visiteur qui exporte — le cas d'usage n'est jamais "je consulte à
-  // distance", toujours "j'y serai").
+  // distance", toujours "j'y serai"). Propre à carnet.js (événements
+  // ponctuels, pas journée entière) : pas de raison de la partager.
   function icsDateTime(dateStr, hhmm) {
     return dateStr.replace(/-/g, "") + "T" + hhmm.replace(":", "") + "00";
   }
 
-  // Horodatage UTC "AAAAMMJJTHHMMSSZ" requis par DTSTAMP (création de
-  // l'événement dans le calendrier, indépendant de l'heure du spectacle).
   function icsUtcStamp(date) {
-    return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    return PDF.icsUtcStamp(date);
   }
 
   // Construit le contenu d'un fichier .ics (RFC 5545) à partir des items
@@ -1061,11 +1053,19 @@
     $("btnPrintDay").addEventListener("click", function () { window.print(); });
   }
 
+  // "carnet.html?date=2026-12-18#journee" présélectionne cette date au lieu
+  // d'aujourd'hui (ex: lien "Préparer ma visite" depuis la carte de
+  // réouverture de l'accueil, voir index.html) — ignoré si absent/invalide.
+  function initialPlanDate() {
+    var requested = new URLSearchParams(location.search).get("date");
+    return requested && /^\d{4}-\d{2}-\d{2}$/.test(requested) ? requested : PDF.isoDateToday();
+  }
+
   function initPlanUI() {
-    $("planDate").value = PDF.isoDateToday();
-    var aujourdhui = PDF.isoDateToday();
-    state.planCalendar.year = +aujourdhui.slice(0, 4);
-    state.planCalendar.month = +aujourdhui.slice(5, 7) - 1;
+    var dateStr = initialPlanDate();
+    $("planDate").value = dateStr;
+    state.planCalendar.year = +dateStr.slice(0, 4);
+    state.planCalendar.month = +dateStr.slice(5, 7) - 1;
     renderPlanCalendar();
     $("planGate").value = S.gate;
     renderJour();

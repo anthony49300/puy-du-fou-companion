@@ -655,6 +655,140 @@ main { flex: 1; }
   margin-top: 0.2rem;
 }
 
+/* ---------- 7bis. Composants de la page "Aujourd'hui" ---------- */
+
+/* Pastille de statut (ouvert/fermé) : jamais la couleur seule — un mot ET
+   un point, voir constraints de la refonte sur l'accessibilité. */
+.pill-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: var(--r-pill);
+  font-size: 0.82rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.pill-status::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+.pill-status.is-open { background: var(--success-bg); color: var(--success); }
+.pill-status.is-closed { background: var(--surface-2); color: var(--muted); }
+
+/* Carte héros "Prochain spectacle" */
+.hero-card {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-radius: var(--r-xl);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  box-shadow: var(--shadow);
+}
+.hero-card .hero-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--on-primary-muted);
+}
+.hero-card h2 {
+  color: var(--on-primary);
+  font-size: clamp(1.5rem, 1.3rem + 1vw, 1.75rem);
+  margin: 0;
+}
+.hero-card .hero-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.hero-card .hero-time { font-size: 1.05rem; }
+.hero-card .hero-countdown { font-weight: 700; }
+.hero-card .hero-duration { color: var(--on-primary-muted); font-size: 0.85rem; }
+.hero-card .hero-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.hero-card .btn-on-primary { background: var(--on-primary); color: var(--primary); }
+.hero-card .btn-on-primary:hover { background: var(--on-primary-muted); }
+.hero-card .btn-outline-on-primary {
+  background: transparent;
+  color: var(--on-primary);
+  border: 1px solid var(--on-primary-muted);
+}
+.hero-card .btn-outline-on-primary:hover { background: rgba(255, 255, 255, 0.12); }
+
+/* Carte nocturne ("Ce soir") */
+.card--night { background: var(--night-bg); border: 1px solid var(--night-line); }
+.card--night .section-label { color: var(--night); }
+
+/* En-têtes de section discrets ("En cours", "Dans l'heure", "Ce soir"…) */
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 0.6rem;
+}
+.section-label .icon { width: 1.1rem; height: 1.1rem; }
+
+/* "En cours" : jusqu'à 2 petites cartes avec barre de progression */
+.inprogress-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; }
+.inprogress-card { display: flex; flex-direction: column; gap: 0.4rem; }
+.inprogress-card .inprogress-name { font-weight: 600; }
+.inprogress-card .inprogress-sub { font-size: 0.8rem; color: var(--muted); }
+
+/* Liste "Dans l'heure" */
+.list-card { display: flex; flex-direction: column; }
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.list-row:last-child { border-bottom: none; }
+.list-row .list-row-time { font-weight: 600; color: var(--accent-text); min-width: 3.4rem; }
+.list-row .list-row-main { flex: 1; min-width: 0; }
+.list-row .list-row-name { font-weight: 600; }
+.list-row .list-row-meta { font-size: 0.8rem; color: var(--muted); }
+.list-row .list-row-meta.is-warn { color: var(--warn); font-weight: 600; }
+
+/* Bouton "+" (ajouter à ma journée) / "✓" une fois ajouté */
+.add-to-day-btn {
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.add-to-day-btn:hover { background: var(--line-soft); }
+.add-to-day-btn.is-added { background: var(--success-bg); color: var(--success); border-color: var(--success); }
+
+/* Carte "jour fermé" : compte à rebours de réouverture */
+.reopen-card { text-align: center; padding: 2rem 1.25rem; }
+.reopen-number {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: clamp(3rem, 8vw, 4.5rem);
+  color: var(--accent-text);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.reopen-sub { color: var(--muted); margin-top: 0.5rem; }
+.reopen-actions { display: flex; justify-content: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 1.25rem; }
+
 /* ---------- 8. Badges ---------- */
 .badge {
   display: inline-flex;

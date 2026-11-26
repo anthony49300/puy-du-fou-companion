@@ -154,30 +154,88 @@
   }
 
   /**
-   * Calcule, à partir de l'heure RÉELLE actuelle du navigateur, le prochain
-   * spectacle (toutes catégories) et le prochain spectacle nocturne du jour
-   * dans `today.spectacles` (à n'utiliser que si `isDataForToday(today.date)`
-   * est vrai). Contrairement au champ "nocturne" du JSON — figé au moment de
-   * l'export côté serveur — ceci reste exact tout au long de la journée même
-   * sans nouvelle collecte.
+   * Calcule, à partir de l'heure RÉELLE actuelle du navigateur (ou de `now`
+   * si fourni — un `Date` injecté, pour des tests déterministes), l'état
+   * "en direct" du programme du jour dans `today.spectacles` (à n'utiliser
+   * que si `isDataForToday(today.date)` est vrai). Contrairement aux champs
+   * figés au moment de l'export côté serveur (ex: "nocturne" du JSON), ceci
+   * reste exact tout au long de la journée même sans nouvelle collecte.
+   *
+   * Retourne :
+   * - next : la toute prochaine représentation (toutes catégories, hors
+   *   accès continu), ou null s'il n'y en a plus aujourd'hui ;
+   * - inProgress : les représentations EN COURS en ce moment (hors accès
+   *   continu : un spectacle en accès continu n'est pas une "séance" qu'on
+   *   peut manquer, déjà visible ailleurs sur la page) ;
+   * - withinHour : les représentations à venir dans les 60 prochaines
+   *   minutes (max 5, triées par heure) ;
+   * - nocturne : la prochaine représentation du spectacle nocturne du jour ;
+   * - lastShowingSlugs : les slugs des spectacles dont la PROCHAINE
+   *   représentation à venir (et seulement celle-là : si une autre suit
+   *   plus tard dans la journée, ce spectacle n'y figure pas) est aussi
+   *   leur dernière de la journée — pour le badge "Dernière séance" sur la
+   *   ligne de cette représentation précise.
    */
-  function computeUpcoming(today) {
-    const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  function computeUpcoming(today, now) {
+    now = now || new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
     const slots = [];
     (today.spectacles || []).forEach((spectacle) => {
       (spectacle.representations || []).forEach((rep) => {
-        if (rep.is_continuous) return;
-        const mins = timeToMinutes(rep.start);
-        if (mins == null || mins < nowMinutes) return;
-        slots.push({ spectacle, rep, mins });
+        const startMins = timeToMinutes(rep.start);
+        const endMins = timeToMinutes(rep.end);
+        slots.push({ spectacle, rep, startMins, endMins });
       });
     });
-    slots.sort((a, b) => a.mins - b.mins);
+
     const toItem = (slot) =>
-      slot && { name: slot.spectacle.name, start: slot.rep.start, category: slot.spectacle.category };
-    const next = toItem(slots[0]);
-    const nocturne = toItem(slots.find((s) => s.spectacle.category === "spectacle_nocturne"));
-    return { next: next || null, nocturne: nocturne || null };
+      slot && {
+        name: slot.spectacle.name,
+        slug: slot.spectacle.slug,
+        category: slot.spectacle.category,
+        start: slot.rep.start,
+        end: slot.rep.end,
+        is_continuous: !!slot.rep.is_continuous,
+      };
+
+    const inProgress = slots
+      .filter((s) => !s.rep.is_continuous && s.startMins != null && s.endMins != null && s.startMins <= nowMinutes && nowMinutes < s.endMins)
+      .sort((a, b) => a.startMins - b.startMins)
+      .map(toItem);
+
+    const upcomingSlots = slots
+      .filter((s) => !s.rep.is_continuous && s.startMins != null && s.startMins >= nowMinutes)
+      .sort((a, b) => a.startMins - b.startMins);
+
+    const next = toItem(upcomingSlots[0]);
+    const nocturne = toItem(upcomingSlots.find((s) => s.spectacle.category === "spectacle_nocturne"));
+    const withinHour = upcomingSlots.filter((s) => s.startMins - nowMinutes <= 60).slice(0, 5).map(toItem);
+
+    // Dernière représentation de la journée, par spectacle (toutes heures
+    // confondues, pas seulement celles à venir)...
+    const lastStartBySlug = {};
+    slots.forEach((s) => {
+      if (s.rep.is_continuous || s.startMins == null) return;
+      const slug = s.spectacle.slug;
+      if (lastStartBySlug[slug] == null || s.startMins > lastStartBySlug[slug]) {
+        lastStartBySlug[slug] = s.startMins;
+      }
+    });
+    // ...comparée à la PROCHAINE représentation à venir de ce spectacle
+    // (la première rencontrée dans upcomingSlots, déjà trié par heure) :
+    // si une autre suit plus tard le même jour, ce n'est pas "la dernière"
+    // du point de vue de cette représentation précise, même si le spectacle
+    // a par ailleurs une dernière séance plus tard.
+    const firstUpcomingBySlug = {};
+    upcomingSlots.forEach((s) => {
+      const slug = s.spectacle.slug;
+      if (firstUpcomingBySlug[slug] == null) firstUpcomingBySlug[slug] = s.startMins;
+    });
+    const lastShowingSlugs = Object.keys(firstUpcomingBySlug).filter(
+      (slug) => firstUpcomingBySlug[slug] === lastStartBySlug[slug]
+    );
+
+    return { next: next || null, inProgress, withinHour, nocturne: nocturne || null, lastShowingSlugs };
   }
 
   /* ----------------------------------------------------------------------
@@ -793,6 +851,128 @@
   }
 
   /* ----------------------------------------------------------------------
+   * 8ter. Carnet (plan du jour) : stockage partagé
+   *       Le Carnet (carnet.html/carnet.js) reste seul propriétaire de SON
+   *       état complet (visites, pass, réglages) et de sa logique de
+   *       conflits — mais le bouton "+" de l'accueil et du Programme
+   *       (ajouter une séance à la journée) a besoin d'écrire dans LA MÊME
+   *       clé localStorage, avec la même règle de dédoublonnage. Plutôt que
+   *       de la réécrire ailleurs (voir les 3 bugs de cohérence déjà
+   *       rencontrés cette session sur des couples de fichiers qui se
+   *       recoupent), ces quelques primitives vivent ici et carnet.js les
+   *       appelle lui aussi (voir site/js/carnet.js, charger/sauver/
+   *       planItemExists). Ne jettent pas d'erreur transformée : un appelant
+   *       qui a besoin de savoir si le stockage a échoué garde son propre
+   *       try/catch autour de l'appel (voir carnet.js).
+   * -------------------------------------------------------------------- */
+  const CARNET_STORAGE_KEY = "pdf-carnet-v1";
+
+  function carnetUid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  function loadCarnetState() {
+    const raw = localStorage.getItem(CARNET_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }
+
+  function saveCarnetState(state) {
+    localStorage.setItem(CARNET_STORAGE_KEY, JSON.stringify(state));
+  }
+
+  // Un item "identique" (même spectacle/nom, mêmes horaires) est déjà dans
+  // le plan : évite les doublons qu'on clique une fois ou dix, depuis le
+  // Carnet, le Programme ou l'accueil (tous passent par cette même règle).
+  function planItemExists(plan, candidate) {
+    const key = candidate.slug || candidate.name;
+    return plan.items.some(
+      (it) =>
+        (it.slug || it.name) === key &&
+        it.start === candidate.start &&
+        it.end === candidate.end &&
+        !!it.is_continuous === !!candidate.is_continuous
+    );
+  }
+
+  // Ajoute une représentation au plan du jour `dateStr` (créé si besoin) et
+  // sauvegarde, ou ne fait rien si elle y est déjà (voir planItemExists).
+  // Retourne false si elle était déjà présente (rien écrit), true sinon.
+  function addToPlan(dateStr, item) {
+    const state = loadCarnetState() || { visites: [], plans: {}, gate: 30, pass: null };
+    if (!state.plans) state.plans = {};
+    if (!state.plans[dateStr]) state.plans[dateStr] = { moment: "Jour", items: [] };
+    const plan = state.plans[dateStr];
+    if (planItemExists(plan, item)) return false;
+    plan.items.push(Object.assign({ uid: carnetUid() }, item));
+    saveCarnetState(state);
+    return true;
+  }
+
+  // Une représentation précise (slug/name + heure de début) est-elle déjà
+  // dans le plan du jour `dateStr` ? Utilisé pour l'état du bouton "+"
+  // (rempli/coché quand déjà ajoutée).
+  function isInPlan(dateStr, slugOrName, start) {
+    const state = loadCarnetState();
+    const plan = state && state.plans && state.plans[dateStr];
+    if (!plan) return false;
+    return plan.items.some((it) => (it.slug || it.name) === slugOrName && it.start === start);
+  }
+
+  /* ----------------------------------------------------------------------
+   * 8quater. Export .ics (RFC 5545) : utilitaires partagés
+   *          carnet.js construit un .ics à plusieurs événements (un par
+   *          séance planifiée, avec rappel d'ouverture des portes) ; la
+   *          carte "jour fermé" de l'accueil n'a besoin que d'un seul
+   *          événement journée entière (date de réouverture) — formes trop
+   *          différentes pour une seule fonction, mais l'échappement de
+   *          texte et l'horodatage UTC, eux, sont identiques : partagés ici.
+   * -------------------------------------------------------------------- */
+  // Backslash, virgule, point-virgule et retour à la ligne doivent être
+  // préfixés d'un backslash (RFC 5545).
+  function icsEscape(text) {
+    return String(text == null ? "" : text)
+      .replace(/\\/g, "\\\\")
+      .replace(/;/g, "\\;")
+      .replace(/,/g, "\\,")
+      .replace(/\n/g, "\\n");
+  }
+
+  // Horodatage UTC "AAAAMMJJTHHMMSSZ" requis par DTSTAMP.
+  function icsUtcStamp(date) {
+    return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  }
+
+  // Un seul événement "journée entière" (DTSTART;VALUE=DATE, sans heure ni
+  // rappel) — ex: réouverture de la saison. `dateStr` au format YYYY-MM-DD.
+  function buildAllDayIcs(dateStr, title, description) {
+    const compactDate = String(dateStr).replace(/-/g, "");
+    const lines = [
+      "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Puy du Fou Companion//FR", "CALSCALE:GREGORIAN",
+      "BEGIN:VEVENT",
+      "UID:" + carnetUid() + "@puydufou-companion",
+      "DTSTAMP:" + icsUtcStamp(new Date()),
+      "DTSTART;VALUE=DATE:" + compactDate,
+      "SUMMARY:" + icsEscape(title),
+    ];
+    if (description) lines.push("DESCRIPTION:" + icsEscape(description));
+    lines.push("END:VEVENT", "END:VCALENDAR");
+    return lines.join("\r\n");
+  }
+
+  // Déclenche le téléchargement d'un contenu texte (ex: un .ics) sous le
+  // nom de fichier donné.
+  function downloadTextFile(filename, content, mimeType) {
+    const blob = new Blob([content], { type: mimeType || "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }
+
+  /* ----------------------------------------------------------------------
    * 9. Barre de recherche réutilisable
    *    createSearchBar(container, options) -> { getValue, setItems }
    *    options.placeholder, options.onChange(query)
@@ -886,6 +1066,17 @@
     renderLoading,
     initThemeToggle,
     setFreshnessNote,
+    CARNET_STORAGE_KEY,
+    carnetUid,
+    loadCarnetState,
+    saveCarnetState,
+    planItemExists,
+    addToPlan,
+    isInPlan,
+    icsEscape,
+    icsUtcStamp,
+    buildAllDayIcs,
+    downloadTextFile,
   });
 
   // Injection auto du header/footer au chargement, basé sur data-page du body
