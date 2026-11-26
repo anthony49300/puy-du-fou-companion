@@ -14,6 +14,7 @@ officiels du Puy du Fou France**.
 ## Sommaire
 
 - [Objectif](#objectif)
+- [Interface](#interface)
 - [Architecture](#architecture)
 - [Installation locale](#installation-locale)
 - [Créer / initialiser la base SQLite](#créer--initialiser-la-base-sqlite)
@@ -53,6 +54,29 @@ Le tout en restant robuste : si la source officielle est indisponible ou
 change de mise en page, le projet ne doit **jamais** remplacer des données
 fiables par du vide, et doit rendre l'échec visible (logs + statut affiché
 sur le site).
+
+## Interface
+
+Site statique, sans dépendance JS de build, avec deux thèmes — clair
+« Parchemin » et sombre « Nocturne » (bascule automatique selon la
+préférence système, ou manuelle via le bouton du header, mémorisée dans
+`localStorage`). Navigation adaptée à la largeur d'écran plutôt qu'un
+simple redimensionnement :
+
+- **Mobile (< 780px)** : barre d'onglets fixe en bas (Aujourd'hui,
+  Programme, Ma journée, Carnet, Stats), page d'accueil "en direct" (prochain
+  spectacle, séances en cours, dans l'heure), Programme en liste avec
+  filtres/favoris, Carnet en timeline verticale avec détection de conflits.
+- **Desktop (≥ 1100px)** : le Programme bascule sur une grille horaire (une
+  ligne par spectacle, un bloc par représentation) avec un volet "Ma
+  journée" à côté.
+
+<!--
+  Captures d'écran à ajouter ici une fois disponibles (ex: screenshots/
+  à la racine, puis ![Accueil](screenshots/accueil.png) etc.) — couvrir au
+  minimum : accueil (jour ouvert + jour fermé), Programme mobile et
+  desktop, Ma journée, dans les deux thèmes clair/sombre.
+-->
 
 ## Architecture
 

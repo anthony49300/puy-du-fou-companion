@@ -2,9 +2,24 @@
    Puy du Fou — Programmes & Statistiques (projet communautaire non officiel)
    style.css — feuille de style unique, vanilla CSS, responsive + dark mode
 
-   Design system "Nocturne" (sombre) / "Parchemin" (clair) : composants
-   documentés en bas de fichier (section 16). Tout composant doit utiliser
-   un token (ci-dessous), jamais une couleur en dur.
+   Design system "Nocturne" (sombre) / "Parchemin" (clair). Tout composant
+   doit utiliser un token (section 1 ci-dessous), jamais une couleur en dur.
+
+   Composants principaux (voir leurs sections respectives plus bas) :
+   - .btn (+ .btn-outline/.btn-secondary/.btn-danger/.btn-outline-danger),
+     .icon-btn (bouton rond 44px, icône seule)
+   - .pill-status (pastille ouvert/fermé), .segmented (sélecteur de jour)
+   - .chip / .chip-row (+ .chip-row--scroll), .badge (+ variantes)
+   - .card (+ .hero-card, .card--night, .day-card--danger)
+   - .stat-tile / .stat-grid (KPI, + .stat-tile--danger)
+   - .list-card / .list-row, .progress-track / .progress-fill
+   - .mini-gantt-row (Programme, accès continu), .hgrid (grille desktop)
+   - .day-timeline / .day-card / .day-gap-row (timeline "Ma journée")
+   - .tabbar / .tabbar-item (barre d'onglets mobile)
+   - .nav-dropdown (menu "sheet" : dropdown ancré en desktop, feuille
+     remontant du bas en mobile — voir .nav-group--inline pour sa
+     réutilisation hors du header)
+   - .toast-msg (+ .toast-msg-action), .confirm-dialog
    ========================================================================= */
 
 /* ---------- 0. Polices auto-hébergées (site/fonts/, pas de requête tierce)
@@ -1117,24 +1132,6 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
   font-variant-numeric: tabular-nums;
 }
 .rep-duration { font-size: 0.72rem; color: var(--text-soft); }
-/* Ouverture des portes (carnet uniquement) : un jalon à part entière avant
-   la carte de la séance — pas juste une donnée officielle parmi d'autres,
-   d'où sa mise à part visuelle plutôt qu'une sous-ligne dans la carte. */
-.gate-marker {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin: 0.6rem 0 0.35rem;
-  color: var(--text-soft);
-  font-size: 0.78rem;
-}
-.gate-marker::before, .gate-marker::after {
-  content: "";
-  flex: 1 1 auto;
-  height: 1px;
-  background: var(--border);
-}
-.timeline > .gate-marker:first-child { margin-top: 0; }
 .rep-name { font-weight: 600; flex: 1 1 180px; }
 .rep-badges { display: flex; gap: 0.35rem; flex-wrap: wrap; }
 
@@ -1262,8 +1259,6 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
   height: 280px;
   margin-top: 1rem;
 }
-.chart-wrap.chart-wrap-sm { height: 220px; }
-
 /* ---------- 12. Charts grid (statistiques) ---------- */
 .charts-grid {
   display: grid;
@@ -1489,7 +1484,6 @@ table.data-table tr.is-changed td:first-child { font-weight: 600; }
   font-weight: 600;
 }
 .btn:hover { background: var(--color-bordeaux-dark); text-decoration: none; }
-.btn.btn-secondary { background: var(--accent-3); }
 .btn.btn-danger { background: var(--color-error); }
 .btn.btn-danger:hover { opacity: 0.88; }
 .btn.btn-outline {
@@ -1639,9 +1633,6 @@ table.data-table tr.is-changed td:first-child { font-weight: 600; }
 /* Tuile KPI qui bascule en alerte (ex: conflits > 0) */
 .stat-tile--danger { background: var(--danger-bg); border-color: var(--danger-line); }
 .stat-tile--danger .stat-value, .stat-tile--danger .stat-label { color: var(--danger); }
-
-.field-inline { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: var(--text-soft); }
-.field-inline > span { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
 
 /* Classement horizontal (palmarès, coût par visite...) */
 .bars { display: flex; flex-direction: column; gap: 0.5rem; margin: 1rem 0; }
