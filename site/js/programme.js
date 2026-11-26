@@ -221,6 +221,209 @@
   }
 
   /* ------------------------------------------------------------------
+   * Vue desktop (>= 1100px) : grille horaire + volet "Ma journée"
+   * ---------------------------------------------------------------- */
+  function timeRangesOverlap(aStart, aEnd, bStart, bEnd) {
+    var as = PDF.timeToMinutes(aStart), ae = PDF.timeToMinutes(aEnd);
+    var bs = PDF.timeToMinutes(bStart), be = PDF.timeToMinutes(bEnd);
+    if (as == null || ae == null || bs == null || be == null) return false;
+    return as < be && bs < ae;
+  }
+
+  function planItemsForDay(dateStr) {
+    var state;
+    try { state = PDF.loadCarnetState(); } catch (e) { return []; }
+    var plan = state && state.plans && state.plans[dateStr];
+    return plan ? plan.items.slice() : [];
+  }
+
+  // État visuel d'un créneau dans la grille : un conflit avec le plan du
+  // jour prime sur "dans ma journée" (qui prime lui-même sur "passé").
+  function gridBlockState(slot, planItems, isToday, nowMinutes) {
+    var key = slot.spectacle.slug || slot.spectacle.name;
+    var conflict = !slot.rep.is_continuous && slot.rep.start && slot.rep.end && planItems.some(function (it) {
+      if ((it.slug || it.name) === key && it.start === slot.rep.start) return false; // lui-même
+      return !it.is_continuous && it.start && it.end && timeRangesOverlap(slot.rep.start, slot.rep.end, it.start, it.end);
+    });
+    if (conflict) return "conflict";
+    var inDay = planItems.some(function (it) { return (it.slug || it.name) === key && it.start === slot.rep.start; });
+    if (inDay) return "myday";
+    if (isToday && !slot.rep.is_continuous && nowMinutes != null) {
+      var end = PDF.timeToMinutes(slot.rep.end);
+      if (end != null && end <= nowMinutes) return "past";
+    }
+    return "neutral";
+  }
+
+  function renderDesktopGrid(slots, bounds, isToday, nowMinutes, dateStr) {
+    var el = document.getElementById("hgrid");
+    if (!el) return;
+    if (!slots.length || bounds.min == null || bounds.max == null) { el.innerHTML = ""; return; }
+    var axisStart = Math.floor(bounds.min / 60) * 60;
+    var axisEnd = Math.ceil(bounds.max / 60) * 60;
+    var span = axisEnd - axisStart;
+    if (span <= 0) { el.innerHTML = ""; return; }
+
+    var planItems = planItemsForDay(dateStr);
+    var nowPct = isToday && nowMinutes != null && nowMinutes >= axisStart && nowMinutes <= axisEnd
+      ? ((nowMinutes - axisStart) / span) * 100
+      : null;
+
+    var groups = [];
+    var bySlug = {};
+    slots.forEach(function (s) {
+      var key = s.spectacle.slug || s.spectacle.name;
+      if (!bySlug[key]) { bySlug[key] = { spectacle: s.spectacle, slots: [] }; groups.push(bySlug[key]); }
+      bySlug[key].slots.push(s);
+    });
+
+    var ticks = [];
+    for (var t = axisStart; t <= axisEnd; t += 60) ticks.push(t);
+    var axisRow =
+      '<div class="hgrid-row hgrid-axis"><div class="hgrid-label"></div><div class="hgrid-track">' +
+      ticks.map(function (tk) {
+        return '<div class="hgrid-tick" style="left:' + (((tk - axisStart) / span) * 100) + '%">' + String(Math.floor(tk / 60)).padStart(2, "0") + "h</div>";
+      }).join("") +
+      (nowPct != null
+        ? '<div class="hgrid-now-line" style="left:' + nowPct + '%"><span class="hgrid-now-label">' +
+          PDF.escapeHtml(String(Math.floor(nowMinutes / 60)).padStart(2, "0") + "h" + String(nowMinutes % 60).padStart(2, "0")) +
+          "</span></div>"
+        : "") +
+      "</div></div>";
+
+    var rows = groups.map(function (group) {
+      var catClass = group.spectacle.category === "spectacle_nocturne" ? "is-night"
+        : group.spectacle.category === "spectacle_immersif" ? "is-immersive" : "is-muted";
+      var blocks = group.slots.map(function (s) {
+        var a = PDF.timeToMinutes(s.rep.start);
+        if (a == null) return "";
+        var b = PDF.timeToMinutes(s.rep.end);
+        var bb = b == null ? a + 20 : b;
+        var left = ((Math.max(a, axisStart) - axisStart) / span) * 100;
+        var width = Math.max(1.2, ((Math.min(bb, axisEnd) - Math.max(a, axisStart)) / span) * 100);
+        var state = gridBlockState(s, planItems, isToday, nowMinutes);
+        var label = s.spectacle.name + ", " + PDF.formatTimeFR(s.rep.start) + (s.rep.end ? "–" + PDF.formatTimeFR(s.rep.end) : "");
+        return (
+          '<button type="button" class="hgrid-block hgrid-block--' + state + '" style="left:' + left + "%;width:" + width + '%" ' +
+          'title="' + PDF.escapeHtml(label) + '" aria-label="' + PDF.escapeHtml(label) + '" ' +
+          'data-slug="' + PDF.escapeHtml(s.spectacle.slug || "") + '" data-name="' + PDF.escapeHtml(s.spectacle.name) + '" ' +
+          'data-category="' + PDF.escapeHtml(s.spectacle.category || "") + '" data-start="' + s.rep.start + '" data-end="' + (s.rep.end || "") + '"></button>'
+        );
+      }).join("");
+      return (
+        '<div class="hgrid-row"><div class="hgrid-label"><span class="hgrid-show-name">' + PDF.escapeHtml(group.spectacle.name) + "</span>" +
+        '<span class="hgrid-show-cat ' + catClass + '">' + PDF.escapeHtml(PDF.categoryLabel(group.spectacle.category)) + "</span></div>" +
+        '<div class="hgrid-track">' + blocks +
+        (nowPct != null ? '<div class="hgrid-now-line" style="left:' + nowPct + '%"></div>' : "") +
+        "</div></div>"
+      );
+    }).join("");
+
+    el.innerHTML = rows + axisRow;
+    el.querySelectorAll(".hgrid-block").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var slug = btn.getAttribute("data-slug") || null;
+        var name = btn.getAttribute("data-name");
+        var start = btn.getAttribute("data-start");
+        var already = false;
+        try { already = PDF.isInPlan(dateStr, slug || name, start); } catch (e) { /* ignore */ }
+        try {
+          if (already) PDF.removeFromPlan(dateStr, slug || name, start);
+          else PDF.addToPlan(dateStr, { slug: slug, name: name, category: btn.getAttribute("data-category") || null, start: start, end: btn.getAttribute("data-end") || null, is_continuous: false });
+        } catch (e) { /* stockage indisponible : ignoré */ }
+        renderProgramme();
+      });
+    });
+  }
+
+  function asideToast(msg) {
+    document.querySelectorAll(".toast-msg").forEach(function (t) { t.remove(); });
+    var t = document.createElement("div");
+    t.className = "toast-msg";
+    t.setAttribute("role", "status");
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, 2600);
+  }
+
+  function renderAside(dateStr, isToday, nowMinutes) {
+    var nextSlot = document.getElementById("aside-next-slot");
+    var dayListSlot = document.getElementById("aside-myday-slot");
+    if (!nextSlot || !dayListSlot) return;
+
+    var items = planItemsForDay(dateStr).sort(function (a, b) {
+      if (a.is_continuous && b.is_continuous) return 0;
+      if (a.is_continuous) return -1;
+      if (b.is_continuous) return 1;
+      return (a.start || "").localeCompare(b.start || "");
+    });
+
+    var upcoming = items.filter(function (it) {
+      if (it.is_continuous || !it.start) return false;
+      return !isToday || nowMinutes == null || PDF.timeToMinutes(it.start) >= nowMinutes;
+    }).sort(function (a, b) { return PDF.timeToMinutes(a.start) - PDF.timeToMinutes(b.start); });
+    var next = upcoming[0];
+
+    nextSlot.innerHTML = next
+      ? '<div class="card hero-card"><div class="hero-label">Prochain dans ma journée</div><h2>' + PDF.escapeHtml(next.name) + "</h2>" +
+        '<div class="hero-meta"><span class="hero-time">' + PDF.formatTimeFR(next.start) + "</span></div></div>"
+      : '<div class="card"><p class="text-muted" style="margin:0">Rien de prévu dans votre journée pour l\'instant.</p></div>';
+
+    if (!items.length) {
+      dayListSlot.innerHTML = '<div class="card"><h3 class="mt-0">Ma journée</h3><p class="text-muted" style="margin:0">Aucun spectacle ajouté — cliquez un créneau dans la grille pour l\'ajouter.</p></div>';
+      return;
+    }
+
+    var fixes = items.filter(function (it) { return !it.is_continuous && it.start && it.end; });
+    var conflictPairs = [];
+    for (var i = 0; i < fixes.length; i++) {
+      for (var j = i + 1; j < fixes.length; j++) {
+        if (timeRangesOverlap(fixes[i].start, fixes[i].end, fixes[j].start, fixes[j].end)) conflictPairs.push([fixes[i], fixes[j]]);
+      }
+    }
+    function isConflicting(it) { return conflictPairs.some(function (p) { return p[0] === it || p[1] === it; }); }
+
+    dayListSlot.innerHTML =
+      '<div class="card"><h3 class="mt-0">Ma journée</h3><div class="list-card">' +
+      items.map(function (it) {
+        var conflict = isConflicting(it);
+        return (
+          '<div class="list-row' + (conflict ? " is-conflict-row" : "") + '">' +
+          '<span class="list-row-time">' + (it.is_continuous ? "Continu" : PDF.formatTimeFR(it.start)) + "</span>" +
+          '<span class="list-row-main"><span class="list-row-name">' + PDF.escapeHtml(it.name) + "</span>" +
+          (conflict ? '<span class="list-row-meta is-warn">Conflit</span>' : "") +
+          "</span></div>"
+        );
+      }).join("") +
+      "</div>" +
+      (conflictPairs.length ? '<button type="button" class="btn btn-outline" id="btn-resolve-conflict" style="margin-top:0.75rem;width:100%">Résoudre le conflit</button>' : "") +
+      '<button type="button" class="btn btn-outline" id="btn-share-aside" style="margin-top:0.6rem;width:100%">Partager</button>' +
+      "</div>";
+
+    var resolveBtn = document.getElementById("btn-resolve-conflict");
+    if (resolveBtn) {
+      resolveBtn.addEventListener("click", function () {
+        var pair = conflictPairs[0];
+        if (!pair) return;
+        try { PDF.removeFromPlan(dateStr, pair[1].slug || pair[1].name, pair[1].start); } catch (e) { /* ignore */ }
+        renderProgramme();
+      });
+    }
+    var shareBtn = document.getElementById("btn-share-aside");
+    if (shareBtn) {
+      shareBtn.addEventListener("click", function () {
+        var lignes = items.map(function (it) { return (it.is_continuous ? "En continu" : PDF.formatTimeFR(it.start)) + " — " + it.name; });
+        var texte = "Ma journée au Puy du Fou :\n" + lignes.join("\n");
+        if (navigator.share) {
+          navigator.share({ title: "Ma journée au Puy du Fou", text: texte }).catch(function () { /* annulé : rien à faire */ });
+        } else if (navigator.clipboard) {
+          navigator.clipboard.writeText(texte).then(function () { asideToast("Copié dans le presse-papiers."); }, function () { asideToast("Impossible de copier."); });
+        }
+      });
+    }
+  }
+
+  /* ------------------------------------------------------------------
    * Rendu principal
    * ---------------------------------------------------------------- */
   function renderProgramme() {
@@ -234,6 +437,8 @@
 
     var continuousAll = allSlots.filter(function (s) { return s.rep.is_continuous; });
     renderContinuousGantt(continuousAll.filter(slotMatchesFilters), dayBounds(allSlots), isToday, nowMinutes);
+    renderDesktopGrid(slots, dayBounds(allSlots), isToday, nowMinutes, state.today.date);
+    renderAside(state.today.date, isToday, nowMinutes);
 
     if (allSlots.length === 0) {
       container.innerHTML =

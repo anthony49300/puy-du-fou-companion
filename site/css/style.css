@@ -961,6 +961,66 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
 .star-btn:hover { color: var(--muted); }
 .star-btn.is-fav { color: var(--accent-text); }
 
+/* ---------- Vue desktop du Programme (>= 1100px) ---------- */
+.programme-layout { display: flex; flex-wrap: wrap; gap: 1.5rem; }
+.programme-main { flex: 999 1 640px; min-width: 0; }
+.programme-aside { flex: 1 1 320px; }
+.hgrid-only, .programme-aside { display: none; }
+@media (min-width: 1100px) {
+  .hgrid-only { display: block; }
+  .programme-aside { display: block; }
+  #programme-content, #hour-nav, #continuous-gantt-slot { display: none !important; }
+}
+
+.hgrid-wrap { overflow-x: auto; }
+.hgrid { min-width: 760px; }
+.hgrid-row { display: grid; grid-template-columns: 11rem 1fr; align-items: center; gap: 0.75rem; min-height: 2.5rem; border-bottom: 1px solid var(--line-soft); }
+.hgrid-row:last-child { border-bottom: none; }
+.hgrid-label { display: flex; flex-direction: column; gap: 0.1rem; padding: 0.4rem 0; }
+.hgrid-show-name { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hgrid-show-cat { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.hgrid-show-cat.is-muted { color: var(--muted); }
+.hgrid-show-cat.is-immersive { color: var(--immersive); }
+.hgrid-show-cat.is-night { color: var(--night); }
+.hgrid-track { position: relative; height: 1.6rem; }
+.hgrid-axis .hgrid-track { height: 1.4rem; }
+.hgrid-tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.hgrid-block {
+  position: absolute;
+  top: 2px;
+  height: 16px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  padding: 0;
+  cursor: pointer;
+}
+.hgrid-block--neutral { background: var(--surface-2); border-color: var(--line); }
+.hgrid-block--past { background: var(--past); border-color: var(--past); }
+.hgrid-block--myday { background: var(--accent-fill); border-color: var(--accent-fill); }
+.hgrid-block--conflict { background: var(--danger); border-color: var(--danger); }
+.hgrid-block:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.hgrid-now-line { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--text); opacity: 0.6; }
+.hgrid-now-label {
+  position: absolute;
+  bottom: -1.4rem;
+  transform: translateX(-50%);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.programme-aside .card { margin-bottom: 1rem; }
+.list-row.is-conflict-row { background: var(--danger-bg); margin: 0 -0.5rem; padding-left: 0.5rem; padding-right: 0.5rem; border-radius: var(--r-sm); }
+
 /* ---------- Mini-Gantt "Accès continu" (Programme) ---------- */
 .mini-gantt-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.3rem 0; }
 .mini-gantt-label {

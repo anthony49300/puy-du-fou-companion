@@ -39,10 +39,24 @@
 
     <div class="hour-nav" id="hour-nav" hidden></div>
 
-    <div id="programme-content" aria-live="polite">
-      <div class="empty-state">
-        <div class="skeleton" style="height:2.4rem;max-width:420px;margin:0 auto;"></div>
+    <div class="programme-layout">
+      <div class="programme-main">
+        <div id="programme-content" aria-live="polite">
+          <div class="empty-state">
+            <div class="skeleton" style="height:2.4rem;max-width:420px;margin:0 auto;"></div>
+          </div>
+        </div>
+        <!-- Vue desktop (>= 1100px, voir style.css) : grille horaire, une
+             ligne par spectacle. Remplace #programme-content à cette
+             largeur plutôt que de la dupliquer en JS. -->
+        <div class="hgrid-wrap hgrid-only">
+          <div class="hgrid" id="hgrid" aria-label="Grille horaire des spectacles"></div>
+        </div>
       </div>
+      <aside class="programme-aside" aria-label="Ma journée">
+        <div id="aside-next-slot"></div>
+        <div id="aside-myday-slot"></div>
+      </aside>
     </div>
   </div>
 </main>

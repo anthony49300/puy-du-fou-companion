@@ -192,3 +192,17 @@ test("isInPlan reflects whether a specific showing was already added", () => {
   assert.strictEqual(PDF.isInPlan("2026-08-26", "les-vikings", "14:00"), true);
   assert.strictEqual(PDF.isInPlan("2026-08-26", "les-vikings", "16:00"), false);
 });
+
+test("removeFromPlan removes a specific showing and reports success", () => {
+  const PDF = loadModule("app.js");
+  withMemoryLocalStorage();
+  PDF.addToPlan("2026-08-26", { slug: "les-vikings", name: "Les Vikings", category: "spectacle", start: "14:00", end: "14:30", is_continuous: false });
+  assert.strictEqual(PDF.removeFromPlan("2026-08-26", "les-vikings", "14:00"), true);
+  assert.strictEqual(PDF.isInPlan("2026-08-26", "les-vikings", "14:00"), false);
+});
+
+test("removeFromPlan returns false when there is nothing to remove", () => {
+  const PDF = loadModule("app.js");
+  withMemoryLocalStorage();
+  assert.strictEqual(PDF.removeFromPlan("2026-08-26", "les-vikings", "14:00"), false);
+});

@@ -937,6 +937,21 @@
     return !!(state && state.favoris && state.favoris.indexOf(slug) !== -1);
   }
 
+  // Retire une représentation précise du plan du jour (symétrique
+  // d'addToPlan) — utilisé par la vue grille desktop du Programme pour
+  // "décocher" une séance déjà ajoutée d'un clic. Retourne false si elle
+  // n'y était pas (rien à faire).
+  function removeFromPlan(dateStr, slugOrName, start) {
+    const state = loadCarnetState();
+    const plan = state && state.plans && state.plans[dateStr];
+    if (!plan) return false;
+    const before = plan.items.length;
+    plan.items = plan.items.filter((it) => !((it.slug || it.name) === slugOrName && it.start === start));
+    if (plan.items.length === before) return false;
+    saveCarnetState(state);
+    return true;
+  }
+
   /* ----------------------------------------------------------------------
    * 8quater. Export .ics (RFC 5545) : utilitaires partagés
    *          carnet.js construit un .ics à plusieurs événements (un par
@@ -1092,6 +1107,7 @@
     planItemExists,
     addToPlan,
     isInPlan,
+    removeFromPlan,
     toggleFavorite,
     isFavorite,
     icsEscape,
