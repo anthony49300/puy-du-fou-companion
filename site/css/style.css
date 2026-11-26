@@ -1,136 +1,213 @@
 /* =========================================================================
    Puy du Fou — Programmes & Statistiques (projet communautaire non officiel)
    style.css — feuille de style unique, vanilla CSS, responsive + dark mode
+
+   Design system "Nocturne" (sombre) / "Parchemin" (clair) : composants
+   documentés en bas de fichier (section 16). Tout composant doit utiliser
+   un token (ci-dessous), jamais une couleur en dur.
    ========================================================================= */
 
-/* ---------- 1. Design tokens (thème clair par défaut) ---------- */
+/* ---------- 0. Polices auto-hébergées (site/fonts/, pas de requête tierce)
+   Fraunces (titres) et Inter (corps/UI) sont des polices variables : un seul
+   fichier par famille couvre tout l'axe de graisse (100–900) — Fraunces
+   couvre aussi l'axe "optical size" (opsz), d'où font-optical-sizing ci-
+   dessous plutôt que plusieurs fichiers par taille. Sous-ensemble "latin"
+   uniquement (unicode-range ci-dessous) : suffisant pour le français
+   (Latin-1 + quelques extras : œ, €…), inutile d'embarquer cyrillique/grec. */
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../fonts/fraunces-latin-var.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../fonts/inter-latin-var.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------- 1. Design tokens (thème clair "Parchemin" par défaut) ---------- */
 :root {
-  /* Palette "parc à spectacles" : ambre, bordeaux, vert forêt, crème */
-  --color-cream: #f8f1e2;
-  --color-cream-soft: #efe4cb;
-  --color-parchment: #fffaf0;
-  --color-bordeaux: #7c2233;
-  --color-bordeaux-dark: #591824;
-  --color-amber: #c98a2b;
-  --color-amber-light: #e3ac4f;
-  --color-forest: #2f4a3c;
-  --color-forest-light: #3f6350;
-  --color-ink: #2c2118;
-  --color-ink-soft: #52453a;
-
-  --bg: var(--color-cream);
-  --bg-elevated: var(--color-parchment);
-  --bg-surface: #ffffff;
-  --bg-header: linear-gradient(135deg, var(--color-bordeaux) 0%, var(--color-bordeaux-dark) 100%);
-  --text: var(--color-ink);
-  --text-soft: var(--color-ink-soft);
-  --text-on-accent: #fff8ec;
-  --border: #ddcba4;
-  --border-soft: #e9dcb9;
-  --accent: var(--color-bordeaux);
-  --accent-soft: #f1dbdd;
-  --accent-2: var(--color-amber);
-  --accent-2-soft: #f6e6c7;
-  --accent-3: var(--color-forest);
-  --accent-3-soft: #dfe8e1;
-  --link: var(--color-bordeaux);
-  --shadow: 0 2px 10px rgba(44, 33, 24, 0.08);
-  --shadow-lg: 0 10px 30px rgba(44, 33, 24, 0.16);
-  --radius: 10px;
-  --radius-lg: 16px;
-
-  --badge-nocturne: #263a63;
-  --badge-nocturne-bg: #dfe4f2;
-  --badge-continu: var(--color-forest);
-  --badge-continu-bg: #dfe8e1;
-  --color-error: #8a2323;
-  --color-error-bg: #f6dede;
-  --badge-complet: #8a5b12;
-  --badge-complet-bg: #f6e6c7;
+  --bg: #F7F2E9;
+  --surface: #FFFFFF;
+  --surface-2: #F0E8DA;
+  --nav-bg: #FFFFFF;
+  --line: #DDD0BC;
+  --line-soft: #EAE0D0;
+  --text: #1E1813;
+  --text-2: #3D3229;
+  --muted: #6B5D4D;
+  --accent-text: #8A6114;
+  --accent-fill: #E3B055;
+  --on-accent: #1E1813;
+  --primary: #8F2639;
+  --primary-hover: #75192C;
+  --on-primary: #FFF6F2;
+  --on-primary-muted: #FFE7E2;
+  --success: #2F6B45;
+  --success-bg: #E3F0E6;
+  --warn: #9A5A0F;
+  --warn-bg: #FBEBD6;
+  --danger: #A3262E;
+  --danger-bg: #FBE3E3;
+  --danger-line: #E9A9AD;
+  --night: #3A4F8C;
+  --night-bg: #E6EBF7;
+  --night-line: #C3CDE8;
+  --immersive: #2F6B45;
+  --immersive-bg: #E3F0E6;
+  --past: #E4DACB;
+  --focus-ring: 0 0 0 3px rgba(143, 38, 57, .45);
+  /* Tokens annexes, pas dans la palette principale mais nécessaires à des
+     composants existants (badge "exceptionnel", teinte douce de --primary). */
+  --primary-soft: #F4E3E6;
   --badge-exceptionnel: #6a3c8a;
   --badge-exceptionnel-bg: #ece1f5;
-  --badge-default: #55534b;
-  --badge-default-bg: #e9e4d6;
 
-  --focus-ring: 0 0 0 3px rgba(201, 138, 43, 0.45);
+  /* Échelle de rayons */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 22px;
+  --r-pill: 999px;
+
+  /* Ombres : aucune en sombre (voir blocs ci-dessous), légère en clair */
+  --shadow: 0 1px 2px rgba(30, 24, 19, .06), 0 4px 16px rgba(30, 24, 19, .05);
+  --shadow-lg: 0 2px 6px rgba(30, 24, 19, .08), 0 10px 30px rgba(30, 24, 19, .08);
+
+  /* ---- Noms historiques : conservés en ALIAS (jamais de valeur en dur ici)
+     le temps que chaque composant soit migré vers les tokens ci-dessus au
+     fil des phases de la refonte — voir site/js/app.js (BRAND_SVG,
+     getChartTheme) qui lit encore certains de ces noms directement. Un
+     alias suit automatiquement le thème actif : pas besoin de le répéter
+     dans les blocs sombres plus bas. ---- */
+  --bg-elevated: var(--surface-2);
+  --bg-surface: var(--surface);
+  --bg-header: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  --text-soft: var(--muted);
+  --text-on-accent: var(--on-primary);
+  --border: var(--line);
+  --border-soft: var(--line-soft);
+  --accent: var(--primary);
+  --accent-soft: var(--primary-soft);
+  --accent-2: var(--accent-text);
+  --accent-2-soft: var(--warn-bg);
+  --accent-3: var(--immersive);
+  --accent-3-soft: var(--immersive-bg);
+  --link: var(--accent-text);
+  --radius: var(--r-sm);
+  --radius-lg: var(--r-lg);
+  --badge-nocturne: var(--night);
+  --badge-nocturne-bg: var(--night-bg);
+  --badge-continu: var(--immersive);
+  --badge-continu-bg: var(--immersive-bg);
+  --color-error: var(--danger);
+  --color-error-bg: var(--danger-bg);
+  --badge-complet: var(--warn);
+  --badge-complet-bg: var(--warn-bg);
+  --badge-default: var(--muted);
+  --badge-default-bg: var(--surface-2);
   /* Contour marqué des jours de fermeture ponctuelle dans les calendriers :
-     un noir franc en thème clair ; inversé (clair) en thème sombre pour
-     garder le même contraste maximal plutôt que la même valeur littérale. */
-  --cal-closed-outline: #16110c;
+     reprend --text, qui est déjà "sombre en thème clair / clair en thème
+     sombre" — donc déjà le bon contraste maximal dans les deux cas. */
+  --cal-closed-outline: var(--text);
+  --color-bordeaux: var(--primary);
+  --color-bordeaux-dark: var(--primary-hover);
+  --color-amber: var(--accent-text);
+  --color-forest: var(--immersive);
+  --color-ink: var(--text);
 }
 
 /* Dark mode via préférence système (si l'utilisateur n'a pas fait de choix explicite) */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #17130f;
-    --bg-elevated: #1f1a14;
-    --bg-surface: #241e17;
-    --bg-header: linear-gradient(135deg, #4a1520 0%, #2c0f16 100%);
-    --text: #f2e9d8;
-    --text-soft: #cbbfa9;
-    --text-on-accent: #fff8ec;
-    --border: #3a3226;
-    --border-soft: #2c261c;
-    --accent: #e0a3ad;
-    --accent-soft: #3a2226;
-    --accent-2: #e3ac4f;
-    --accent-2-soft: #3a2f19;
-    --accent-3: #7fae94;
-    --accent-3-soft: #1f2b23;
-    --link: #e6b8bf;
-    --shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55);
-
-    --badge-nocturne: #aebde6;
-    --badge-nocturne-bg: #202a42;
-    --badge-continu: #9fd0b4;
-    --badge-continu-bg: #1f2b23;
-    --color-error: #f0a3a3;
-    --color-error-bg: #3a2020;
-    --badge-complet: #e6c583;
-    --badge-complet-bg: #3a2f19;
+    /* Gardé identique au bloc [data-theme="dark"] ci-dessous, vérifié par
+       scripts/check_css_theme_blocks.py (exécuté à chaque `pytest`, voir
+       tests/test_frontend_css.py) plutôt qu'à la main. */
+    /* BEGIN DARK-TOKENS */
+    --bg: #13100D;
+    --surface: #1D1814;
+    --surface-2: #27201A;
+    --nav-bg: #1A1511;
+    --line: #3A3128;
+    --line-soft: #2A231D;
+    --text: #F4EBDD;
+    --text-2: #E9DFCF;
+    --muted: #B8AA95;
+    --accent-text: #E3B055;
+    --accent-fill: #E3B055;
+    --on-accent: #13100D;
+    --primary: #8F2639;
+    --primary-hover: #A3304A;
+    --on-primary: #FFF6F2;
+    --on-primary-muted: #FFE7E2;
+    --success: #A9D8B8;
+    --success-bg: #1F2A22;
+    --warn: #F0A04B;
+    --warn-bg: #2E2416;
+    --danger: #FF9C9C;
+    --danger-bg: #2E1A1A;
+    --danger-line: #6B3434;
+    --night: #9DB3EA;
+    --night-bg: #171C2A;
+    --night-line: #2C3550;
+    --immersive: #A9D8B8;
+    --immersive-bg: #24342A;
+    --past: #241E19;
+    --focus-ring: 0 0 0 3px rgba(227, 176, 85, .55);
+    --primary-soft: #2E1A20;
     --badge-exceptionnel: #cdadea;
     --badge-exceptionnel-bg: #2c2138;
-    --badge-default: #cfc9b8;
-    --badge-default-bg: #2a251c;
-    --cal-closed-outline: #f2e9d8;
+    --shadow: none;
+    --shadow-lg: none;
+    /* END DARK-TOKENS */
   }
 }
 
 /* Dark mode via bouton toggle (force le thème quel que soit le système) */
 :root[data-theme="dark"] {
-  --bg: #17130f;
-  --bg-elevated: #1f1a14;
-  --bg-surface: #241e17;
-  --bg-header: linear-gradient(135deg, #4a1520 0%, #2c0f16 100%);
-  --text: #f2e9d8;
-  --text-soft: #cbbfa9;
-  --text-on-accent: #fff8ec;
-  --border: #3a3226;
-  --border-soft: #2c261c;
-  --accent: #e0a3ad;
-  --accent-soft: #3a2226;
-  --accent-2: #e3ac4f;
-  --accent-2-soft: #3a2f19;
-  --accent-3: #7fae94;
-  --accent-3-soft: #1f2b23;
-  --link: #e6b8bf;
-  --shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55);
-
-  --badge-nocturne: #aebde6;
-  --badge-nocturne-bg: #202a42;
-  --badge-continu: #9fd0b4;
-  --badge-continu-bg: #1f2b23;
-  --color-error: #f0a3a3;
-  --color-error-bg: #3a2020;
-  --badge-complet: #e6c583;
-  --badge-complet-bg: #3a2f19;
+  /* BEGIN DARK-TOKENS-DUP */
+  --bg: #13100D;
+  --surface: #1D1814;
+  --surface-2: #27201A;
+  --nav-bg: #1A1511;
+  --line: #3A3128;
+  --line-soft: #2A231D;
+  --text: #F4EBDD;
+  --text-2: #E9DFCF;
+  --muted: #B8AA95;
+  --accent-text: #E3B055;
+  --accent-fill: #E3B055;
+  --on-accent: #13100D;
+  --primary: #8F2639;
+  --primary-hover: #A3304A;
+  --on-primary: #FFF6F2;
+  --on-primary-muted: #FFE7E2;
+  --success: #A9D8B8;
+  --success-bg: #1F2A22;
+  --warn: #F0A04B;
+  --warn-bg: #2E2416;
+  --danger: #FF9C9C;
+  --danger-bg: #2E1A1A;
+  --danger-line: #6B3434;
+  --night: #9DB3EA;
+  --night-bg: #171C2A;
+  --night-line: #2C3550;
+  --immersive: #A9D8B8;
+  --immersive-bg: #24342A;
+  --past: #241E19;
+  --focus-ring: 0 0 0 3px rgba(227, 176, 85, .55);
+  --primary-soft: #2E1A20;
   --badge-exceptionnel: #cdadea;
   --badge-exceptionnel-bg: #2c2138;
-  --badge-default: #cfc9b8;
-  --badge-default-bg: #2a251c;
-  --cal-closed-outline: #f2e9d8;
+  --shadow: none;
+  --shadow-lg: none;
+  /* END DARK-TOKENS-DUP */
 }
 
 /* ---------- 2. Reset & bases ---------- */
@@ -144,7 +221,8 @@ html {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Segoe UI", serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.9375rem; /* 15px, voir §2 "Typographie" de la refonte */
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.25s ease, color 0.25s ease;
@@ -154,16 +232,31 @@ body {
 }
 
 h1, h2, h3, h4 {
-  font-family: "Trajan Pro", "Cinzel", "Palatino Linotype", Georgia, serif;
-  letter-spacing: 0.02em;
+  font-family: "Fraunces", Georgia, serif;
+  font-optical-sizing: auto; /* pilote l'axe "opsz" de la variable selon la taille affichée */
+  letter-spacing: 0.01em;
   color: var(--text);
   margin: 0 0 0.5em;
-  font-weight: 700;
+  font-weight: 600;
 }
 
-h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); }
+h1 { font-size: clamp(1.875rem, 1.6rem + 1.3vw, 2.5rem); } /* 30px -> 40px */
 h2 { font-size: clamp(1.3rem, 3vw, 1.7rem); }
-h3 { font-size: 1.15rem; }
+/* Utilisée aussi comme titre de carte (nav-card, spectacle-card,
+   chart-card…) : 24-28px, voir §2 "Typographie" de la refonte. */
+h3 { font-size: clamp(1.5rem, 1.35rem + 0.5vw, 1.75rem); }
+
+/* Petits libellés (labels de stat-tile, méta de page…) */
+.label-upper {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+/* Chiffres alignés sur une grille fixe (horaires, durées, totaux) : évite
+   que "11" paraisse plus étroit que "10" dans une colonne de temps. */
+.tnum { font-variant-numeric: tabular-nums; }
 
 p { margin: 0 0 1em; }
 
@@ -229,10 +322,10 @@ img, svg { max-width: 100%; display: block; }
   align-items: center;
   gap: 0.6rem;
   color: var(--text-on-accent);
-  font-family: "Trajan Pro", "Cinzel", "Palatino Linotype", Georgia, serif;
+  font-family: "Fraunces", Georgia, serif;
   font-size: 1.15rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   white-space: nowrap;
 }
 .brand:hover { text-decoration: none; opacity: 0.92; }
@@ -499,17 +592,18 @@ main { flex: 1; }
   box-shadow: var(--shadow);
 }
 .stat-tile .stat-label {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   color: var(--text-soft);
   margin-bottom: 0.35rem;
 }
 .stat-tile .stat-value {
   font-size: 1.6rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--accent);
-  font-family: "Trajan Pro", "Cinzel", Georgia, serif;
+  font-family: "Fraunces", Georgia, serif;
+  font-variant-numeric: tabular-nums;
 }
 .stat-tile .stat-sub {
   font-size: 0.8rem;
@@ -671,7 +765,7 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
   gap: 0.6rem;
 }
 .timeline-hour-label {
-  font-family: "Trajan Pro", "Cinzel", Georgia, serif;
+  font-family: "Fraunces", Georgia, serif;
   font-size: 0.95rem;
   color: var(--accent);
   margin: 1rem 0 0.25rem;
@@ -694,10 +788,11 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
 .rep-card.is-past { opacity: 0.55; }
 .rep-time-wrap { min-width: 4.6rem; }
 .rep-time {
-  font-family: "Trajan Pro", "Cinzel", Georgia, serif;
-  font-weight: 700;
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
   font-size: 1.1rem;
   color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 .rep-duration { font-size: 0.72rem; color: var(--text-soft); }
 /* Ouverture des portes (carnet uniquement) : un jalon à part entière avant
@@ -749,7 +844,7 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
   padding: 0.75rem;
 }
 .within-hour-label {
-  font-family: "Trajan Pro", "Cinzel", Georgia, serif;
+  font-family: "Fraunces", Georgia, serif;
   font-size: 0.95rem;
   color: var(--accent);
 }
@@ -898,7 +993,7 @@ table.data-table tr.is-changed td:first-child { font-weight: 600; }
   color: var(--text);
 }
 .calendar-head button:hover { background: var(--accent-2); color: var(--text-on-accent); }
-.calendar-title { font-family: "Trajan Pro", "Cinzel", Georgia, serif; text-transform: capitalize; }
+.calendar-title { font-family: "Fraunces", Georgia, serif; text-transform: capitalize; }
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
