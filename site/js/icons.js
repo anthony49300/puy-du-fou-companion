@@ -35,6 +35,7 @@
     door: '<rect x="6" y="3" width="12" height="18" rx="1"/><path d="M14.5 12h.01"/>',
     share: '<circle cx="18" cy="5" r="2.3"/><circle cx="6" cy="12" r="2.3"/><circle cx="18" cy="19" r="2.3"/><path d="M8.1 10.8l7.8-4.6M8.1 13.2l7.8 4.6"/>',
     walking: '<circle cx="12.5" cy="5" r="1.7"/><path d="M12.5 8v4l-3 3M12.5 12l3 2.5M9.3 15l-1.6 4M15.3 14.3l2 4.7"/>',
+    calendar: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
     star: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.8z"/>',
     "star-filled": '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.8z" fill="currentColor"/>',

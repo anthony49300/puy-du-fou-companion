@@ -847,6 +847,15 @@
       accent: read("--accent") || "#7c2233",
       accent2: read("--accent-2") || "#c98a2b",
       accent3: read("--accent-3") || "#2f4a3c",
+      // Tokens sémantiques de la refonte (voir §2 design tokens) : utiles
+      // aux graphiques qui veulent distinguer visuellement une catégorie
+      // (spectacle_nocturne, spectacle_immersif) plutôt que de réutiliser
+      // l'accent générique pour toutes les séries.
+      success: read("--success") || "#2F6B45",
+      warn: read("--warn") || "#9A5A0F",
+      danger: read("--danger") || "#A3262E",
+      night: read("--night") || "#3A4F8C",
+      immersive: read("--immersive") || "#2F6B45",
     };
   }
 

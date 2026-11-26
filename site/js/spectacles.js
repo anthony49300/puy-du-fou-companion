@@ -41,9 +41,13 @@
     var stats = s.stats || {};
     var selectedCls = s.slug === state.selectedSlug ? " is-selected" : "";
     var inactiveCls = s.active === false ? " is-inactive" : "";
+    // Un jour de fermeture, "Aujourd'hui : 0" ne veut rien dire (0 partout,
+    // sans rapport avec la popularité du spectacle) : on masque la ligne
+    // plutôt que d'afficher un remplaçant ("Fermé") qui prendrait quand
+    // même la place d'une vraie donnée.
     var todayLabel = state.todayClosed
-      ? "Aujourd'hui : <strong>Fermé</strong>"
-      : "Aujourd'hui : <strong>" + (stats.today_count != null ? stats.today_count : "—") + "</strong>";
+      ? ""
+      : "<span>Aujourd'hui : <strong>" + (stats.today_count != null ? stats.today_count : "—") + "</strong></span>";
     return (
       '<div class="card spectacle-card' + selectedCls + inactiveCls + '" data-slug="' + PDF.escapeHtml(s.slug) + '" tabindex="0" role="button" aria-pressed="' + (s.slug === state.selectedSlug) + '">' +
       '<div class="spectacle-card-head"><h3>' + PDF.escapeHtml(s.name) + "</h3>" +
@@ -51,7 +55,7 @@
       "</div>" +
       (s.active === false ? '<span class="badge badge-default">Inactif</span>' : "") +
       '<div class="spectacle-stats-mini">' +
-      "<span>" + todayLabel + "</span>" +
+      todayLabel +
       '<span>Moyenne/jour : <strong>' + PDF.formatNumberFR(stats.avg_per_day) + "</strong></span>" +
       '<span>Jours présents : <strong>' + (stats.days_present != null ? stats.days_present : "—") + "</strong></span>" +
       '<span>Jours absents : <strong>' + (stats.days_absent != null ? stats.days_absent : "—") + "</strong></span>" +
@@ -109,7 +113,7 @@
     if (!periods || !periods.length) return "";
     return periods.map(function (p) {
       return (
-        '<span class="badge badge-default">📅 ' +
+        '<span class="badge badge-default">' + PDF.icon("calendar") + " " +
         PDF.escapeHtml(PDF.formatDateFR(p.from)) + " → " + PDF.escapeHtml(PDF.formatDateFR(p.to)) +
         "</span>"
       );

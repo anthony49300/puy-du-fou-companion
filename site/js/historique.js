@@ -334,7 +334,11 @@
         state.viewYear = refDate.getFullYear();
         state.viewMonth = refDate.getMonth();
 
-        renderCalendar();
+        // Présélectionne cette même date (pas seulement le mois) : sans ça,
+        // le panneau de détail resterait sur son message d'invite initial
+        // alors que le calendrier, lui, s'ouvre déjà dessus.
+        if (latest) selectDate(latest);
+        else renderCalendar();
 
         state.compare.a.year = state.compare.b.year = refDate.getFullYear();
         state.compare.a.month = state.compare.b.month = refDate.getMonth();

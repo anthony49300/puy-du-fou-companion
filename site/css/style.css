@@ -1547,13 +1547,10 @@ table.data-table tr.is-changed td:first-child { font-weight: 600; }
   .page-hero { padding: 1.25rem 0 0.75rem; }
   .page-hero h1 { font-size: 1.35rem; }
   .page-hero p.lede { font-size: 0.85rem; }
-  #today-stats {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.5rem;
-  }
-  #today-stats .stat-tile { padding: 0.6rem 0.5rem; }
-  #today-stats .stat-label { font-size: 0.65rem; }
-  #today-stats .stat-value { font-size: 1.15rem; }
+  /* Grille KPI de Statistiques : garantit 2 colonnes sur mobile (minmax un
+     peu plus étroit que le défaut de .stat-grid, qui retomberait à 1 seule
+     colonne en dessous de ~360px). */
+  #global-stats { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
 }
 
 /* ---------- 15. Carnet personnel (planificateur, visites, bilan, pass) ---------
