@@ -32,6 +32,9 @@
     "alert-triangle": '<path d="M12 3 2 20h20L12 3Z"/><path d="M12 9.5v4"/><path d="M12 16.7v.01"/>',
     "more-horizontal": '<path d="M5 12h.01M12 12h.01M19 12h.01"/>',
     clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+    star: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.8z"/>',
+    "star-filled": '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.8z" fill="currentColor"/>',
     x: '<path d="M6 6l12 12M18 6 6 18"/>',
   };
 

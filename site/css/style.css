@@ -878,19 +878,91 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
   flex-wrap: wrap;
   gap: 0.4rem;
 }
+/* Variante défilement horizontal (filtres du Programme) : une seule ligne,
+   jamais de retour à la ligne qui pousserait le contenu vers le bas. */
+.chip-row--scroll {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+  margin: 0.75rem 0;
+}
+.chip-row--scroll::-webkit-scrollbar { display: none; }
 .chip {
   border: 1px solid var(--border);
   background: var(--bg-surface);
   color: var(--text-soft);
   border-radius: 999px;
-  padding: 0.4rem 0.85rem;
+  padding: 0.5rem 0.9rem;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
   font-size: 0.83rem;
+  flex-shrink: 0;
 }
 .chip.active {
   background: var(--accent);
   color: var(--text-on-accent);
   border-color: var(--accent);
 }
+
+/* ---------- Contrôle segmenté (sélecteur de jour, Programme) ---------- */
+.segmented {
+  display: flex;
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  padding: 3px;
+  gap: 2px;
+  margin: 1rem 0;
+}
+.segmented .segment {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  min-height: 40px;
+  border: none;
+  background: none;
+  border-radius: calc(var(--r-md) - 3px);
+  color: var(--text-2);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.segmented .segment .segment-date { font-size: 0.7rem; font-weight: 500; color: var(--muted); }
+.segmented .segment.active { background: var(--primary); color: var(--on-primary); }
+.segmented .segment.active .segment-date { color: var(--on-primary-muted); }
+
+/* ---------- Étoile "favori" sur une séance ---------- */
+.star-btn {
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--line);
+}
+.star-btn .icon { width: 1.15rem; height: 1.15rem; }
+.star-btn:hover { color: var(--muted); }
+.star-btn.is-fav { color: var(--accent-text); }
+
+/* ---------- Mini-Gantt "Accès continu" (Programme) ---------- */
+.mini-gantt-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.3rem 0; }
+.mini-gantt-label {
+  flex: 0 0 9rem;
+  font-size: 0.82rem;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mini-gantt-track { position: relative; flex: 1; height: 10px; background: var(--surface-2); border-radius: var(--r-pill); }
+.mini-gantt-bar { position: absolute; top: 0; bottom: 0; background: var(--accent-fill); border-radius: var(--r-pill); }
+.mini-gantt-bar.is-past { background: var(--past); }
+.mini-gantt-now { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--text); }
 
 /* Vrai tab bar (ex: onglets du Carnet) : soulignement plutôt que des chips
    remplies, pour ne pas se confondre avec les filtres/sélecteurs de même
@@ -995,38 +1067,49 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
 .rep-badges { display: flex; gap: 0.35rem; flex-wrap: wrap; }
 
 /* Séances déjà commencées (jour réel du visiteur uniquement) : repliées
-   plutôt que mélangées aux séances à venir — voir programme.js. */
+   plutôt que mélangées aux séances à venir — voir programme.js. Présenté
+   comme un bouton à contour pointillé (voir §4.3 de la refonte), pas comme
+   une simple ligne de texte cliquable. */
 .past-sessions {
-  border: 1px dashed var(--border);
-  border-radius: var(--radius);
-  padding: 0.5rem 0.85rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-pill);
+  overflow: hidden;
 }
 .past-sessions summary {
   cursor: pointer;
-  color: var(--text-soft);
+  color: var(--text-2);
+  font-weight: 600;
   font-size: 0.85rem;
-  padding: 0.35rem 0;
+  padding: 0.6rem 1rem;
+  text-align: center;
+  list-style: none;
 }
-.past-sessions[open] summary { margin-bottom: 0.5rem; }
-.past-sessions .timeline-hour-group { gap: 0.6rem; }
+.past-sessions summary::-webkit-details-marker { display: none; }
+.past-sessions[open] { border-radius: var(--r-md); }
+.past-sessions[open] summary { border-bottom: 1px dashed var(--line); }
+.past-sessions .timeline-hour-group { gap: 0.6rem; padding: 0.75rem 1rem 0.25rem; }
 
-/* Séances commençant dans l'heure : mise en avant, pas de sous-titrage par
-   heure (une seule séance suffit à comprendre "maintenant"). */
-.within-hour-group {
+/* Séparateur "Maintenant · HH:MM" entre les séances passées (repliées) et
+   à venir — remplace l'ancien encart "dans l'heure" mis en avant : chaque
+   séance à venir porte déjà son propre délai ("dans 25 min"), voir
+   .rep-duration ci-dessous. */
+.now-divider {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 0.6rem;
-  background: var(--accent-2-soft);
-  border: 1px solid var(--accent-2);
-  border-radius: var(--radius);
-  padding: 0.75rem;
+  color: var(--accent-text);
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin: 1rem 0;
 }
-.within-hour-label {
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 0.95rem;
-  color: var(--accent);
+.now-divider::before, .now-divider::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--accent-text);
+  opacity: 0.35;
 }
-.rep-countdown { font-size: 0.72rem; color: var(--accent); font-weight: 600; }
+.rep-duration.is-warn { color: var(--warn); font-weight: 600; }
 
 /* Barre d'heures collante : navigation rapide sur une page potentiellement
    très longue (nombreuses séances/jour) — surtout utile sur mobile. */

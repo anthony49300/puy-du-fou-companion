@@ -918,6 +918,25 @@
     return plan.items.some((it) => (it.slug || it.name) === slugOrName && it.start === start);
   }
 
+  // Favoris (chip "Favoris" du Programme, étoile sur chaque séance) : un
+  // simple tableau de slugs dans le même état partagé que le plan du jour.
+  // Retourne true si le spectacle est désormais favori (false s'il vient
+  // d'être retiré).
+  function toggleFavorite(slug) {
+    const state = loadCarnetState() || { visites: [], plans: {}, gate: 30, pass: null, favoris: [] };
+    if (!state.favoris) state.favoris = [];
+    const i = state.favoris.indexOf(slug);
+    if (i === -1) state.favoris.push(slug);
+    else state.favoris.splice(i, 1);
+    saveCarnetState(state);
+    return i === -1;
+  }
+
+  function isFavorite(slug) {
+    const state = loadCarnetState();
+    return !!(state && state.favoris && state.favoris.indexOf(slug) !== -1);
+  }
+
   /* ----------------------------------------------------------------------
    * 8quater. Export .ics (RFC 5545) : utilitaires partagés
    *          carnet.js construit un .ics à plusieurs événements (un par
@@ -1073,6 +1092,8 @@
     planItemExists,
     addToPlan,
     isInPlan,
+    toggleFavorite,
+    isFavorite,
     icsEscape,
     icsUtcStamp,
     buildAllDayIcs,
