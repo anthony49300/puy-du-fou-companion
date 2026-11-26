@@ -506,12 +506,6 @@ img, svg { max-width: 100%; display: block; }
   .nav-dropdown-link { font-size: 1rem; }
 }
 
-@media (min-width: 780px) {
-  /* Pas de barre d'onglets fixe ni de marge de respiration pour elle sur
-     desktop (voir section 3bis, .tabbar). */
-  .tabbar { display: none; }
-}
-
 /* ---------- 3bis. Barre d'onglets mobile (bottom tab bar) ----------
    5 destinations principales, toujours visibles — remplace le hamburger
    de l'ancienne nav. Fixée en bas, au-dessus du contenu : voir la marge
@@ -551,6 +545,14 @@ img, svg { max-width: 100%; display: block; }
   font-weight: 600;
 }
 .tabbar-item.active .tabbar-label { font-weight: 600; }
+
+/* Pas de barre d'onglets fixe sur desktop (la nav horizontale du header la
+   remplace) — cette règle doit venir APRÈS la définition de base de
+   .tabbar ci-dessus : à spécificité égale, c'est l'ordre dans la feuille
+   qui tranche, pas l'ordre de lecture "logique" des sections. */
+@media (min-width: 780px) {
+  .tabbar { display: none; }
+}
 
 /* ---------- 4. Footer ---------- */
 .site-footer {

@@ -760,7 +760,24 @@
       dropdown.classList.remove("open");
       toggles.forEach((t) => t.setAttribute("aria-expanded", "false"));
     }
-    function open() {
+    // `right: 1.25rem` (CSS) suppose que le bouton est collé au bord droit
+    // de .header-inner — faux en desktop dès que la note de fraîcheur (sa
+    // largeur varie selon la page/les données) s'intercale avant le bouton
+    // thème. On recalcule donc l'écart réel au clic plutôt que de fixer une
+    // valeur CSS qui ne vaudrait que par coïncidence.
+    function open(fromToggle) {
+      if (fromToggle && fromToggle.id === "nav-explore-toggle-desktop") {
+        const headerInner = fromToggle.closest(".header-inner");
+        if (headerInner) {
+          const toggleRect = fromToggle.getBoundingClientRect();
+          const innerRect = headerInner.getBoundingClientRect();
+          dropdown.style.right = Math.max(0, innerRect.right - toggleRect.right) + "px";
+        }
+      } else {
+        // Mobile : laisse la media query (right: 0, feuille pleine largeur)
+        // reprendre la main plutôt que de garder un décalage desktop périmé.
+        dropdown.style.right = "";
+      }
       dropdown.classList.add("open");
       toggles.forEach((t) => t.setAttribute("aria-expanded", "true"));
     }
@@ -769,7 +786,7 @@
       toggle.addEventListener("click", (e) => {
         e.stopPropagation();
         if (dropdown.classList.contains("open")) close();
-        else open();
+        else open(toggle);
       });
     });
     document.addEventListener("click", (e) => {
