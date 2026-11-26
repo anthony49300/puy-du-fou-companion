@@ -536,7 +536,12 @@
     var dateStr = $("planDate").value;
     var plan = planCourant(dateStr);
     $("planMoment").value = plan.moment || "Jour";
-    $("planSelectedDateLabel").textContent = dateStr ? "Journée du " + PDF.formatDateLongFR(dateStr) : "";
+    // Mis en forme "mercredi 22 juillet · Jour" (voir .label-upper, qui le
+    // passe en MAJUSCULES à l'affichage) — sans l'année, superflue ici.
+    var dLabel = PDF.parseISODate(dateStr);
+    $("planSelectedDateLabel").textContent = dLabel
+      ? dLabel.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) + " · " + (plan.moment || "Jour")
+      : "";
     $("planHint").textContent = stockageOk ? "" : "Stockage local indisponible : pensez à exporter vos données.";
 
     var record = state.datesMap[dateStr];
@@ -565,8 +570,96 @@
     var fixes = itemsFixesTries(plan);
     var conflits = detecterConflits(fixes, S.gate);
 
+    renderJourKpis(plan, fixes, conflits);
     renderTimeline(tous, conflits);
     renderAlertes(tous, conflits);
+    renderSwapChipsAsync(dateStr, tous, conflits);
+  }
+
+  // Durée totale des séances à heure fixe (les attractions en continu n'ont
+  // pas de "temps de spectacle" ponctuel à additionner).
+  function dureeTotaleMinutes(fixes) {
+    return fixes.reduce(function (sum, it) {
+      var d = PDF.timeToMinutes(it.end) - PDF.timeToMinutes(it.start);
+      if (d < 0) d += 24 * 60;
+      return sum + d;
+    }, 0);
+  }
+
+  function formatDureeHeuresMinutes(totalMin) {
+    var h = Math.floor(totalMin / 60), m = totalMin % 60;
+    return h > 0 ? h + " h " + String(m).padStart(2, "0") : m + " min";
+  }
+
+  // Menu "Plus d'actions" (Enregistrer comme visite / Imprimer / Vider) :
+  // mêmes ouverture/fermeture au clic extérieur et à Échap que le panneau
+  // "Explorer" de la nav (voir initNavDropdown, site/js/app.js), réécrites
+  // ici en quelques lignes plutôt que de généraliser ce mécanisme pour un
+  // unique autre appelant.
+  function initDayActionsMenu() {
+    var toggle = $("dayActionsToggle");
+    var menu = $("dayActionsMenu");
+    if (!toggle || !menu) return;
+    toggle.innerHTML = PDF.icon("more-horizontal");
+    function close() { menu.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); }
+    function open() { menu.classList.add("open"); toggle.setAttribute("aria-expanded", "true"); }
+    toggle.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (menu.classList.contains("open")) close(); else open();
+    });
+    document.addEventListener("click", function (e) {
+      if (!menu.contains(e.target) && e.target !== toggle) close();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && menu.classList.contains("open")) { close(); toggle.focus(); }
+    });
+    // Referme après un clic sur une des actions (pas de navigation de page
+    // qui le ferait naturellement, contrairement au panneau "Explorer").
+    menu.addEventListener("click", function (e) {
+      if (e.target.closest("button")) close();
+    });
+  }
+
+  function initShareButton() {
+    var btn = $("btnShareDay");
+    if (!btn) return;
+    btn.innerHTML = PDF.icon("share");
+    btn.addEventListener("click", function () {
+      var dateStr = $("planDate").value;
+      var plan = planCourant(dateStr);
+      if (!plan.items.length) { toast("Rien à partager : la journée est vide."); return; }
+      var lignes = plan.items.slice().sort(function (a, b) {
+        if (a.is_continuous && b.is_continuous) return 0;
+        if (a.is_continuous) return -1;
+        if (b.is_continuous) return 1;
+        return (a.start || "").localeCompare(b.start || "");
+      }).map(function (it) {
+        return (it.is_continuous ? "En continu" : PDF.formatTimeFR(it.start)) + " — " + it.name;
+      });
+      var texte = "Ma journée au Puy du Fou (" + PDF.formatDateLongFR(dateStr) + ") :\n" + lignes.join("\n");
+      if (navigator.share) {
+        navigator.share({ title: "Ma journée au Puy du Fou", text: texte }).catch(function () { /* annulé par l'utilisateur : rien à faire */ });
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(texte).then(
+          function () { toast("Copié dans le presse-papiers."); },
+          function () { toast("Impossible de copier automatiquement."); }
+        );
+      } else {
+        toast("Partage non disponible sur ce navigateur.");
+      }
+    });
+  }
+
+  function renderJourKpis(plan, fixes, conflits) {
+    var wrap = $("jourKpis");
+    if (!wrap) return;
+    var n = conflits.length;
+    var conflitLabel = n > 0 ? n + (n > 1 ? " conflits" : " conflit") : "0 conflit";
+    wrap.innerHTML =
+      '<div class="stat-tile"><div class="stat-label">Spectacles</div><div class="stat-value">' + plan.items.length + "</div></div>" +
+      '<div class="stat-tile"><div class="stat-label">Temps de spectacle</div><div class="stat-value">' +
+      (fixes.length ? formatDureeHeuresMinutes(dureeTotaleMinutes(fixes)) : "—") + "</div></div>" +
+      '<div class="stat-tile' + (n > 0 ? " stat-tile--danger" : "") + '"><div class="stat-label">Conflits</div><div class="stat-value">' + conflitLabel + "</div></div>";
   }
 
   // Minutes depuis minuit -> "HH:MM" (inverse de PDF.timeToMinutes), avec
@@ -638,6 +731,20 @@
     return lignes.join("\r\n");
   }
 
+  // Marge entre deux séances consécutives À HEURE FIXE (la précédente, la
+  // suivante) : négative = vrai chevauchement (pas de ligne de marge, la
+  // carte suivante passe directement en alerte "danger" — voir renderTimeline).
+  function margeMinutes(avant, apres) {
+    return PDF.timeToMinutes(apres.start) - PDF.timeToMinutes(avant.end);
+  }
+
+  // L'AUTRE séance impliquée dans un chevauchement réel avec `it`, ou null.
+  function conflitChevauchementAvec(it, conflits) {
+    var trouve = conflits.find(function (c) { return c.chevauchement && (c.a === it || c.b === it); });
+    if (!trouve) return null;
+    return trouve.a === it ? trouve.b : trouve.a;
+  }
+
   function renderTimeline(items, conflits) {
     var el = $("jourTimeline");
     if (!items.length) {
@@ -646,43 +753,56 @@
         "<p>Ajoutez un spectacle pour composer cette journée — depuis le programme officiel, ou manuellement.</p></div>";
       return;
     }
-    el.innerHTML =
-      '<div class="timeline">' +
-      items.map(function (it) {
-        var sev = severiteConflit(it, conflits);
-        var cls = "rep-card" +
-          (it.category === "spectacle_nocturne" ? " is-nocturne" : "") +
-          (sev === "error" ? " is-conflict" : sev === "warn" ? " is-conflict-warn" : "");
-        var timeLabel = it.is_continuous
-          ? "En continu" + (it.end ? " " + PDF.formatTimeFR(it.start) + "–" + PDF.formatTimeFR(it.end) : "")
-          : PDF.formatTimeFR(it.start) + (it.end ? "–" + PDF.formatTimeFR(it.end) : "");
-        // Repère "ouverture des portes" : un jalon à part entière avant la
-        // carte, comme un horaire d'embarquement dans un itinéraire — bien
-        // plus visible qu'une simple sous-ligne. N'a de sens que pour une
-        // séance ponctuelle (file d'attente) — pas pour un accès en continu.
-        var gateMarker = (!it.is_continuous && it.start)
-          ? '<div class="gate-marker"><span>🚪 Ouverture des portes ' +
-            PDF.escapeHtml(PDF.formatTimeFR(minutesToHHMM(PDF.timeToMinutes(it.start) - S.gate))) +
-            "</span></div>"
-          : "";
-        var badges = it.slug
-          ? PDF.representationBadges({ start: it.start, is_continuous: it.is_continuous, status: it.status || "scheduled" }, it.category)
-          : '<span class="badge badge-default">Ajout manuel</span>';
-        if (sev === "error") badges += '<span class="badge badge-conflict-error">⛔ Chevauchement</span>';
-        else if (sev === "warn") badges += '<span class="badge badge-conflict-warn">⚠️ Portes justes</span>';
-        return (
-          gateMarker +
-          '<div class="' + cls + '">' +
-          '<div class="rep-time">' +
-          '<span class="rep-time-main">' + PDF.escapeHtml(timeLabel) + "</span>" +
-          "</div>" +
-          '<div class="rep-name">' + PDF.escapeHtml(it.name) + "</div>" +
-          '<div class="rep-badges">' + badges + "</div>" +
-          '<button type="button" class="btn btn-outline no-print" data-remove="' + it.uid + '" aria-label="Retirer ' + PDF.escapeHtml(it.name) + '" style="padding:0.35rem 0.6rem;">✕</button>' +
-          "</div>"
-        );
-      }).join("") +
-      "</div>";
+    var html = '<ol class="day-timeline">';
+    items.forEach(function (it, idx) {
+      var sev = severiteConflit(it, conflits);
+      var autreConflit = sev === "error" ? conflitChevauchementAvec(it, conflits) : null;
+      var cls = "day-card" +
+        (it.category === "spectacle_nocturne" ? " day-card--night" : "") +
+        (autreConflit ? " day-card--danger" : "");
+      var dotCls = "day-timeline-dot" + (autreConflit ? " is-danger" : sev === "warn" ? " is-warn" : "");
+      var timeLabel = it.is_continuous
+        ? "En continu"
+        : PDF.formatTimeFR(it.start);
+      var badges = it.slug
+        ? PDF.representationBadges({ start: it.start, is_continuous: it.is_continuous, status: it.status || "scheduled" }, it.category)
+        : '<span class="badge badge-default">Ajout manuel</span>';
+      var gateNote = (!it.is_continuous && it.start)
+        ? '<div class="gate-note">' + PDF.icon("door") + " Portes " +
+          PDF.escapeHtml(PDF.formatTimeFR(minutesToHHMM(PDF.timeToMinutes(it.start) - S.gate))) + "</div>"
+        : "";
+
+      html +=
+        '<li class="day-timeline-item">' +
+        '<div class="day-timeline-time tnum">' + PDF.escapeHtml(timeLabel) + (it.end && !it.is_continuous ? '<div class="text-muted" style="font-weight:400;font-size:0.75rem">' + PDF.escapeHtml(PDF.formatTimeFR(it.end)) + "</div>" : "") + "</div>" +
+        '<div class="day-timeline-rail"><span class="' + dotCls + '"></span></div>' +
+        '<div class="' + cls + '">' +
+        '<div class="day-card-name">' + PDF.escapeHtml(it.name) + "</div>" +
+        '<div class="day-card-badges">' + badges + "</div>" +
+        (autreConflit ? '<div class="day-card-conflict">Chevauche ' + PDF.escapeHtml(autreConflit.name) + "</div>" : "") +
+        (autreConflit && it.slug ? '<div class="swap-chips" id="swap-' + it.uid + '"></div>' : "") +
+        gateNote +
+        '<button type="button" class="btn btn-outline no-print remove-btn" data-remove="' + it.uid + '" aria-label="Retirer ' + PDF.escapeHtml(it.name) + '">' + PDF.icon("x") + "</button>" +
+        "</div>" +
+        "</li>";
+
+      var next = items[idx + 1];
+      if (!it.is_continuous && it.end && next && !next.is_continuous && next.start) {
+        var marge = margeMinutes(it, next);
+        if (marge >= 0) {
+          var tendu = marge < S.gate;
+          html +=
+            '<li class="day-gap-row"><div></div><div></div>' +
+            '<div class="day-gap-note' + (tendu ? " is-warn" : "") + '">' + PDF.icon("walking") + " " +
+            (tendu
+              ? marge + " min pour rejoindre — enchaînement serré"
+              : marge + " min de marge") +
+            "</div></li>";
+        }
+      }
+    });
+    html += "</ol>";
+    el.innerHTML = html;
     el.querySelectorAll("[data-remove]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var dateStr = $("planDate").value;
@@ -691,6 +811,46 @@
         plan.items = plan.items.filter(function (it) { return it.uid !== targetUid; });
         sauver();
         renderJour();
+      });
+    });
+  }
+
+  // Pour chaque séance en chevauchement réel, propose en chips les autres
+  // horaires connus du MÊME spectacle ce jour-là (programme officiel) pour
+  // la déplacer en un tap — n'affiche rien si le programme officiel de
+  // cette date n'est pas disponible (ex: ajout manuel, jour trop ancien).
+  function renderSwapChipsAsync(dateStr, items, conflits) {
+    var cibles = items.filter(function (it) {
+      return it.slug && conflits.some(function (c) { return c.chevauchement && (c.a === it || c.b === it); });
+    });
+    if (!cibles.length) return;
+    fetchRealDay(dateStr).then(function (dayData) {
+      if (!dayData) return;
+      var slots = realDayToSlots(dayData);
+      cibles.forEach(function (it) {
+        var hote = document.getElementById("swap-" + it.uid);
+        if (!hote) return;
+        var autres = slots.filter(function (s) {
+          return s.slug === it.slug && !s.is_continuous && s.start && s.start !== it.start;
+        });
+        if (!autres.length) return;
+        hote.innerHTML =
+          '<div class="swap-chips-label">Autres séances</div><div class="chip-row">' +
+          autres.map(function (s) {
+            return '<button type="button" class="chip" data-swap-uid="' + it.uid + '" data-swap-start="' + s.start + '" data-swap-end="' + (s.end || "") + '">' +
+              PDF.escapeHtml(PDF.formatTimeFR(s.start)) + "</button>";
+          }).join("") + "</div>";
+        hote.querySelectorAll("[data-swap-uid]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var plan = planCourant(dateStr);
+            var cible = plan.items.find(function (x) { return x.uid === btn.getAttribute("data-swap-uid"); });
+            if (!cible) return;
+            cible.start = btn.getAttribute("data-swap-start");
+            cible.end = btn.getAttribute("data-swap-end") || null;
+            sauver();
+            renderJour();
+          });
+        });
       });
     });
   }
@@ -1436,9 +1596,16 @@
     renderPass();
   }
 
+  // Numéro de version du format exporté — permet de distinguer, à l'import,
+  // un futur format incompatible d'un ancien export. Les exports déjà en
+  // circulation n'ont pas ce champ : acceptés quand même (traités comme la
+  // version 1), rien à migrer pour l'instant.
+  var EXPORT_VERSION = 1;
+
   function initIoListeners() {
     $("btnExport").addEventListener("click", function () {
-      var blob = new Blob([JSON.stringify(S, null, 2)], { type: "application/json" });
+      var payload = Object.assign({ version: EXPORT_VERSION }, S);
+      var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
       var a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = "mon-carnet-puy-du-fou-" + PDF.isoDateToday() + ".json";
@@ -1455,22 +1622,35 @@
       if (!f) return;
       var reader = new FileReader();
       reader.onload = function () {
+        var d;
         try {
-          var d = JSON.parse(reader.result);
+          d = JSON.parse(reader.result);
           if (!d || !Array.isArray(d.visites)) throw new Error("format");
+        } catch (err) {
+          toast('Fichier illisible : il doit venir du bouton « Exporter ».');
+          $("fileImport").value = "";
+          return;
+        }
+        // version absente = ancien export, accepté tel quel (voir
+        // EXPORT_VERSION ci-dessus) — seule une version future et
+        // incompatible serait à rejeter, pas encore le cas aujourd'hui.
+        confirmDialog(
+          "Importer ce fichier remplacera TOUTES vos données actuelles (plans, visites, réglages). Continuer ?",
+          "Importer"
+        ).then(function (ok) {
+          if (!ok) { $("fileImport").value = ""; return; }
           S = d;
+          delete S.version;
           if (!S.pass) S.pass = etatInitial().pass;
           if (S.gate == null) S.gate = 30;
           if (!S.plans) S.plans = {};
           sauver();
           refreshAll();
           toast("Données importées.");
-        } catch (err) {
-          toast('Fichier illisible : il doit venir du bouton « Exporter ».');
-        }
+          $("fileImport").value = "";
+        });
       };
       reader.readAsText(f);
-      e.target.value = "";
     });
 
     $("btnResetAll").addEventListener("click", function () {
@@ -1501,6 +1681,8 @@
     window.addEventListener("resize", syncStickyOffsets);
 
     initJourListeners();
+    initDayActionsMenu();
+    initShareButton();
     initVisitesListeners();
     initPassInputs();
     initIoListeners();

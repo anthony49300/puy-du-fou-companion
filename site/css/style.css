@@ -420,6 +420,10 @@ img, svg { max-width: 100%; display: block; }
 .nav-dropdown.open { display: flex; }
 .nav-dropdown-link {
   color: var(--text);
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
   padding: 0.6rem 0.75rem;
   border-radius: 8px;
   font-size: 0.92rem;
@@ -429,6 +433,14 @@ img, svg { max-width: 100%; display: block; }
 }
 .nav-dropdown-link:hover { background: var(--surface-2); text-decoration: none; }
 .nav-dropdown-link.active { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+
+/* Réutilisation de .nav-dropdown hors du header (ex: menu "Plus d'actions"
+   de Ma journée) : le panneau est ici un enfant direct de .nav-group (pas
+   de .header-inner plus large pour l'ancrer) — on l'aligne donc sur le
+   bord droit de .nav-group lui-même plutôt que sur le décalage pensé pour
+   le header. */
+.nav-group--inline { position: relative; display: inline-block; }
+.nav-group--inline .nav-dropdown { right: 0; min-width: 14rem; }
 
 .header-actions {
   display: flex;
@@ -1490,10 +1502,86 @@ table.data-table tr.is-changed td:first-child { font-weight: 600; }
    catalogue de spectacles et les horaires proposés, eux, viennent des vraies
    données déjà collectées (spectacles.json / today.json / history). */
 
-.rep-card.is-conflict { border-left-color: var(--color-error); background: var(--color-error-bg); }
-.rep-card.is-conflict-warn { border-left-color: var(--accent-2); background: var(--accent-2-soft); }
-.badge-conflict-error { color: var(--color-error); background: var(--color-error-bg); border: 1px solid var(--color-error); }
-.badge-conflict-warn { color: var(--badge-complet); background: var(--accent-2-soft); border: 1px solid var(--accent-2); }
+/* Timeline verticale "Ma journée" : colonne d'heures, rail avec pucettes,
+   cartes à droite — remplace les .rep-card à bordure gauche (voir
+   constraints de la refonte : "retirer l'accent en bordure gauche"). */
+.day-timeline { list-style: none; margin: 1.25rem 0; padding: 0; display: flex; flex-direction: column; }
+.day-timeline-item { display: grid; grid-template-columns: 3.4rem 1.2rem 1fr; gap: 0.75rem; align-items: start; }
+.day-timeline-time { font-weight: 600; font-variant-numeric: tabular-nums; padding-top: 0.9rem; text-align: right; font-size: 0.9rem; }
+.day-timeline-rail { position: relative; display: flex; justify-content: center; align-self: stretch; }
+.day-timeline-rail::before { content: ""; position: absolute; top: 0; bottom: 0; width: 2px; background: var(--line); }
+.day-timeline-item:last-child .day-timeline-rail::before { display: none; }
+.day-timeline-dot {
+  position: relative;
+  z-index: 1;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--muted);
+  margin-top: 1.1rem;
+  flex-shrink: 0;
+}
+.day-timeline-dot.is-warn { background: var(--warn); }
+.day-timeline-dot.is-danger { background: var(--danger); }
+
+.day-card {
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+.day-card .day-card-name { font-weight: 600; flex: 1 1 160px; }
+.day-card .day-card-badges { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.day-card--night { background: var(--night-bg); border-color: var(--night-line); }
+.day-card--danger { background: var(--danger-bg); border-color: var(--danger-line); }
+.day-card-conflict { flex: 1 1 100%; color: var(--danger); font-size: 0.85rem; font-weight: 600; }
+.day-card .gate-note { flex: 1 1 100%; color: var(--muted); font-size: 0.78rem; display: flex; align-items: center; gap: 0.35rem; }
+.day-card .gate-note .icon { width: 1rem; height: 1rem; }
+.day-card .remove-btn {
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.day-card .remove-btn .icon { width: 1.1rem; height: 1.1rem; }
+
+/* Autres séances du même spectacle, proposées en chips pour "déplacer" la
+   séance en conflit (voir renderSwapChipsAsync, carnet.js). */
+.swap-chips { flex: 1 1 100%; }
+.swap-chips-label { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.3rem; }
+
+/* Entre deux séances consécutives : marge confortable (neutre) ou tendue
+   (avertissement) — un vrai chevauchement n'a pas de ligne de marge, la
+   carte suivante passe directement en --day-card--danger. */
+.day-gap-row {
+  display: grid;
+  grid-template-columns: 3.4rem 1.2rem 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  margin: -0.3rem 0 0.6rem;
+}
+.day-gap-note {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.day-gap-note.is-warn { color: var(--warn); font-weight: 600; }
+.day-gap-note .icon { width: 1rem; height: 1rem; }
+
+/* Tuile KPI qui bascule en alerte (ex: conflits > 0) */
+.stat-tile--danger { background: var(--danger-bg); border-color: var(--danger-line); }
+.stat-tile--danger .stat-value, .stat-tile--danger .stat-label { color: var(--danger); }
 
 .field-inline { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: var(--text-soft); }
 .field-inline > span { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
