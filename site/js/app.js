@@ -506,68 +506,121 @@
 
   /* ----------------------------------------------------------------------
    * 6. Header / nav / footer injectés
+   *
+   *    Nouvelle coquille de navigation (refonte "Nocturne/Parchemin") :
+   *    - mobile (< 780px) : barre fine en haut (marque + thème + "Plus") et
+   *      une barre d'onglets FIXE en bas (5 destinations principales) ;
+   *    - desktop (>= 780px) : en-tête horizontal classique (marque, liens,
+   *      thème). Les deux variantes sont injectées en même temps et
+   *      basculées en CSS (media query) plutôt qu'en JS, pour ne pas avoir
+   *      à réagir au redimensionnement de la fenêtre.
+   *
+   *    Les 3 pages de consultation moins fréquentes (Spectacles,
+   *    Historique, Bilan) restent groupées sous "Explorer" : un même
+   *    panneau (#nav-explore-dropdown) sert de menu déroulant ancré sous le
+   *    bouton en desktop, et de feuille ("sheet") remontant du bas en
+   *    mobile — seul le CSS diffère, le JS d'ouverture/fermeture est
+   *    partagé (voir initNavDropdown).
    * -------------------------------------------------------------------- */
-  // Nav directe : les 2 pages consultées au quotidien. Le logo sert déjà de
-  // lien "Accueil", pas besoin de le dupliquer dans la nav.
-  const NAV_DIRECT = [
-    { page: "programme", href: "programme.html", label: "Programme" },
-    { page: "carnet", href: "carnet.html", label: "Mon carnet" },
+  const NAV_PRIMARY = [
+    { key: "index", page: "index", href: "index.html", label: "Aujourd'hui", icon: "home" },
+    { key: "programme", page: "programme", href: "programme.html", label: "Programme", icon: "scroll" },
+    { key: "carnet-journee", page: "carnet", tab: "jour", href: "carnet.html#journee", label: "Ma journée", icon: "map-route" },
+    { key: "carnet-visites", page: "carnet", tab: "autre", href: "carnet.html#visites", label: "Carnet", icon: "book" },
+    { key: "statistiques", page: "statistiques", href: "statistiques.html", label: "Stats", icon: "chart-bar" },
   ];
   // Regroupées sous "Explorer" : pages de consultation/données, moins
-  // fréquentées au quotidien — évite une nav à 7 entrées à plat.
+  // fréquentées au quotidien — évite une nav à 8 entrées à plat.
   const NAV_EXPLORE = [
     { page: "spectacles", href: "spectacles.html", label: "Spectacles" },
-    { page: "statistiques", href: "statistiques.html", label: "Statistiques" },
     { page: "historique", href: "historique.html", label: "Historique" },
     { page: "bilan", href: "bilan.html", label: "Bilan" },
   ];
+  // "#journee" -> onglet "jour" (clé interne déjà utilisée par carnet.js) ;
+  // les 3 autres ancres gardent le même nom que l'onglet. Pas de hash du
+  // tout = état par défaut du HTML de carnet.html, c'est-à-dire "jour".
+  const CARNET_HASH_TO_TAB = { journee: "jour", visites: "visites", bilan: "bilan", pass: "pass" };
 
-  // Petit emblème SVG dessiné à la main (pas de logo officiel) :
-  // un blason simplifié couronné d'une flamme, dans la palette du site.
-  const BRAND_SVG =
-    '<svg class="brand-emblem" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-    '<path d="M24 5l14 5.2v10.5c0 10-6 17-14 21.3-8-4.3-14-11.3-14-21.3V10.2z" fill="var(--color-bordeaux, #7c2233)"/>' +
-    '<path d="M24 13c-1.3 2.6-2 4.6-2 6.3 0 1.8.9 3.1 2 4.1 1.1-1 2-2.3 2-4.1 0-1.7-.7-3.7-2-6.3z" fill="var(--color-amber, #c98a2b)"/>' +
-    '<path d="M24 20c-2 0-4 1.3-5.3 3.3-1.4 2.1-1.2 4.3.1 5.5 1 .9 2.3.9 3.1-.2-.9-1.3-1-3-.2-4.3.6-1 1.5-1.8 2.3-2.3z" fill="var(--color-amber, #c98a2b)"/>' +
-    '<path d="M24 20c2 0 4 1.3 5.3 3.3 1.4 2.1 1.2 4.3-.1 5.5-1 .9-2.3.9-3.1-.2.9-1.3 1-3 .2-4.3-.6-1-1.5-1.8-2.3-2.3z" fill="var(--color-amber, #c98a2b)"/>' +
-    '<rect x="22.3" y="30" width="3.4" height="6.5" fill="var(--color-amber, #c98a2b)"/>' +
-    '<rect x="19" y="35.6" width="10" height="2.6" rx="1" fill="var(--color-amber, #c98a2b)"/>' +
-    "</svg>";
+  function currentCarnetTab() {
+    const hash = (global.location.hash || "").replace(/^#/, "");
+    return CARNET_HASH_TO_TAB[hash] || "jour";
+  }
 
-  function navLinkHtml(item, activePage, cls) {
-    const activeCls = item.page === activePage ? " active" : "";
+  // Un item de nav "carnet" a deux variantes (Ma journée / Carnet) qui
+  // partagent la même page mais pas le même onglet : il faut donc regarder
+  // le hash en plus de data-page pour savoir laquelle est active.
+  function isNavItemActive(item, activePage) {
+    if (item.page !== "carnet") return item.page === activePage;
+    if (activePage !== "carnet") return false;
+    const tab = currentCarnetTab();
+    return item.tab === "jour" ? tab === "jour" : tab !== "jour";
+  }
+
+  function primaryItemHtml(item, activePage, cls) {
+    const active = isNavItemActive(item, activePage);
     return (
-      '<a href="' + item.href + '" class="' + cls + activeCls + '"' +
-      (item.page === activePage ? ' aria-current="page"' : "") +
+      '<a href="' + item.href + '" class="' + cls + (active ? " active" : "") + '" data-nav-key="' + item.key + '"' +
+      (active ? ' aria-current="page"' : "") +
+      ">" + PDF.icon(item.icon) + '<span class="' + (cls === "tabbar-item" ? "tabbar-label" : "nav-link-label") + '">' + item.label + "</span></a>"
+    );
+  }
+
+  function exploreItemHtml(item, activePage) {
+    const active = item.page === activePage;
+    return (
+      '<a href="' + item.href + '" class="nav-dropdown-link' + (active ? " active" : "") + '" data-nav-key="' + item.page + '"' +
+      (active ? ' aria-current="page"' : "") +
       ">" + item.label + "</a>"
     );
   }
 
   function buildHeaderHtml(activePage) {
-    const directHtml = NAV_DIRECT.map((item) => navLinkHtml(item, activePage, "nav-link")).join("");
-    const exploreHtml = NAV_EXPLORE.map((item) => navLinkHtml(item, activePage, "nav-dropdown-link")).join("");
     const isExploreActive = NAV_EXPLORE.some((item) => item.page === activePage);
+    const exploreHtml = NAV_EXPLORE.map((item) => exploreItemHtml(item, activePage)).join("");
+    const brandLink = '<a href="index.html" class="brand">' + PDF.icon("castle", "brand-emblem") + '<span class="brand-text">Puy du Fou Companion</span></a>';
+    const themeBtn = (idSuffix) =>
+      '<button type="button" class="icon-btn theme-toggle" id="theme-toggle' + idSuffix + '" ' +
+      'aria-label="Basculer le mode sombre / clair" title="Mode sombre / clair"></button>';
+    const exploreToggleBtn = (idSuffix, visibleLabel) =>
+      '<button type="button" class="nav-explore-toggle' + (isExploreActive ? " active" : "") + '" ' +
+      'id="nav-explore-toggle' + idSuffix + '" aria-haspopup="true" aria-expanded="false" ' +
+      (visibleLabel ? "" : 'aria-label="Plus de pages"') + ">" +
+      (visibleLabel ? "Explorer " + PDF.icon("chevron-down", "nav-caret") : PDF.icon("more-horizontal")) +
+      "</button>";
 
     return (
       '<div class="header-inner">' +
-      '<a href="index.html" class="brand">' +
-      BRAND_SVG +
-      '<span class="brand-text-full">Puy du Fou — Programmes</span>' +
-      '<span class="brand-text-short">PdF Programmes</span>' +
-      "</a>" +
-      '<nav class="main-nav" id="main-nav" aria-label="Navigation principale">' +
-      directHtml +
-      '<div class="nav-group">' +
-      '<button type="button" class="nav-link nav-group-toggle' + (isExploreActive ? " active" : "") + '" ' +
-      'id="nav-explore-toggle" aria-haspopup="true" aria-expanded="false">Explorer <span class="nav-caret" aria-hidden="true">▾</span></button>' +
-      '<div class="nav-dropdown" id="nav-explore-dropdown">' + exploreHtml + "</div>" +
-      "</div>" +
+      // ---- Desktop ----
+      '<div class="header-row header-desktop">' +
+      brandLink +
+      '<nav class="main-nav" aria-label="Navigation principale">' +
+      NAV_PRIMARY.map((item) => primaryItemHtml(item, activePage, "nav-link")).join("") +
+      '<div class="nav-group">' + exploreToggleBtn("-desktop", true) + "</div>" +
       "</nav>" +
       '<div class="header-actions">' +
-      '<button type="button" class="theme-toggle" id="theme-toggle" aria-label="Basculer le mode sombre / clair" title="Mode sombre / clair">🌙</button>' +
-      '<button type="button" class="hamburger" id="hamburger-btn" aria-label="Ouvrir le menu" aria-controls="main-nav" aria-expanded="false"><span></span><span></span><span></span></button>' +
+      '<span class="freshness-note" id="freshness-note"></span>' +
+      themeBtn("-desktop") +
       "</div>" +
+      "</div>" +
+      // ---- Mobile : barre fine ----
+      '<div class="header-row header-mobile">' +
+      '<a href="index.html" class="brand brand-compact" aria-label="Accueil">' + PDF.icon("castle", "brand-emblem") + "</a>" +
+      '<div class="header-actions">' +
+      themeBtn("-mobile") +
+      exploreToggleBtn("-mobile", false) +
+      "</div>" +
+      "</div>" +
+      // ---- Panneau "Explorer" partagé (dropdown desktop / sheet mobile) ----
+      '<div class="nav-dropdown" id="nav-explore-dropdown">' + exploreHtml + "</div>" +
       "</div>"
+    );
+  }
+
+  function buildTabbarHtml(activePage) {
+    return (
+      '<nav class="tabbar" id="bottom-tabbar" aria-label="Navigation principale">' +
+      NAV_PRIMARY.map((item) => primaryItemHtml(item, activePage, "tabbar-item")).join("") +
+      "</nav>"
     );
   }
 
@@ -576,21 +629,41 @@
     return (
       '<div class="footer-inner">' +
       '<div class="footer-block">' +
-      '<div class="footer-disclaimer">⚠️ Projet communautaire non officiel — données issues du programme officiel du Puy du Fou. Ce site n\'est ni édité, ni approuvé, ni affilié au Puy du Fou.</div>' +
+      '<div class="footer-disclaimer">' + PDF.icon("alert-triangle") +
+      "<span>Projet communautaire non officiel — données issues du programme officiel du Puy du Fou. Ce site n'est ni édité, ni approuvé, ni affilié au Puy du Fou.</span></div>" +
       "<p>Les horaires et informations peuvent évoluer sans préavis. Vérifiez toujours le programme officiel avant votre visite.</p>" +
       "</div>" +
       '<div class="footer-block footer-links">' +
       "<h4>Liens</h4>" +
-      '<p><a href="' +
-      GITHUB_REPO_URL +
-      '" target="_blank" rel="noopener noreferrer">📦 Dépôt GitHub du projet</a></p>' +
-      '<p><a href="https://www.puydufou.com" target="_blank" rel="noopener noreferrer">🔗 Site officiel du Puy du Fou</a></p>' +
-      "<p>© " +
-      year +
-      ' — Projet open source communautaire</p>' +
+      '<p><a href="' + GITHUB_REPO_URL + '" target="_blank" rel="noopener noreferrer">' + PDF.icon("package") + " Dépôt GitHub du projet</a></p>" +
+      '<p><a href="https://www.puydufou.com" target="_blank" rel="noopener noreferrer">' + PDF.icon("external-link") + " Site officiel du Puy du Fou</a></p>" +
+      "<p>© " + year + " — Projet open source communautaire</p>" +
       "</div>" +
       "</div>"
     );
+  }
+
+  // Ré-applique juste l'état actif des items de nav déjà rendus (classe +
+  // aria-current), sans reconstruire le HTML — appelé après un changement
+  // de hash (ex: clic sur un onglet du Carnet) pour que "Ma journée" /
+  // "Carnet" restent corrects sans perdre le focus/scroll d'un re-rendu complet.
+  function refreshNavActiveStates(activePage) {
+    document.querySelectorAll("[data-nav-key]").forEach((el) => {
+      const item = NAV_PRIMARY.find((i) => i.key === el.getAttribute("data-nav-key"));
+      const active = item ? isNavItemActive(item, activePage) : el.getAttribute("data-nav-key") === activePage;
+      el.classList.toggle("active", active);
+      if (active) el.setAttribute("aria-current", "page");
+      else el.removeAttribute("aria-current");
+    });
+  }
+
+  // Texte "Non officiel · données du JJ/MM à HH:MM" du header desktop,
+  // alimenté par chaque page une fois son today.json/stats chargé (le
+  // header, lui, est injecté sans connaître ces données).
+  function setFreshnessNote(dateTimeIso) {
+    const el = document.getElementById("freshness-note");
+    if (!el) return;
+    el.textContent = dateTimeIso ? "Non officiel · données du " + formatDateTimeFR(dateTimeIso) : "Non officiel";
   }
 
   function injectHeaderFooter(activePage) {
@@ -604,60 +677,50 @@
       footerEl.className = "site-footer";
       footerEl.innerHTML = buildFooterHtml();
     }
-    initMobileMenu();
+    // Barre d'onglets mobile : élément à part (position fixed en bas),
+    // injecté une seule fois comme enfant direct de <body>.
+    let tabbarEl = document.getElementById("bottom-tabbar");
+    if (!tabbarEl) {
+      document.body.insertAdjacentHTML("beforeend", buildTabbarHtml(activePage));
+    } else {
+      tabbarEl.outerHTML = buildTabbarHtml(activePage);
+    }
+    initNavDropdown();
     initThemeToggle();
+    global.addEventListener("hashchange", () => refreshNavActiveStates(activePage));
   }
 
   /* ----------------------------------------------------------------------
-   * 7. Menu mobile (hamburger)
+   * 7. Panneau "Explorer" (dropdown desktop / sheet mobile, même markup)
    * -------------------------------------------------------------------- */
-  function initMobileMenu() {
-    const btn = document.getElementById("hamburger-btn");
-    const nav = document.getElementById("main-nav");
-    if (!btn || !nav) return;
-    btn.addEventListener("click", () => {
-      const isOpen = nav.classList.toggle("open");
-      btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
-      btn.setAttribute("aria-label", isOpen ? "Fermer le menu" : "Ouvrir le menu");
-    });
-    // Ferme le menu après un clic sur un lien (mobile)
-    nav.addEventListener("click", (e) => {
-      if (e.target.tagName === "A") {
-        nav.classList.remove("open");
-        btn.setAttribute("aria-expanded", "false");
-      }
-    });
-    initNavDropdown();
-  }
-
-  // Menu déroulant "Explorer" (desktop : flottant sous le bouton ; mobile :
-  // s'ouvre en ligne dans le menu hamburger déjà vertical, même markup/JS).
   function initNavDropdown() {
-    const toggle = document.getElementById("nav-explore-toggle");
+    const toggles = Array.prototype.slice.call(document.querySelectorAll(".nav-explore-toggle"));
     const dropdown = document.getElementById("nav-explore-dropdown");
-    if (!toggle || !dropdown) return;
+    if (!toggles.length || !dropdown) return;
 
     function close() {
       dropdown.classList.remove("open");
-      toggle.setAttribute("aria-expanded", "false");
+      toggles.forEach((t) => t.setAttribute("aria-expanded", "false"));
     }
     function open() {
       dropdown.classList.add("open");
-      toggle.setAttribute("aria-expanded", "true");
+      toggles.forEach((t) => t.setAttribute("aria-expanded", "true"));
     }
 
-    toggle.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (dropdown.classList.contains("open")) close();
-      else open();
+    toggles.forEach((toggle) => {
+      toggle.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (dropdown.classList.contains("open")) close();
+        else open();
+      });
     });
     document.addEventListener("click", (e) => {
-      if (!dropdown.contains(e.target) && e.target !== toggle) close();
+      if (!dropdown.contains(e.target) && toggles.indexOf(e.target) === -1) close();
     });
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && dropdown.classList.contains("open")) {
         close();
-        toggle.focus();
+        toggles[0].focus();
       }
     });
   }
@@ -683,22 +746,25 @@
   }
 
   function initThemeToggle() {
-    const btn = document.getElementById("theme-toggle");
-    if (!btn) return;
-    updateThemeToggleIcon(btn);
-    btn.addEventListener("click", () => {
-      const next = currentEffectiveTheme() === "dark" ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", next);
-      localStorage.setItem(THEME_KEY, next);
+    const btns = document.querySelectorAll(".theme-toggle");
+    if (!btns.length) return;
+    btns.forEach((btn) => {
       updateThemeToggleIcon(btn);
-      // Permet aux pages avec graphiques Chart.js de se redessiner avec les
-      // bonnes couleurs (texte/grille) pour le nouveau thème.
-      global.dispatchEvent(new CustomEvent("pdf:themechange", { detail: { theme: next } }));
+      btn.addEventListener("click", () => {
+        const next = currentEffectiveTheme() === "dark" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", next);
+        localStorage.setItem(THEME_KEY, next);
+        btns.forEach(updateThemeToggleIcon);
+        // Permet aux pages avec graphiques Chart.js de se redessiner avec les
+        // bonnes couleurs (texte/grille) pour le nouveau thème.
+        global.dispatchEvent(new CustomEvent("pdf:themechange", { detail: { theme: next } }));
+      });
     });
   }
 
   function updateThemeToggleIcon(btn) {
-    btn.textContent = currentEffectiveTheme() === "dark" ? "☀️" : "🌙";
+    const dark = currentEffectiveTheme() === "dark";
+    btn.innerHTML = PDF.icon(dark ? "sun" : "moon");
   }
 
   // Appliquer le thème stocké le plus tôt possible (avant l'injection du header)
@@ -778,8 +844,11 @@
 
   /* ----------------------------------------------------------------------
    * 11. Export global
+   *     Fusionné (jamais remplacé) : site/js/icons.js s'exécute avant et
+   *     attache déjà PDF.icon, qu'un remplacement complet effacerait selon
+   *     l'ordre réel des <script> — Object.assign reste sûr dans les deux sens.
    * -------------------------------------------------------------------- */
-  global.PDF = {
+  Object.assign(global.PDF = global.PDF || {}, {
     DATA_BASE,
     GITHUB_REPO_URL,
     fetchJSON,
@@ -815,9 +884,9 @@
     createSearchBar,
     renderErrorMessage,
     renderLoading,
-    initMobileMenu,
     initThemeToggle,
-  };
+    setFreshnessNote,
+  });
 
   // Injection auto du header/footer au chargement, basé sur data-page du body
   document.addEventListener("DOMContentLoaded", () => {

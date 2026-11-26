@@ -215,6 +215,13 @@
    * Onglets
    * -------------------------------------------------------------------- */
 
+  // "jour" (clé interne historique) correspond à l'ancre "#journee" dans
+  // l'URL (voir site/js/app.js, NAV_PRIMARY) : la barre de nav du site
+  // pointe vers carnet.html#journee/#visites/#bilan/#pass pour cibler
+  // directement un onglet, et doit elle-même rester en phase quand on
+  // change d'onglet ICI, d'où la mise à jour du hash ci-dessous.
+  var TAB_TO_HASH = { jour: "journee", visites: "visites", bilan: "bilan", pass: "pass" };
+
   function switchTab(tab) {
     document.querySelectorAll("#carnet-tabs .tab").forEach(function (b) {
       var active = b.getAttribute("data-tab") === tab;
@@ -230,6 +237,37 @@
     if (tab === "visites") renderVisites();
     if (tab === "bilan") renderBilan();
     if (tab === "pass") renderPass();
+    var hash = "#" + TAB_TO_HASH[tab];
+    if (location.hash !== hash && history.replaceState) {
+      history.replaceState(null, "", hash);
+    }
+  }
+
+  // Permet à un lien externe (nav du site, favori, partage) de cibler un
+  // onglet précis via carnet.html#journee|visites|bilan|pass.
+  var HASH_TO_TAB = { journee: "jour", visites: "visites", bilan: "bilan", pass: "pass" };
+
+  function tabFromHash() {
+    var key = (location.hash || "").replace(/^#/, "");
+    return HASH_TO_TAB[key] || null;
+  }
+
+  // N'applique le hash qu'une fois le catalogue chargé (voir init()) :
+  // renderVisites/renderBilan/renderPass lisent state.catalogue, encore
+  // vide avant la résolution de fetchCatalogue() — y arriver plus tôt via
+  // le hash figerait un onglet sans ses colonnes, jamais corrigé ensuite
+  // (rien ne rappelle ces render* une fois les données arrivées, en
+  // dehors d'un changement d'onglet explicite).
+  function initTabRouting() {
+    window.addEventListener("hashchange", function () {
+      var tab = tabFromHash();
+      if (tab) switchTab(tab);
+    });
+  }
+
+  function applyInitialHashTab() {
+    var initial = tabFromHash();
+    if (initial) switchTab(initial);
   }
 
   // Déplace le focus et active l'onglet ciblé par les flèches — Gauche/
@@ -1458,6 +1496,7 @@
       btn.addEventListener("click", function () { switchTab(btn.getAttribute("data-tab")); });
     });
     initTabKeyboardNav();
+    initTabRouting();
     syncStickyOffsets();
     window.addEventListener("resize", syncStickyOffsets);
 
@@ -1467,7 +1506,7 @@
     initIoListeners();
 
     Promise.all([fetchCatalogue(), fetchDatesMap()])
-      .then(function () { populerDatesConnues(); initPlanUI(); })
+      .then(function () { populerDatesConnues(); initPlanUI(); applyInitialHashTab(); })
       .catch(function (err) {
         PDF.renderErrorMessage($("jourTimeline"), "Impossible de charger le catalogue de spectacles (" + err.message + "). Le programme officiel ne pourra pas être proposé, mais l'ajout manuel reste disponible.");
       });
