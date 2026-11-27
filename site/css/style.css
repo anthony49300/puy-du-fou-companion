@@ -1038,6 +1038,76 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
 .programme-aside .card { margin-bottom: 1rem; }
 .list-row.is-conflict-row { background: var(--danger-bg); margin: 0 -0.5rem; padding-left: 0.5rem; padding-right: 0.5rem; border-radius: var(--r-sm); }
 
+/* ---------- "Horaires habituels" (détail d'un spectacle) ---------- */
+.schedule-section { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line-soft); }
+.schedule-filters { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin: 0.75rem 0 1.25rem; }
+.schedule-filters .segmented { flex: 0 0 auto; min-width: 13rem; }
+
+.slot-chip.is-fixed { border-color: var(--accent-text); color: var(--accent-text); font-weight: 600; }
+.schedule-low-sample { font-size: 0.85rem; margin-top: 0.5rem; }
+
+.regularity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--r-pill);
+  font-size: 0.88rem;
+  margin: 0.75rem 0 1.25rem;
+}
+.regularity-high { background: var(--success-bg); color: var(--success); }
+.regularity-medium { background: var(--warn-bg); color: var(--warn); }
+.regularity-low, .regularity-none { background: var(--surface-2); color: var(--muted); }
+
+.heatmap-wrap { margin-bottom: 1.25rem; }
+.heatmap-grid {
+  display: grid;
+  gap: 2px;
+  align-items: center;
+  overflow-x: auto;
+}
+.heatmap-corner { min-width: 3rem; }
+.heatmap-hour-label, .heatmap-row-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: center;
+  white-space: nowrap;
+}
+.heatmap-row-label { text-align: right; padding-right: 0.4rem; }
+.heatmap-cell {
+  aspect-ratio: 1;
+  min-width: 1.6rem;
+  border-radius: 4px;
+  background: var(--primary);
+  opacity: calc(0.08 + var(--cell-share, 0) * 0.92);
+}
+.heatmap-cell:focus-visible { outline: none; box-shadow: var(--focus-ring); opacity: 1; }
+.heatmap-legend { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.6rem; font-size: 0.78rem; color: var(--muted); }
+.heatmap-legend-swatch {
+  display: inline-block;
+  width: 2.5rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: linear-gradient(to right, color-mix(in srgb, var(--primary) 8%, transparent), var(--primary));
+}
+
+.slot-timeline { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem; }
+.slot-timeline-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; font-size: 0.85rem; }
+.slot-timeline-time { font-weight: 600; min-width: 4rem; font-variant-numeric: tabular-nums; }
+.slot-timeline-dates { font-size: 0.78rem; }
+.sparkline { display: inline-flex; gap: 1px; align-items: center; }
+.sparkline-dot { width: 4px; height: 10px; border-radius: 1px; background: var(--line); }
+.sparkline-dot.is-on { background: var(--accent-text); }
+
+.season-compare-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.season-compare-chip {
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  font-size: 0.85rem;
+}
+
 /* ---------- Mini-Gantt "Accès continu" (Programme) ---------- */
 .mini-gantt-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.3rem 0; }
 .mini-gantt-label {

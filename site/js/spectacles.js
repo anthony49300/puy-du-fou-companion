@@ -17,6 +17,11 @@
     year: null,
     todayClosed: false, // voir fetchTodayStatus : "Aujourd'hui : 0" ne veut rien dire un jour de fermeture
     currentHistory: null, // historique du spectacle actuellement affiché (voir loadSpectacleHistory) — pour un redessin sans refetch (ex: pdf:themechange)
+    scheduleDayType: "all", // "all" | "weekday" | "weekend" — filtre "Horaires habituels"
+    schedulePeriod: "all", // "all" | "holidays" | "school" | "month:N"
+    calendar: null, // data/json/calendar.json, chargé une fois (voir fetchCalendarOnce) — null si absent/non chargé
+    calendarLoaded: false,
+    otherSeasonFreqCache: {}, // "slug:year" -> PDF.scheduleStats.startFrequencies(...).items[0], pour la comparaison 2025 vs 2026
   };
 
   var chartInstance = null;
@@ -131,6 +136,17 @@
       : "spectacle-history/" + slug + ".json";
   }
 
+  // Chargé une seule fois pour toute la session (pas par spectacle) :
+  // dégrade sans erreur si le fichier est absent (saison sans calendrier
+  // renseigné) — voir §5 de la fonctionnalité "distribution horaire".
+  function fetchCalendarOnce() {
+    if (state.calendarLoaded) return Promise.resolve(state.calendar);
+    return PDF.fetchJSON("calendar.json")
+      .then(function (data) { state.calendar = data; return data; })
+      .catch(function () { state.calendar = null; return null; })
+      .then(function (data) { state.calendarLoaded = true; return data; });
+  }
+
   function renderDetail() {
     var panel = document.getElementById("detail-panel");
     var s = state.selectedSlug ? findSpectacle(state.selectedSlug) : null;
@@ -170,8 +186,9 @@
   // n'existe plus dans la liste principale (voir spectacleHistoryPath).
   function loadSpectacleHistory(s) {
     var slot = document.getElementById("spectacle-history-slot");
-    PDF.fetchJSON(spectacleHistoryPath(s.slug))
-      .then(function (data) {
+    Promise.all([PDF.fetchJSON(spectacleHistoryPath(s.slug)), fetchCalendarOnce()])
+      .then(function (results) {
+        var data = results[0];
         // La sélection a pu changer pendant le chargement (clic rapide sur
         // une autre carte) : ne pas écraser le panneau d'un AUTRE spectacle.
         if (state.selectedSlug !== s.slug || !slot.isConnected) return;
@@ -184,13 +201,231 @@
         slot.innerHTML =
           '<div class="chart-wrap"><canvas id="spectacle-history-chart" role="img" aria-label="Historique du nombre de représentations par jour pour ' + PDF.escapeHtml(s.name) + '"></canvas></div>' +
           '<details class="chart-table-details"><summary>Voir les données en tableau</summary>' +
-          '<div class="table-wrap"><table class="data-table" id="spectacle-history-table"></table></div></details>';
+          '<div class="table-wrap"><table class="data-table" id="spectacle-history-table"></table></div></details>' +
+          '<div id="schedule-section-slot"></div>';
         drawHistoryChart(history);
+        renderScheduleSection(s);
       })
       .catch(function (err) {
         if (state.selectedSlug !== s.slug || !slot.isConnected) return;
         PDF.renderErrorMessage(slot, "Impossible de charger l'historique de ce spectacle (" + err.message + ").");
       });
+  }
+
+  /* ----------------------------------------------------------------------
+   * "Horaires habituels" : distribution par créneau, régularité, heatmap,
+   * chronologie des créneaux, comparaison inter-saisons (voir
+   * site/js/schedule-stats.js pour les calculs purs, ici seulement le rendu).
+   * ---------------------------------------------------------------------- */
+  var PERIOD_LABELS = { all: "Toute la saison", holidays: "Vacances scolaires", school: "Hors vacances" };
+
+  function monthOptionsFromHistory(history) {
+    var seen = {};
+    var months = [];
+    history.forEach(function (h) {
+      var m = +h.date.slice(5, 7);
+      if (!seen[m]) { seen[m] = true; months.push(m); }
+    });
+    months.sort(function (a, b) { return a - b; });
+    return months;
+  }
+
+  function renderScheduleFilters(s, history) {
+    var hasCalendar = !!state.calendar;
+    var months = monthOptionsFromHistory(history);
+    var periodOptions = ["all"].concat(hasCalendar ? ["holidays", "school"] : []).concat(
+      months.map(function (m) { return "month:" + m; })
+    );
+    var segmented =
+      '<div class="segmented schedule-daytype">' +
+      ["all", "weekday", "weekend"].map(function (key) {
+        var label = key === "all" ? "Tous" : key === "weekday" ? "Semaine" : "Week-end";
+        var active = state.scheduleDayType === key;
+        return '<button type="button" class="segment' + (active ? " active" : "") + '" data-daytype="' + key + '" aria-pressed="' + active + '"><span>' + label + "</span></button>";
+      }).join("") +
+      "</div>";
+    var select =
+      '<select class="filter-select" id="schedule-period-select" aria-label="Période">' +
+      periodOptions.map(function (key) {
+        var label = PERIOD_LABELS[key] || PDF.MONTH_LABELS[+key.slice(6) - 1];
+        return '<option value="' + key + '"' + (state.schedulePeriod === key ? " selected" : "") + ">" + label + "</option>";
+      }).join("") +
+      "</select>";
+    return '<div class="schedule-filters">' + segmented + select + "</div>";
+  }
+
+  function slotChipsHtml(freq, unit) {
+    if (!freq.items.length) return '<p class="text-muted">Aucune séance pour ce filtre.</p>';
+    var html = '<div class="chip-row">' + freq.items.map(function (item) {
+      var label = unit === "range" ? item.time.replace("-", "–") : PDF.formatTimeFR(item.time);
+      return (
+        '<span class="chip slot-chip' + (item.fixed ? " is-fixed" : "") + '">' +
+        PDF.escapeHtml(label) + " · " + Math.round(item.share * 100) + " %" +
+        (item.fixed ? " · Créneau fixe" : "") +
+        "</span>"
+      );
+    }).join("") + "</div>";
+    if (freq.sample < 10) {
+      html += '<p class="text-muted schedule-low-sample">Peu de données (' + freq.sample + " jour" + (freq.sample > 1 ? "s" : "") + " comparable" + (freq.sample > 1 ? "s" : "") + ").</p>";
+    }
+    return html;
+  }
+
+  function regularityBadgeHtml(reg) {
+    var level = reg.share >= 0.7 ? "high" : reg.share >= 0.4 ? "medium" : reg.sample === 0 ? "none" : "low";
+    var patternLabel = reg.pattern.length
+      ? reg.pattern.map(function (p) { return p.indexOf("-") !== -1 ? p.replace("-", "–") : PDF.formatTimeFR(p); }).join(" · ")
+      : null;
+    return (
+      '<div class="regularity-badge regularity-' + level + '">' +
+      "<strong>" + PDF.escapeHtml(reg.label) + "</strong>" +
+      (patternLabel ? "<span> — Le plus souvent : " + PDF.escapeHtml(patternLabel) + "</span>" : "") +
+      "</div>"
+    );
+  }
+
+  function heatmapHtml(heatmap) {
+    if (!heatmap.hours.length) return "";
+    var cols = heatmap.hours.length;
+    var header = '<div class="heatmap-corner"></div>' + heatmap.hours.map(function (h) {
+      return '<div class="heatmap-hour-label">' + h + "h</div>";
+    }).join("");
+    var rows = heatmap.rows.map(function (row) {
+      var label = '<div class="heatmap-row-label">' + PDF.DOW_LABELS[row.weekday] + "</div>";
+      var cells = row.cells.map(function (cell) {
+        var pct = Math.round(cell.share * 100);
+        var title = PDF.DOW_LABELS[row.weekday] + ", " + cell.hour + " h : " + pct + "% des jours (" + cell.count + "/" + cell.total + ")";
+        return (
+          '<div class="heatmap-cell" style="--cell-share:' + cell.share + '" title="' + PDF.escapeHtml(title) + '" ' +
+          'tabindex="0" aria-label="' + PDF.escapeHtml(title) + '"></div>'
+        );
+      }).join("");
+      return label + cells;
+    }).join("");
+    var table =
+      '<table class="data-table"><thead><tr><th></th>' +
+      heatmap.hours.map(function (h) { return "<th>" + h + "h</th>"; }).join("") + "</tr></thead><tbody>" +
+      heatmap.rows.map(function (row) {
+        return "<tr><th>" + PDF.DOW_LABELS[row.weekday] + "</th>" +
+          row.cells.map(function (c) { return "<td>" + Math.round(c.share * 100) + "%</td>"; }).join("") + "</tr>";
+      }).join("") + "</tbody></table>";
+    return (
+      '<div class="heatmap-wrap">' +
+      '<div class="heatmap-grid" style="grid-template-columns:auto repeat(' + cols + ',1fr)">' + header + rows + "</div>" +
+      '<div class="heatmap-legend"><span class="heatmap-legend-swatch"></span> Part des jours avec une séance à cette heure</div>' +
+      '<details class="chart-table-details"><summary>Voir en tableau</summary><div class="table-wrap">' + table + "</div></details>" +
+      "</div>"
+    );
+  }
+
+  function sparklineHtml(series) {
+    return '<span class="sparkline">' + series.map(function (w) {
+      return '<span class="sparkline-dot' + (w.present ? " is-on" : "") + '"></span>';
+    }).join("") + "</span>";
+  }
+
+  function slotTimelineHtml(timeline, unit) {
+    if (!timeline.length) return "";
+    return (
+      '<div class="slot-timeline">' +
+      timeline.map(function (t) {
+        var label = unit === "range" ? t.time.replace("-", "–") : PDF.formatTimeFR(t.time);
+        return (
+          '<div class="slot-timeline-row">' +
+          '<span class="slot-timeline-time">' + PDF.escapeHtml(label) + "</span>" +
+          sparklineHtml(t.series) +
+          '<span class="slot-timeline-dates text-muted">' +
+          (t.firstSeen ? PDF.formatDateFR(t.firstSeen) : "—") + " → " + (t.lastSeen ? PDF.formatDateFR(t.lastSeen) : "—") +
+          "</span></div>"
+        );
+      }).join("") +
+      "</div>"
+    );
+  }
+
+  // Comparaison "2025 vs 2026" du créneau principal : chargée à la demande
+  // (une seule requête par saison/slug, mise en cache) — jamais bloquante
+  // pour le reste du panneau.
+  function renderSeasonComparison(s) {
+    var el = document.getElementById("schedule-compare-slot");
+    if (!el || state.years.length < 2) return;
+    var otherYear = state.years.find(function (y) { return y !== state.year; });
+    if (!otherYear) return;
+    var cacheKey = s.slug + ":" + otherYear;
+    var cached = state.otherSeasonFreqCache[cacheKey];
+    if (cached !== undefined) {
+      renderComparisonRow(el, otherYear, cached);
+      return;
+    }
+    PDF.fetchJSON("history/" + otherYear + "/spectacle-history/" + s.slug + ".json")
+      .then(function (data) {
+        var history = data.history || [];
+        var freq = PDF.scheduleStats.startFrequencies(history);
+        var top = freq.items[0] || null;
+        state.otherSeasonFreqCache[cacheKey] = top;
+        if (state.selectedSlug === s.slug) renderComparisonRow(el, otherYear, top);
+      })
+      .catch(function () {
+        state.otherSeasonFreqCache[cacheKey] = null;
+        if (state.selectedSlug === s.slug) renderComparisonRow(el, otherYear, null);
+      });
+  }
+
+  function renderComparisonRow(el, otherYear, otherTop) {
+    var currentFreq = PDF.scheduleStats.startFrequencies(state.currentHistory || []);
+    var currentTop = currentFreq.items[0];
+    if (!currentTop && !otherTop) { el.innerHTML = ""; return; }
+    el.innerHTML =
+      '<div class="section-label">' + state.year + " vs " + otherYear + "</div>" +
+      '<div class="season-compare-row">' +
+      '<span class="season-compare-chip">' + state.year + " : " + (currentTop ? PDF.formatTimeFR(currentTop.time) + " (" + Math.round(currentTop.share * 100) + "%)" : "—") + "</span>" +
+      '<span class="season-compare-chip">' + otherYear + " : " + (otherTop ? PDF.formatTimeFR(otherTop.time) + " (" + Math.round(otherTop.share * 100) + "%)" : "—") + "</span>" +
+      "</div>";
+  }
+
+  function renderScheduleSection(s) {
+    var el = document.getElementById("schedule-section-slot");
+    if (!el) return;
+    var history = state.currentHistory || [];
+    if (!PDF.scheduleStats) { el.innerHTML = ""; return; }
+
+    var filtered = PDF.scheduleStats.filterDays(history, state.calendar, { dayType: state.scheduleDayType, period: state.schedulePeriod });
+    var hasRanges = history.some(function (h) { return h.ranges && h.ranges.length; });
+    var hasStarts = history.some(function (h) { return h.starts && h.starts.length; });
+    var isContinuous = hasRanges && !hasStarts;
+    var freq = isContinuous ? PDF.scheduleStats.rangeFrequencies(filtered) : PDF.scheduleStats.startFrequencies(filtered);
+    var reg = PDF.scheduleStats.regularity(filtered);
+    var heatmap = isContinuous ? { hours: [], rows: [] } : PDF.scheduleStats.weekdayHourHeatmap(filtered);
+    var timeline = isContinuous ? [] : PDF.scheduleStats.slotTimeline(filtered);
+
+    el.innerHTML =
+      '<div class="section schedule-section">' +
+      "<h3>Horaires habituels</h3>" +
+      renderScheduleFilters(s, history) +
+      '<div class="section-label">' + (isContinuous ? "Plages d'accès habituelles" : "Créneaux habituels") + "</div>" +
+      slotChipsHtml(freq, isContinuous ? "range" : "start") +
+      regularityBadgeHtml(reg) +
+      (heatmap.hours.length ? '<div class="section-label">Répartition par jour et heure</div>' + heatmapHtml(heatmap) : "") +
+      (timeline.length ? '<div class="section-label">Chronologie des créneaux</div>' + slotTimelineHtml(timeline, isContinuous ? "range" : "start") : "") +
+      '<div id="schedule-compare-slot"></div>' +
+      "</div>";
+
+    var daytypeButtons = el.querySelectorAll(".schedule-daytype .segment");
+    daytypeButtons.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        state.scheduleDayType = btn.getAttribute("data-daytype");
+        renderScheduleSection(s);
+      });
+    });
+    var periodSelect = document.getElementById("schedule-period-select");
+    if (periodSelect) {
+      periodSelect.addEventListener("change", function () {
+        state.schedulePeriod = periodSelect.value;
+        renderScheduleSection(s);
+      });
+    }
+
+    renderSeasonComparison(s);
   }
 
   // Rempli dans tous les cas (voir drawHistoryChart) : seule vue possible
