@@ -25,7 +25,13 @@
       </div>
     </section>
 
-    <div class="segmented" id="day-select" role="group" aria-label="Jour affiché"></div>
+    <div class="flex-between" style="gap:0.6rem;flex-wrap:wrap">
+      <div class="segmented" id="day-select" role="group" aria-label="Jour affiché" style="flex:1 1 260px"></div>
+      <div>
+        <button type="button" class="btn btn-outline" id="custom-date-toggle">Choisir une date</button>
+        <input type="date" id="custom-date-input" class="filter-select" hidden>
+      </div>
+    </div>
 
     <div id="status-banner-slot" aria-live="polite"></div>
 
@@ -65,6 +71,7 @@
 
 <script src="js/icons.js"></script>
 <script src="js/app.js"></script>
+<script src="js/schedule-stats.js"></script>
 <script src="js/programme.js"></script>
 </body>
 </html>

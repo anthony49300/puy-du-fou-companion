@@ -963,6 +963,31 @@
     return !!(state && state.favoris && state.favoris.indexOf(slug) !== -1);
   }
 
+  // Calendrier scolaire + jours fériés (data/json/calendar.json) : chargé
+  // une seule fois par PAGE (pas par composant) et partagé entre
+  // spectacles.js ("Horaires habituels") et programme.js ("Programme
+  // probable") — dégrade sans erreur (résout `null`) si le fichier est
+  // absent, voir site/js/schedule-stats.js pour ce que ça implique côté
+  // classification (aucun jour n'est jamais un jour férié/de vacances).
+  let _calendarPromise = null;
+  function fetchCalendarOnce() {
+    if (!_calendarPromise) {
+      _calendarPromise = fetchJSON("calendar.json").catch(() => null);
+    }
+    return _calendarPromise;
+  }
+
+  // Même principe pour l'index compact des horaires habituels (voir
+  // src/exporter.py:export_schedule_index) : une seule requête par page,
+  // quel que soit le nombre de dates consultées dans la session.
+  let _scheduleIndexPromise = null;
+  function fetchScheduleIndexOnce() {
+    if (!_scheduleIndexPromise) {
+      _scheduleIndexPromise = fetchJSON("schedule-index.json").catch(() => null);
+    }
+    return _scheduleIndexPromise;
+  }
+
   // Retire une représentation précise du plan du jour (symétrique
   // d'addToPlan) — utilisé par la vue grille desktop du Programme pour
   // "décocher" une séance déjà ajoutée d'un clic. Retourne false si elle
@@ -1136,6 +1161,8 @@
     removeFromPlan,
     toggleFavorite,
     isFavorite,
+    fetchCalendarOnce,
+    fetchScheduleIndexOnce,
     icsEscape,
     icsUtcStamp,
     buildAllDayIcs,

@@ -858,6 +858,10 @@ main { flex: 1; }
 .status-banner.status-error { background: var(--color-error-bg); color: var(--color-error); border-color: var(--color-error); }
 .status-banner.status-stale { background: var(--accent-2-soft); color: var(--badge-complet); border-color: var(--accent-2); }
 .status-banner.status-warn { background: var(--accent-2-soft); color: var(--badge-complet); border-color: var(--accent-2); }
+/* "Programme probable" (estimation, pas une erreur ni un avertissement
+   générique) : teinte distincte de la famille rouge/ambre déjà utilisée
+   pour les erreurs/avertissements, pour ne pas laisser croire à un souci. */
+.status-banner.status-probable { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
 
 /* ---------- 9. Search bar & filters ---------- */
 .search-bar {

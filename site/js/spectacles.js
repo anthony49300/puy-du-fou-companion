@@ -19,8 +19,7 @@
     currentHistory: null, // historique du spectacle actuellement affiché (voir loadSpectacleHistory) — pour un redessin sans refetch (ex: pdf:themechange)
     scheduleDayType: "all", // "all" | "weekday" | "weekend" — filtre "Horaires habituels"
     schedulePeriod: "all", // "all" | "holidays" | "school" | "month:N"
-    calendar: null, // data/json/calendar.json, chargé une fois (voir fetchCalendarOnce) — null si absent/non chargé
-    calendarLoaded: false,
+    calendar: null, // résolu une fois (voir PDF.fetchCalendarOnce), null si absent
     otherSeasonFreqCache: {}, // "slug:year" -> PDF.scheduleStats.startFrequencies(...).items[0], pour la comparaison 2025 vs 2026
   };
 
@@ -136,17 +135,6 @@
       : "spectacle-history/" + slug + ".json";
   }
 
-  // Chargé une seule fois pour toute la session (pas par spectacle) :
-  // dégrade sans erreur si le fichier est absent (saison sans calendrier
-  // renseigné) — voir §5 de la fonctionnalité "distribution horaire".
-  function fetchCalendarOnce() {
-    if (state.calendarLoaded) return Promise.resolve(state.calendar);
-    return PDF.fetchJSON("calendar.json")
-      .then(function (data) { state.calendar = data; return data; })
-      .catch(function () { state.calendar = null; return null; })
-      .then(function (data) { state.calendarLoaded = true; return data; });
-  }
-
   function renderDetail() {
     var panel = document.getElementById("detail-panel");
     var s = state.selectedSlug ? findSpectacle(state.selectedSlug) : null;
@@ -186,9 +174,10 @@
   // n'existe plus dans la liste principale (voir spectacleHistoryPath).
   function loadSpectacleHistory(s) {
     var slot = document.getElementById("spectacle-history-slot");
-    Promise.all([PDF.fetchJSON(spectacleHistoryPath(s.slug)), fetchCalendarOnce()])
+    Promise.all([PDF.fetchJSON(spectacleHistoryPath(s.slug)), PDF.fetchCalendarOnce()])
       .then(function (results) {
         var data = results[0];
+        state.calendar = results[1];
         // La sélection a pu changer pendant le chargement (clic rapide sur
         // une autre carte) : ne pas écraser le panneau d'un AUTRE spectacle.
         if (state.selectedSlug !== s.slug || !slot.isConnected) return;
