@@ -216,6 +216,7 @@
    * -------------------------------------------------------------------- */
   function openSettingsSheet() {
     var dlg = PDF.openSheet(
+      '<div class="sheet-drag-handle" aria-hidden="true"></div>' +
       "<h2>Réglages</h2>" +
       '<label for="jourGateInput">Portes ouvertes (minutes avant la séance)' +
       '<br><input type="number" id="jourGateInput" min="0" max="90" step="5" style="width:6rem"></label>' +
@@ -288,10 +289,11 @@
     if (fixes.length) parts.push(dayPlan.formatDureeHeuresMinutes(dayPlan.dureeTotaleMinutes(fixes)));
     var html = PDF.escapeHtml(parts.join(" · "));
     var sev = dayPlan.compterSeveriteConflits(conflits);
+    var icon = PDF.icon("alert-triangle", "summary-line-icon");
     if (sev.overlaps > 0) {
-      html += ' · <span class="text-danger">⛔ ' + sev.overlaps + " chevauchement" + (sev.overlaps > 1 ? "s" : "") + "</span>";
+      html += ' · <span class="text-danger summary-line-flag">' + icon + sev.overlaps + " chevauchement" + (sev.overlaps > 1 ? "s" : "") + "</span>";
     } else if (sev.tight > 0) {
-      html += ' · <span class="text-warn">⚠ ' + sev.tight + " enchaînement" + (sev.tight > 1 ? "s" : "") + " serré" + (sev.tight > 1 ? "s" : "") + "</span>";
+      html += ' · <span class="text-warn summary-line-flag">' + icon + sev.tight + " enchaînement" + (sev.tight > 1 ? "s" : "") + " serré" + (sev.tight > 1 ? "s" : "") + "</span>";
     }
     el.innerHTML = html;
   }
@@ -314,8 +316,8 @@
           var distinctSlugs = {};
           slots.forEach(function (s) { if (s.slug) distinctSlugs[s.slug] = true; });
           var nbSpectacles = Object.keys(distinctSlugs).length;
-          el.textContent =
-            "Programme officiel chargé — " + nbSpectacles + " spectacle" + (nbSpectacles > 1 ? "s" : "") +
+          el.innerHTML =
+            PDF.icon("check", "status-ok-icon") + "Programme officiel chargé — " + nbSpectacles + " spectacle" + (nbSpectacles > 1 ? "s" : "") +
             ", " + slots.length + " séance" + (slots.length > 1 ? "s" : "") + ".";
         }
       }
@@ -325,7 +327,7 @@
       // rendu) les fait apparaître dès qu'elles sont disponibles.
       state.currentSlots = slots;
       var plan = planCourant(dateStr);
-      if (plan.items.length) renderFilledDay(plan);
+      renderDayContent(plan);
     });
   }
 
@@ -337,22 +339,33 @@
    * -------------------------------------------------------------------- */
   function renderEmptyState() {
     var el = $("jour-content");
+    var nbSeances = state.currentSlots.length;
+    var dateLabel = PDF.parseISODate(state.dateStr) ? PDF.parseISODate(state.dateStr).toLocaleDateString("fr-FR", { day: "numeric", month: "long" }) : "";
+    var chooseDesc = nbSeances
+      ? "Parcourez les " + nbSeances + " séances du " + PDF.escapeHtml(dateLabel) + " et ajoutez-les d'un tap."
+      : "Parcourez le programme officiel et ajoutez vos spectacles au fil de l'eau.";
+
     el.innerHTML =
-      '<div class="empty-state journee-empty">' +
-      '<div class="empty-icon" aria-hidden="true">🗓️</div>' +
+      '<div class="journee-empty">' +
       "<h2>Votre journée est vide</h2>" +
       '<p class="text-muted">Comment voulez-vous la composer ?</p>' +
-      '<div class="card-grid">' +
-      '<button type="button" class="card nav-card nav-card--primary" id="btnComposeAuto">' +
-      "<h3>Composer automatiquement</h3>" +
-      '<p>Le plus de spectacles possible, sans conflit d\'horaire.</p>' +
+      '<div class="journee-choice-list">' +
+      '<button type="button" class="journee-choice journee-choice--primary" id="btnComposeAuto">' +
+      '<span class="journee-choice-icon" aria-hidden="true">' + PDF.icon("wand") + "</span>" +
+      '<span class="journee-choice-body">' +
+      '<span class="journee-choice-title">Composer automatiquement</span>' +
+      '<span class="journee-choice-desc">Le plus de spectacles possible, ou seulement ceux que vous choisissez. Vous voyez le résultat avant de valider.</span>' +
+      "</span>" +
       "</button>" +
-      '<a class="card nav-card" id="linkChooseProgramme" href="programme.html">' +
-      "<h3>Choisir dans le programme</h3>" +
-      "<p>Parcourez le programme officiel et ajoutez vos spectacles au fil de l'eau.</p>" +
+      '<a class="journee-choice" id="linkChooseProgramme" href="programme.html">' +
+      '<span class="journee-choice-icon" aria-hidden="true">' + PDF.icon("list") + "</span>" +
+      '<span class="journee-choice-body">' +
+      '<span class="journee-choice-title">Choisir dans le programme</span>' +
+      '<span class="journee-choice-desc">' + chooseDesc + "</span>" +
+      "</span>" +
       "</a>" +
       "</div>" +
-      '<button type="button" class="link-button" id="btnAddManualLink">Ajouter un spectacle hors programme (Cinéscénie…)</button>' +
+      '<button type="button" class="link-button" id="btnAddManualLink">' + PDF.icon("plus") + "Ajouter un spectacle hors programme (Cinéscénie…)</button>" +
       "</div>";
 
     $("linkChooseProgramme").href = "programme.html?date=" + encodeURIComponent(state.dateStr);
@@ -395,28 +408,42 @@
       ? '<p class="text-warn">Remplacera les ' + plan.items.length + " spectacle" + (plan.items.length > 1 ? "s" : "") + " déjà dans votre journée.</p>"
       : "";
 
+    // Sélection du mode "précis" suivie en JS (pas des <input type=checkbox>
+    // natifs) : les chips s'activent au tap, voir .assistant-show-chip.
+    var selected = {};
+
     var html =
-      "<h2>Composer automatiquement</h2>" +
+      '<div class="sheet-drag-handle" aria-hidden="true"></div>' +
+      '<div class="sheet-dialog-header">' +
+      '<h2 id="assistant-sheet-title">Composer ma journée</h2>' +
+      '<button type="button" class="icon-btn" data-act="close" aria-label="Fermer">' + PDF.icon("x") + "</button>" +
+      "</div>" +
       '<div class="assistant-modes" role="radiogroup" aria-label="Mode de composition">' +
       '<label class="radio-card"><input type="radio" name="assistantMode" value="libre" checked>' +
-      "<span><strong>Le plus de spectacles possible</strong><br><span class=\"text-muted\">Casé automatiquement, sans conflit d'horaire.</span></span></label>" +
+      '<span class="radio-card-dot" aria-hidden="true"></span>' +
+      "<span><strong>Le plus de spectacles possible</strong><br><span class=\"text-muted\">Une journée bien remplie, sans conflit.</span></span></label>" +
       '<label class="radio-card"><input type="radio" name="assistantMode" value="precis">' +
-      "<span><strong>Seulement ceux que je choisis</strong><br><span class=\"text-muted\">Vous cochez les spectacles, rien d'autre n'est ajouté.</span></span></label>" +
+      '<span class="radio-card-dot" aria-hidden="true"></span>' +
+      "<span><strong>Seulement ceux que je choisis</strong><br><span class=\"text-muted\">Je coche mes incontournables, l'app trouve les séances.</span></span></label>" +
       "</div>" +
-      '<div class="pick-list" id="assistantPickList" hidden>' +
+      '<div id="assistantPickWrap" hidden>' +
+      '<span class="text-muted" style="display:block;margin-bottom:0.4rem;font-size:0.78rem;letter-spacing:0.05em;text-transform:uppercase">Je veux voir</span>' +
+      '<div class="assistant-shows" id="assistantPickList">' +
       pickList.map(function (s) {
-        return '<label class="pick-item"><input type="checkbox" value="' + PDF.escapeHtml(s.slug) + '"><span class="pick-name">' + PDF.escapeHtml(s.name) + "</span>" + PDF.categoryBadgeHtml(s.category) + "</label>";
+        return '<button type="button" class="assistant-show-chip" data-show-chip="' + PDF.escapeHtml(s.slug) + '" aria-pressed="false">' + PDF.escapeHtml(s.name) + "</button>";
       }).join("") +
+      "</div>" +
       "</div>" +
       '<p class="text-muted" id="assistantInfoLine"></p>' +
       replaceNote +
       '<div id="assistantPreview" aria-live="polite"></div>' +
-      '<div class="sheet-dialog-actions">' +
-      '<button type="button" class="btn btn-outline" data-act="cancel">Annuler</button>' +
-      '<button type="button" class="btn" data-act="apply">Appliquer à ma journée</button>' +
+      '<div style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.5rem">' +
+      '<button type="button" class="btn" data-act="apply" style="width:100%">Appliquer à ma journée</button>' +
+      '<span class="text-muted" style="text-align:center;font-size:0.8rem">Vous pourrez annuler juste après.</span>' +
       "</div>";
 
     var dlg = PDF.openSheet(html, { className: "assistant-sheet" });
+    dlg.setAttribute("aria-labelledby", "assistant-sheet-title");
 
     var continuousNote = continuousCount === 0
       ? "Aucun accès continu ce jour-là."
@@ -427,16 +454,14 @@
       continuousNote + " Portes " + S.gate + " min avant · formule " + (plan.moment || "Jour") + ".";
 
     function currentMode() { return dlg.querySelector('input[name="assistantMode"]:checked').value; }
-    function selectedSlugs() {
-      return Array.prototype.slice.call(dlg.querySelectorAll("#assistantPickList input:checked")).map(function (cb) { return cb.value; });
-    }
+    function selectedSlugs() { return Object.keys(selected).filter(function (k) { return selected[k]; }); }
 
     function updatePreview() {
       var mode = currentMode();
       dlg.querySelectorAll(".radio-card").forEach(function (card) {
         card.classList.toggle("is-selected", card.querySelector("input").value === mode);
       });
-      dlg.querySelector("#assistantPickList").hidden = mode !== "precis";
+      dlg.querySelector("#assistantPickWrap").hidden = mode !== "precis";
       var previewEl = dlg.querySelector("#assistantPreview");
       if (mode === "libre") {
         var propose = dayPlan.buildAutoPlan(state.currentSlots, S.gate, []);
@@ -444,29 +469,37 @@
         var fixesRetenues = propose.filter(function (s) { return !s.is_continuous; }).length;
         var ecartees = fixesDispo - fixesRetenues;
         previewEl.innerHTML =
-          '<div class="status-banner status-ok"><span aria-hidden="true">✅</span><span>Aperçu : ' + propose.length + " spectacle" + (propose.length > 1 ? "s" : "") +
-          (ecartees > 0 ? " (" + ecartees + " séance" + (ecartees > 1 ? "s" : "") + " incompatible" + (ecartees > 1 ? "s" : "") + " écartée" + (ecartees > 1 ? "s" : "") + ")" : "") +
+          '<div class="status-banner status-ok">' + PDF.icon("check") + "<span>Aperçu : " + propose.length + " spectacle" + (propose.length > 1 ? "s" : "") +
+          (ecartees > 0 ? ", " + ecartees + " séance" + (ecartees > 1 ? "s" : "") + " incompatible" + (ecartees > 1 ? "s" : "") + " écartée" + (ecartees > 1 ? "s" : "") : ", aucun conflit") +
           ".</span></div>";
         return;
       }
       var mandatory = selectedSlugs();
       if (!mandatory.length) {
-        previewEl.innerHTML = '<p class="text-muted">Cochez au moins un spectacle.</p>';
+        previewEl.innerHTML = '<p class="text-muted">Choisissez au moins un spectacle.</p>';
         return;
       }
       var manques = dayPlan.analyserManques(mandatory, state.currentSlots, S.gate, [], state.catalogueBySlug);
       previewEl.innerHTML = !manques.length
-        ? '<div class="status-banner status-ok"><span aria-hidden="true">✅</span><span>Aperçu : ' + mandatory.length + " spectacle" + (mandatory.length > 1 ? "s" : "") +
-          " demandé" + (mandatory.length > 1 ? "s" : "") + " " + (mandatory.length > 1 ? "seront tous casés" : "sera casé") + ".</span></div>"
-        : '<div class="status-banner status-warn"><span aria-hidden="true">⚠️</span><span>' +
+        ? '<div class="status-banner status-ok">' + PDF.icon("check") + "<span>Aperçu : vos " + mandatory.length + " spectacle" + (mandatory.length > 1 ? "s" : "") +
+          " tiennent tous, aucun conflit.</span></div>"
+        : '<div class="status-banner status-warn">' + PDF.icon("alert-triangle") + "<span>" +
           manques.map(function (m) { return PDF.escapeHtml(m.name) + " ne peut pas être casé"; }).join(", ") + ".</span></div>";
     }
 
     dlg.querySelectorAll('input[name="assistantMode"]').forEach(function (r) { r.addEventListener("change", updatePreview); });
-    dlg.querySelector("#assistantPickList").addEventListener("change", updatePreview);
+    dlg.querySelectorAll("[data-show-chip]").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        var slug = chip.getAttribute("data-show-chip");
+        selected[slug] = !selected[slug];
+        chip.classList.toggle("is-selected", !!selected[slug]);
+        chip.setAttribute("aria-pressed", String(!!selected[slug]));
+        updatePreview();
+      });
+    });
     updatePreview();
 
-    dlg.querySelector('[data-act="cancel"]').addEventListener("click", function () { dlg.close(); });
+    dlg.querySelector('[data-act="close"]').addEventListener("click", function () { dlg.close(); });
     dlg.querySelector('[data-act="apply"]').addEventListener("click", function () {
       var mode = currentMode();
       var mandatory = mode === "precis" ? selectedSlugs() : [];
@@ -493,6 +526,7 @@
 
   function openManualAddSheet() {
     var dlg = PDF.openSheet(
+      '<div class="sheet-drag-handle" aria-hidden="true"></div>' +
       "<h2>Ajouter un spectacle hors programme</h2>" +
       '<p class="text-muted">Ex : Cinéscénie, ou tout spectacle non couvert par la collecte officielle.</p>' +
       '<label for="jourManualName">Nom<br><input type="text" id="jourManualName" placeholder="Cinéscénie" style="width:100%"></label>' +
@@ -594,7 +628,12 @@
     return (
       '<div class="continuous-row-wrap">' +
       '<button type="button" class="continuous-row-toggle" data-continuous-toggle aria-expanded="false">' +
-      PDF.icon("door") + "<span>Accès continu · " + items.length + " — " + PDF.escapeHtml(names) + "</span>" + PDF.icon("chevron-down") +
+      '<span class="continuous-row-dot" aria-hidden="true"></span>' +
+      '<span class="continuous-row-text">' +
+      '<span class="continuous-row-title">Accès continu · ' + items.length + "</span>" +
+      '<span class="continuous-row-subtitle">' + PDF.escapeHtml(names) + "</span>" +
+      "</span>" +
+      PDF.icon("chevron-down") +
       "</button>" +
       '<div class="continuous-row-detail" id="continuousDetail" hidden>' + detail + "</div>" +
       "</div>"
@@ -660,39 +699,40 @@
   // Libellé contextuel du panneau "+ Ajouter ici" une fois déplié — un creux
   // en bord de journée (avant la première séance / après la dernière) n'a
   // qu'une seule borne connue, l'autre reste ouverte.
+  // "N min libres" pour un creux entre deux séances (on connaît sa durée
+  // exacte) ; phrasé ouvert pour un creux en bord de journée (avant la
+  // première séance/après la dernière), dont une seule borne est connue.
   function gapLabel(gap) {
-    if (gap.start && gap.end) return "Libre de " + PDF.formatTimeFR(gap.start) + " à " + PDF.formatTimeFR(gap.end);
+    if (gap.gapMinutes != null) return gap.gapMinutes + " min libres";
     if (gap.end) return "Libre jusqu’à " + PDF.formatTimeFR(gap.end);
     if (gap.start) return "Libre à partir de " + PDF.formatTimeFR(gap.start);
     return "Libre";
   }
 
   function fittingCandidateRowHtml(c) {
-    var note = c.alreadyPlannedAt
-      ? '<div class="text-muted" style="font-size:0.78rem;flex-basis:100%">Déjà dans le plan à ' + PDF.escapeHtml(PDF.formatTimeFR(c.alreadyPlannedAt)) + "</div>"
-      : "";
+    var meta = dayPlan.formatDureeHeuresMinutes(c.durationMinutes) + " · fin " + PDF.formatTimeFR(c.end);
+    if (c.alreadyPlannedAt) meta += " · déjà prévu à " + PDF.formatTimeFR(c.alreadyPlannedAt);
     return (
       '<button type="button" class="fitting-candidate" data-add-fitting ' +
       'data-slug="' + PDF.escapeHtml(c.slug) + '" data-name="' + PDF.escapeHtml(c.name) + '" data-category="' + PDF.escapeHtml(c.category || "") + '" ' +
       'data-start="' + c.start + '" data-end="' + c.end + '">' +
-      '<span class="fitting-candidate-time tnum">' + PDF.escapeHtml(PDF.formatTimeFR(c.start)) + "–" + PDF.escapeHtml(PDF.formatTimeFR(c.end)) + "</span>" +
+      '<span class="fitting-candidate-time tnum">' + PDF.escapeHtml(PDF.formatTimeFR(c.start)) + "</span>" +
+      '<span class="fitting-candidate-body">' +
       '<span class="fitting-candidate-name">' + PDF.escapeHtml(c.name) + "</span>" +
-      '<span class="text-muted">' + PDF.escapeHtml(dayPlan.formatDureeHeuresMinutes(c.durationMinutes)) + "</span>" +
-      note +
+      '<span class="fitting-candidate-meta">' + PDF.escapeHtml(meta) + "</span>" +
+      "</span>" +
+      '<span class="fitting-candidate-add" aria-hidden="true">' + PDF.icon("plus") + "</span>" +
       "</button>"
     );
   }
 
-  function gapRowWithAddHereHtml(gap, gapKey) {
-    var toggleHtml = '<button type="button" class="add-here-toggle" data-add-here-toggle="' + gapKey + '" aria-expanded="false">+ Ajouter ici</button>';
-    var panelHtml =
-      '<div class="add-here-panel" data-add-here-panel="' + gapKey + '" hidden>' +
-      '<div class="text-muted">' + PDF.escapeHtml(gapLabel(gap)) + "</div>" +
-      (gap.candidates.length
-        ? gap.candidates.map(fittingCandidateRowHtml).join("")
-        : '<p class="text-muted" style="margin:0">Aucune séance ne tient entièrement dans ce créneau.</p>') +
-      "</div>";
-    return '<li class="day-gap-row day-gap-row--addhere"><div></div><div></div><div class="day-gap-addhere">' + toggleHtml + panelHtml + "</div></li>";
+  // Toujours déplié (pas de clic pour révéler) : un creux assez grand pour
+  // qu'une séance y tienne entièrement mérite de le montrer directement.
+  function gapRowWithAddHereHtml(gap) {
+    var inner = gap.candidates.length
+      ? '<span class="day-gap-addhere-label">' + PDF.escapeHtml(gapLabel(gap)) + " — ça tient :</span>" + gap.candidates.map(fittingCandidateRowHtml).join("")
+      : '<span class="day-gap-addhere-label">Aucune séance ne tient entièrement dans ce créneau (' + PDF.escapeHtml(gapLabel(gap).toLowerCase()) + ").</span>";
+    return '<li class="day-gap-row day-gap-row--addhere"><div></div><div></div><div class="day-gap-addhere">' + inner + "</div></li>";
   }
 
   function renderFilledDay(plan) {
@@ -705,14 +745,14 @@
     var conflits = dayPlan.detecterConflits(fixes, S.gate);
     var fittingGaps = dayPlan.findFittingShowings(plan.items, state.currentSlots, { gateMin: S.gate, minGapMin: ADD_HERE_MIN_GAP_MIN });
     var gapsByKey = {};
-    fittingGaps.forEach(function (g, i) { gapsByKey[(g.afterUid || "") + "|" + (g.beforeUid || "")] = { gap: g, key: "gap-" + i }; });
+    fittingGaps.forEach(function (g) { gapsByKey[(g.afterUid || "") + "|" + (g.beforeUid || "")] = g; });
 
     var html = continuousRowHtml(continuous);
     html += '<ol class="day-timeline">';
 
     if (allFixed.length) {
       var edgeBefore = gapsByKey["|" + allFixed[0].uid];
-      if (edgeBefore) html += gapRowWithAddHereHtml(edgeBefore.gap, edgeBefore.key);
+      if (edgeBefore) html += gapRowWithAddHereHtml(edgeBefore);
     }
 
     allFixed.forEach(function (it, idx) {
@@ -721,10 +761,10 @@
       if (next) {
         html += gapRowHtml(it, next);
         var mid = gapsByKey[it.uid + "|" + next.uid];
-        if (mid) html += gapRowWithAddHereHtml(mid.gap, mid.key);
+        if (mid) html += gapRowWithAddHereHtml(mid);
       } else {
         var edgeAfter = gapsByKey[it.uid + "|"];
-        if (edgeAfter) html += gapRowWithAddHereHtml(edgeAfter.gap, edgeAfter.key);
+        if (edgeAfter) html += gapRowWithAddHereHtml(edgeAfter);
       }
     });
 
@@ -886,17 +926,6 @@
         delete cible.confidence;
         sauver();
         renderDay();
-        return;
-      }
-
-      var addHereToggle = e.target.closest("[data-add-here-toggle]");
-      if (addHereToggle) {
-        var gapKey = addHereToggle.getAttribute("data-add-here-toggle");
-        var panel = el.querySelector('[data-add-here-panel="' + gapKey + '"]');
-        if (!panel) return;
-        var willOpenPanel = panel.hidden;
-        panel.hidden = !willOpenPanel;
-        addHereToggle.setAttribute("aria-expanded", String(willOpenPanel));
         return;
       }
 

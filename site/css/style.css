@@ -656,28 +656,69 @@ main { flex: 1; }
 .explore-grid .nav-card-icon { font-size: 1.3rem; }
 .explore-grid .nav-card p { font-size: 0.8rem; }
 
-/* <button class="card nav-card"> (ex: "Composer automatiquement", journée
-   vide de Ma journée) : même carte cliquable que .nav-card (normalement un
-   <a>), avec juste le nécessaire pour effacer le chrome natif d'un bouton. */
-button.nav-card {
+/* Journée vide (voir §2.4 de la refonte "day-editor-v2", renderEmptyState
+   dans journee.js) : liste verticale de "choix" pleine largeur (icône +
+   titre + description), pas une grille de cartes — trop étroit à 2 par
+   ligne sur un mobile 390px, et l'intention ("voici LA façon de faire, ou
+   celle-ci") se lit mieux l'une sous l'autre. */
+#jour-official-status, .jour-summary-line { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3rem; }
+.status-ok-icon { color: var(--success); flex: none; }
+.summary-line-flag { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 500; }
+.summary-line-icon { width: 1rem; height: 1rem; flex: none; }
+
+.journee-empty h2 { margin-bottom: 0.3rem; }
+.journee-empty > p.text-muted { margin-top: 0; }
+.journee-choice-list { display: flex; flex-direction: column; gap: 0.75rem; margin: 0.5rem 0; }
+.journee-choice {
   width: 100%;
+  border-radius: var(--r-lg);
+  padding: 1.1rem;
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
   text-align: left;
+  text-decoration: none;
   font: inherit;
   cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
 }
-.nav-card--primary { border: 2px solid var(--accent); }
+.journee-choice-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  color: var(--accent-text);
+}
+.journee-choice-body { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+.journee-choice-title { font-weight: 600; font-size: 1rem; }
+.journee-choice-desc { font-size: 0.85rem; line-height: 1.45; color: var(--text-soft); }
+.journee-choice--primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+.journee-choice--primary .journee-choice-icon { background: rgba(255, 255, 255, 0.16); color: var(--on-primary); }
+.journee-choice--primary .journee-choice-desc { color: var(--on-primary-muted); }
 
 /* Lien texte simple (ex: "Ajouter un spectacle hors programme") : pas un
    bouton plein, pas un <a> vers une autre page — ouvre une feuille modale. */
 .link-button {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
   background: none;
   border: none;
   padding: 0;
-  font: inherit;
+  font: 500 0.92rem/1 inherit;
   color: var(--accent-text);
-  text-decoration: underline;
   cursor: pointer;
   min-height: 44px;
 }
@@ -1765,25 +1806,29 @@ table.data-table th[data-sort][aria-sort="descending"]::after { content: " \25BC
 /* Accès continu groupé en une ligne repliable, avant la frise des séances à
    heure fixe (voir §2.5 de la refonte "day-editor-v2") : on ne veut plus
    d'une carte par attraction en continu ni du libellé "En continu" dans la
-   colonne horaire. */
+   colonne horaire. Pastille + titre gras/sous-titre discret (noms, tronqués
+   sur une ligne) plutôt qu'un seul fil de texte. */
 .continuous-row-wrap { margin-bottom: 1rem; }
 .continuous-row-toggle {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.65rem;
   width: 100%;
   background: var(--surface);
   border: 1px solid var(--line-soft);
   border-radius: var(--r-md);
   box-shadow: var(--shadow);
-  padding: 0.85rem 1rem;
+  padding: 0.7rem 1rem;
   font: inherit;
   color: var(--text);
   cursor: pointer;
   min-height: 44px;
 }
-.continuous-row-toggle span:first-of-type { flex: 1 1 auto; text-align: left; }
-.continuous-row-toggle .icon:last-child { transition: transform 0.15s ease; }
+.continuous-row-dot { width: 0.5rem; height: 0.5rem; border-radius: 999px; background: var(--success); flex: none; }
+.continuous-row-text { flex: 1 1 auto; min-width: 0; text-align: left; display: flex; flex-direction: column; gap: 0.1rem; }
+.continuous-row-title { font-weight: 600; font-size: 0.92rem; }
+.continuous-row-subtitle { font-size: 0.78rem; color: var(--text-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.continuous-row-toggle .icon:last-child { flex: none; transition: transform 0.15s ease; }
 .continuous-row-toggle[aria-expanded="true"] .icon:last-child { transform: rotate(180deg); }
 .continuous-row-detail { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
 .continuous-row-detail[hidden] { display: none; }
@@ -1799,27 +1844,22 @@ table.data-table th[data-sort][aria-sort="descending"]::after { content: " \25BC
 }
 .continuous-row-item > div:first-child { flex: 1 1 auto; }
 
-/* "+ Ajouter ici" (voir dayPlan.findFittingShowings) : affordance en
-   pointillés dans un creux assez grand, qui déplie la liste des séances
-   officielles tenant entièrement dedans. */
-.day-gap-addhere { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.3rem 0 0.6rem; }
-.add-here-toggle {
-  align-self: flex-start;
-  border: 1px dashed var(--line);
-  background: transparent;
-  color: var(--text-soft);
+/* "+ Ajouter ici" (voir dayPlan.findFittingShowings) : un creux assez grand
+   affiche directement (pas de clic pour déplier) un encart en pointillés
+   avec les séances officielles qui tiennent entièrement dedans. */
+.day-gap-addhere {
   border-radius: var(--r-md);
-  padding: 0.5rem 0.9rem;
-  font-size: 0.82rem;
-  min-height: 36px;
-  cursor: pointer;
+  border: 1px dashed var(--line);
+  background: var(--bg);
+  padding: 0.6rem 0.75rem;
+  margin: 0.3rem 0 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
-.add-here-toggle:hover { background: var(--surface-2); }
-.add-here-panel { display: flex; flex-direction: column; gap: 0.5rem; }
-.add-here-panel[hidden] { display: none; }
+.day-gap-addhere-label { font-size: 0.78rem; color: var(--text-soft); }
 .fitting-candidate {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem;
   width: 100%;
@@ -1827,14 +1867,28 @@ table.data-table th[data-sort][aria-sort="descending"]::after { content: " \25BC
   background: var(--surface);
   border: 1px solid var(--line-soft);
   border-radius: var(--r-md);
-  padding: 0.6rem 0.9rem;
+  padding: 0 0.5rem 0 0.75rem;
   font: inherit;
   cursor: pointer;
   min-height: 44px;
 }
 .fitting-candidate:hover { background: var(--surface-2); }
-.fitting-candidate-time { font-weight: 600; color: var(--accent-text); flex-shrink: 0; }
-.fitting-candidate-name { flex: 1 1 auto; }
+.fitting-candidate-time { font-weight: 600; color: var(--accent-text); flex-shrink: 0; font-size: 0.85rem; }
+.fitting-candidate-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.fitting-candidate-name { font-size: 0.85rem; font-weight: 500; }
+.fitting-candidate-meta { font-size: 0.75rem; color: var(--text-soft); }
+.fitting-candidate-add {
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  border-radius: var(--r-sm);
+  background: var(--primary);
+  color: var(--on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fitting-candidate-add .icon { width: 1rem; height: 1rem; }
 
 /* Desktop (voir §2.7 de la refonte) : deux colonnes, la timeline à gauche,
    un panneau collant à droite (calendrier toujours visible, formule et
@@ -1906,29 +1960,58 @@ table.visit-grid tfoot td { font-weight: 700; background: var(--bg-elevated); }
 .visit-check-btn.is-seen-twice { background: var(--accent-2-soft); border-color: var(--accent-2); color: var(--badge-complet); }
 .visit-check-name { font-size: 0.92rem; }
 
-/* Liste à cocher (spectacles incontournables avant de générer un planning
-   automatique) : simple case à cocher, contrairement à .visit-check-btn qui
-   cycle un compteur. */
 /* Assistant "Composer automatiquement" (voir PDF.openSheet, journee.js) */
 .assistant-modes { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.75rem 0; }
 .radio-card {
   display: flex;
   align-items: flex-start;
   gap: 0.6rem;
-  border: 1px solid var(--line-soft);
+  border: 1px solid var(--line);
   border-radius: var(--r-md);
-  padding: 0.75rem 0.9rem;
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+  min-height: 56px;
+  box-sizing: border-box;
+}
+.radio-card.is-selected { border: 2px solid var(--primary); background: var(--primary-soft); padding: calc(0.7rem - 1px) calc(0.9rem - 1px); }
+.radio-card-dot {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+  margin-top: 0.1rem;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.radio-card.is-selected .radio-card-dot { border-color: var(--primary); }
+.radio-card-dot::after { content: ""; width: 0.6rem; height: 0.6rem; border-radius: 999px; background: transparent; }
+.radio-card.is-selected .radio-card-dot::after { background: var(--primary); }
+/* L'<input> reste dans le DOM pour le rôle radio natif/la navigation clavier
+   mais est visuellement remplacé par .radio-card-dot ci-dessus. */
+.radio-card input[type="radio"] {
+  position: absolute;
+  width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* Spectacles à heure fixe à choisir (mode "précis") : chips qui basculent
+   au tap, pas une liste de cases à cocher (voir assistantShowChipHtml,
+   journee.js). */
+.assistant-shows { display: flex; flex-wrap: wrap; gap: 0.5rem; max-height: 14rem; overflow-y: auto; }
+.assistant-show-chip {
+  min-height: 40px;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 500;
   cursor: pointer;
 }
-.radio-card.is-selected { border-color: var(--accent); background: var(--surface-2); }
-.radio-card input[type="radio"] { margin-top: 0.2rem; flex-shrink: 0; width: 1.1rem; height: 1.1rem; }
-
-.pick-list { display: flex; flex-direction: column; gap: 0.1rem; max-height: 20rem; overflow-y: auto; margin-top: 0.5rem; }
-.pick-list[hidden] { display: none; }
-.pick-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.3rem 0.4rem; border-radius: 8px; }
-.pick-item:hover { background: var(--bg-elevated); }
-.pick-item input[type="checkbox"] { width: 1.15rem; height: 1.15rem; flex-shrink: 0; }
-.pick-item .pick-name { font-size: 0.92rem; }
+.assistant-show-chip.is-selected { background: var(--text); border-color: var(--text); color: var(--bg); }
 
 @media (max-width: 640px) {
   .bar { grid-template-columns: 90px 2fr auto; }
@@ -1989,6 +2072,11 @@ table.visit-grid tfoot td { font-weight: 700; background: var(--bg-elevated); }
 .sheet-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
 .sheet-dialog h2, .sheet-dialog h3 { margin-top: 0; }
 .sheet-dialog-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1.1rem; }
+.sheet-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.sheet-dialog-header h2 { margin-bottom: 0; }
+/* Poignée de glissement décorative (mobile uniquement — voir plus bas, sur
+   desktop la feuille est un dialogue centré, pas une feuille qu'on glisse). */
+.sheet-drag-handle { display: none; }
 @media (max-width: 779px) {
   .sheet-dialog {
     position: fixed;
@@ -2003,6 +2091,15 @@ table.visit-grid tfoot td { font-weight: 700; background: var(--bg-elevated); }
     border-radius: var(--r-xl) var(--r-xl) 0 0;
     border-bottom: none;
     padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  }
+  .sheet-drag-handle {
+    display: block;
+    align-self: center;
+    width: 2.5rem;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--line);
+    margin-bottom: 0.5rem;
   }
 }
 
