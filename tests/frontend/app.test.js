@@ -206,3 +206,27 @@ test("removeFromPlan returns false when there is nothing to remove", () => {
   withMemoryLocalStorage();
   assert.strictEqual(PDF.removeFromPlan("2026-08-26", "les-vikings", "14:00"), false);
 });
+
+test("planItemExists detects a duplicate by slug + timing", () => {
+  const PDF = loadModule("app.js");
+  const plan = { items: [{ slug: "les-vikings", name: "Les Vikings", start: "10:00", end: "10:30", is_continuous: false }] };
+  assert.ok(PDF.planItemExists(plan, { slug: "les-vikings", start: "10:00", end: "10:30", is_continuous: false }));
+  assert.ok(!PDF.planItemExists(plan, { slug: "les-vikings", start: "16:00", end: "16:30", is_continuous: false }));
+});
+
+test("planItemExists falls back to name for manual (slug-less) entries", () => {
+  const PDF = loadModule("app.js");
+  const plan = { items: [{ slug: null, name: "Cinéscénie", start: "22:00", end: "23:40", is_continuous: false }] };
+  assert.ok(PDF.planItemExists(plan, { slug: null, name: "Cinéscénie", start: "22:00", end: "23:40", is_continuous: false }));
+});
+
+test("icsEscape escapes backslash, semicolon, comma and newline per RFC 5545", () => {
+  const PDF = loadModule("app.js");
+  assert.strictEqual(PDF.icsEscape("A, B; C\\D\nE"), "A\\, B\\; C\\\\D\\nE");
+});
+
+test("icsEscape treats null/undefined as an empty string", () => {
+  const PDF = loadModule("app.js");
+  assert.strictEqual(PDF.icsEscape(null), "");
+  assert.strictEqual(PDF.icsEscape(undefined), "");
+});

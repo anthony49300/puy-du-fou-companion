@@ -18,7 +18,8 @@
    - .tabbar / .tabbar-item (barre d'onglets mobile)
    - .nav-dropdown (menu "sheet" : dropdown ancré en desktop, feuille
      remontant du bas en mobile — voir .nav-group--inline pour sa
-     réutilisation hors du header)
+     réutilisation hors du header), .sheet-dialog (feuille modale <dialog>,
+     centrée en desktop/plein bas en mobile — voir PDF.openSheet)
    - .toast-msg (+ .toast-msg-action), .confirm-dialog
    ========================================================================= */
 
@@ -631,6 +632,11 @@ main { flex: 1; }
   text-decoration: none;
   color: var(--text);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  /* Un item de grille ne rétrécit jamais sous le min-content de son texte
+     (ex: "automatiquement" à la taille d'un <h3>) sans ce reset : sur un
+     écran étroit, ça pousse toute la carte — et la page — en débordement
+     horizontal plutôt que de laisser le titre passer à la ligne. */
+  min-width: 0;
 }
 .nav-card:hover {
   transform: translateY(-3px);
@@ -649,6 +655,73 @@ main { flex: 1; }
 .explore-grid .nav-card { padding: 0.85rem; }
 .explore-grid .nav-card-icon { font-size: 1.3rem; }
 .explore-grid .nav-card p { font-size: 0.8rem; }
+
+/* Journée vide (voir §2.4 de la refonte "day-editor-v2", renderEmptyState
+   dans journee.js) : liste verticale de "choix" pleine largeur (icône +
+   titre + description), pas une grille de cartes — trop étroit à 2 par
+   ligne sur un mobile 390px, et l'intention ("voici LA façon de faire, ou
+   celle-ci") se lit mieux l'une sous l'autre. */
+#jour-official-status, .jour-summary-line { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3rem; }
+.status-ok-icon { color: var(--success); flex: none; }
+.summary-line-flag { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 500; }
+.summary-line-icon { width: 1rem; height: 1rem; flex: none; }
+
+.journee-empty h2 { margin-bottom: 0.3rem; }
+.journee-empty > p.text-muted { margin-top: 0; }
+.journee-choice-list { display: flex; flex-direction: column; gap: 0.75rem; margin: 0.5rem 0; }
+.journee-choice {
+  width: 100%;
+  border-radius: var(--r-lg);
+  padding: 1.1rem;
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  text-align: left;
+  text-decoration: none;
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+.journee-choice-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  color: var(--accent-text);
+}
+.journee-choice-body { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+.journee-choice-title { font-weight: 600; font-size: 1rem; }
+.journee-choice-desc { font-size: 0.85rem; line-height: 1.45; color: var(--text-soft); }
+.journee-choice--primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+.journee-choice--primary .journee-choice-icon { background: rgba(255, 255, 255, 0.16); color: var(--on-primary); }
+.journee-choice--primary .journee-choice-desc { color: var(--on-primary-muted); }
+
+/* Lien texte simple (ex: "Ajouter un spectacle hors programme") : pas un
+   bouton plein, pas un <a> vers une autre page — ouvre une feuille modale. */
+.link-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  font: 500 0.92rem/1 inherit;
+  color: var(--accent-text);
+  cursor: pointer;
+  min-height: 44px;
+}
 
 /* ---------- 7. Stat tiles ---------- */
 .stat-grid {
@@ -789,6 +862,8 @@ main { flex: 1; }
 .list-row .list-row-name { font-weight: 600; }
 .list-row .list-row-meta { font-size: 0.8rem; color: var(--muted); }
 .list-row .list-row-meta.is-warn { color: var(--warn); font-weight: 600; }
+.list-row .list-row-meta.is-conflict { color: var(--danger); font-weight: 600; }
+.list-row .list-row-meta.is-night { color: var(--night); }
 
 /* Bouton "+" (ajouter à ma journée) / "✓" une fois ajouté */
 .add-to-day-btn {
@@ -945,6 +1020,10 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
   color: var(--text-on-accent);
   border-color: var(--accent);
 }
+/* Variante pour un chip qui ouvre un panneau (date/formule de "Ma journée")
+   plutôt qu'un simple filtre : cible tactile pleine (44px), pas les 36px
+   habituels des chips de filtre (moins critiques, répétés en rangée). */
+.chip-lg { min-height: 44px; padding: 0.6rem 1rem; font-size: 0.9rem; }
 
 /* ---------- Contrôle segmenté (sélecteur de jour, Programme) ---------- */
 .segmented {
@@ -1013,6 +1092,11 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
 .hgrid-show-cat.is-night { color: var(--night); }
 .hgrid-track { position: relative; height: 1.6rem; }
 .hgrid-axis .hgrid-track { height: 1.4rem; }
+.hgrid-legend { display: flex; gap: 0.9rem; flex-wrap: wrap; font-size: 0.72rem; color: var(--text-soft); }
+.hgrid-legend-item { display: flex; align-items: center; gap: 0.35rem; }
+.hgrid-legend-swatch { width: 0.6rem; height: 0.6rem; border-radius: 3px; flex: none; }
+.hgrid-legend-swatch--myday { background: var(--accent-fill); }
+.hgrid-legend-swatch--conflict { background: var(--danger); }
 .hgrid-tick {
   position: absolute;
   top: 0;
@@ -1542,6 +1626,8 @@ table.data-table th[data-sort][aria-sort="descending"]::after { content: " \25BC
   flex-wrap: wrap;
 }
 .text-muted { color: var(--text-soft); }
+.text-warn { color: var(--warn); }
+.text-danger { color: var(--danger); }
 .mt-0 { margin-top: 0; }
 .skeleton {
   background: linear-gradient(90deg, var(--border-soft) 25%, var(--accent-2-soft) 50%, var(--border-soft) 75%);
@@ -1678,16 +1764,6 @@ table.data-table th[data-sort][aria-sort="descending"]::after { content: " \25BC
 .day-card-conflict { flex: 1 1 100%; color: var(--danger); font-size: 0.85rem; font-weight: 600; }
 .day-card .gate-note { flex: 1 1 100%; color: var(--muted); font-size: 0.78rem; display: flex; align-items: center; gap: 0.35rem; }
 .day-card .gate-note .icon { width: 1rem; height: 1rem; }
-.day-card .remove-btn {
-  flex-shrink: 0;
-  width: 2.75rem;
-  height: 2.75rem;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.day-card .remove-btn .icon { width: 1.1rem; height: 1.1rem; }
 
 /* Autres séances du même spectacle, proposées en chips pour "déplacer" la
    séance en conflit (voir renderSwapChipsAsync, carnet.js). */
@@ -1713,6 +1789,127 @@ table.data-table th[data-sort][aria-sort="descending"]::after { content: " \25BC
 }
 .day-gap-note.is-warn { color: var(--warn); font-weight: 600; }
 .day-gap-note .icon { width: 1rem; height: 1rem; }
+
+/* ---------- Ma journée — timeline v2 (voir site/js/journee.js) ---------- */
+/* Heure de début (gras, accentué) / heure de fin (petite, discrète) empilées
+   dans la même colonne qu'avant (.day-timeline-time) — remplace l'étiquette
+   "En continu" qui s'y affichait pour les accès continus, désormais sortis
+   de la frise (voir .continuous-row-*). */
+.card-time-start { display: block; color: var(--accent-text); }
+.card-time-end { display: block; font-weight: 400; font-size: 0.75rem; }
+
+/* .day-card garde flex-wrap:wrap (hérité) : seule la ligne "nom + badges"
+   tient sur une seule ligne (.day-card-main) ; le reste (conflit, portes,
+   "Autres séances"...) garde flex:1 1 100% pour passer à la ligne suivante. */
+.day-card-main { display: flex; align-items: baseline; gap: 0.5rem; flex: 1 1 auto; min-width: 0; }
+.day-card-main .day-card-name { flex: 0 1 auto; }
+/* Pousse le menu "..." à la fin de la première ligne, quel que soit ce qui
+   la précède (nom, badges...). */
+.day-card .nav-group--inline { margin-left: auto; flex-shrink: 0; }
+.card-menu-toggle { background: transparent; border-color: transparent; }
+.card-menu-toggle:hover { background: var(--line-soft); }
+.card-menu-toggle .icon { width: 1.3rem; height: 1.3rem; }
+
+/* Accès continu groupé en une ligne repliable, avant la frise des séances à
+   heure fixe (voir §2.5 de la refonte "day-editor-v2") : on ne veut plus
+   d'une carte par attraction en continu ni du libellé "En continu" dans la
+   colonne horaire. Pastille + titre gras/sous-titre discret (noms, tronqués
+   sur une ligne) plutôt qu'un seul fil de texte. */
+.continuous-row-wrap { margin-bottom: 1rem; }
+.continuous-row-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  padding: 0.7rem 1rem;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+  min-height: 44px;
+}
+.continuous-row-dot { width: 0.5rem; height: 0.5rem; border-radius: 999px; background: var(--success); flex: none; }
+.continuous-row-text { flex: 1 1 auto; min-width: 0; text-align: left; display: flex; flex-direction: column; gap: 0.1rem; }
+.continuous-row-title { font-weight: 600; font-size: 0.92rem; }
+.continuous-row-subtitle { font-size: 0.78rem; color: var(--text-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.continuous-row-toggle .icon:last-child { flex: none; transition: transform 0.15s ease; }
+.continuous-row-toggle[aria-expanded="true"] .icon:last-child { transform: rotate(180deg); }
+.continuous-row-detail { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.continuous-row-detail[hidden] { display: none; }
+.continuous-row-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  padding: 0.7rem 0.9rem;
+}
+.continuous-row-item > div:first-child { flex: 1 1 auto; }
+
+/* "+ Ajouter ici" (voir dayPlan.findFittingShowings) : un creux assez grand
+   affiche directement (pas de clic pour déplier) un encart en pointillés
+   avec les séances officielles qui tiennent entièrement dedans. */
+.day-gap-addhere {
+  border-radius: var(--r-md);
+  border: 1px dashed var(--line);
+  background: var(--bg);
+  padding: 0.6rem 0.75rem;
+  margin: 0.3rem 0 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.day-gap-addhere-label { font-size: 0.78rem; color: var(--text-soft); }
+.fitting-candidate {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  padding: 0 0.5rem 0 0.75rem;
+  font: inherit;
+  cursor: pointer;
+  min-height: 44px;
+}
+.fitting-candidate:hover { background: var(--surface-2); }
+.fitting-candidate-time { font-weight: 600; color: var(--accent-text); flex-shrink: 0; font-size: 0.85rem; }
+.fitting-candidate-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.fitting-candidate-name { font-size: 0.85rem; font-weight: 500; }
+.fitting-candidate-meta { font-size: 0.75rem; color: var(--text-soft); }
+.fitting-candidate-add {
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  border-radius: var(--r-sm);
+  background: var(--primary);
+  color: var(--on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fitting-candidate-add .icon { width: 1rem; height: 1rem; }
+
+/* Desktop (voir §2.7 de la refonte) : deux colonnes, la timeline à gauche,
+   un panneau collant à droite (calendrier toujours visible, formule et
+   réglages en ligne, entrée vers l'assistant) — en dessous, une seule
+   colonne, le calendrier/la formule ne s'ouvrent qu'en panneau (chips). */
+.journee-aside { display: none; }
+@media (min-width: 1100px) {
+  .journee-layout { display: grid; grid-template-columns: 1fr 320px; gap: 2rem; align-items: start; }
+  .journee-chips { display: none; }
+  /* "top" fixé en JS (voir syncAsideStickyOffset, journee.js), même
+     principe que .tab-bar/.hour-nav : dépend de la hauteur réelle du
+     header, pas une constante CSS qui se périmerait au moindre changement. */
+  .journee-aside { display: flex; flex-direction: column; gap: 1rem; position: sticky; top: 1rem; }
+}
 
 /* Tuile KPI qui bascule en alerte (ex: conflits > 0) */
 .stat-tile--danger { background: var(--danger-bg); border-color: var(--danger-line); }
@@ -1770,22 +1967,58 @@ table.visit-grid tfoot td { font-weight: 700; background: var(--bg-elevated); }
 .visit-check-btn.is-seen-twice { background: var(--accent-2-soft); border-color: var(--accent-2); color: var(--badge-complet); }
 .visit-check-name { font-size: 0.92rem; }
 
-/* Liste à cocher (spectacles incontournables avant de générer un planning
-   automatique) : simple case à cocher, contrairement à .visit-check-btn qui
-   cycle un compteur. */
-.pick-list { display: flex; flex-direction: column; gap: 0.1rem; max-height: 20rem; overflow-y: auto; margin-top: 0.5rem; }
-.pick-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.3rem 0.4rem; border-radius: 8px; }
-.pick-item:hover { background: var(--bg-elevated); }
-.pick-item input[type="checkbox"] { width: 1.15rem; height: 1.15rem; flex-shrink: 0; }
-.pick-item .pick-name { font-size: 0.92rem; }
+/* Assistant "Composer automatiquement" (voir PDF.openSheet, journee.js) */
+.assistant-modes { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.75rem 0; }
+.radio-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+  min-height: 56px;
+  box-sizing: border-box;
+}
+.radio-card.is-selected { border: 2px solid var(--primary); background: var(--primary-soft); padding: calc(0.7rem - 1px) calc(0.9rem - 1px); }
+.radio-card-dot {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+  margin-top: 0.1rem;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.radio-card.is-selected .radio-card-dot { border-color: var(--primary); }
+.radio-card-dot::after { content: ""; width: 0.6rem; height: 0.6rem; border-radius: 999px; background: transparent; }
+.radio-card.is-selected .radio-card-dot::after { background: var(--primary); }
+/* L'<input> reste dans le DOM pour le rôle radio natif/la navigation clavier
+   mais est visuellement remplacé par .radio-card-dot ci-dessus. */
+.radio-card input[type="radio"] {
+  position: absolute;
+  width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
 
-/* Résultat du planning automatique : quand un spectacle demandé ne peut pas
-   être casé, propose le(s) créneau(x) possibles et ce qu'il faudrait
-   retirer pour l'y faire tenir. */
-.autoplan-conflict { margin-top: 0.6rem; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 10px; }
-.autoplan-conflict strong { display: block; margin-bottom: 0.3rem; }
-.autoplan-choice { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.25rem 0; flex-wrap: wrap; }
-.autoplan-choice span { font-size: 0.9rem; }
+/* Spectacles à heure fixe à choisir (mode "précis") : chips qui basculent
+   au tap, pas une liste de cases à cocher (voir assistantShowChipHtml,
+   journee.js). */
+.assistant-shows { display: flex; flex-wrap: wrap; gap: 0.5rem; max-height: 14rem; overflow-y: auto; }
+.assistant-show-chip {
+  min-height: 40px;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.assistant-show-chip.is-selected { background: var(--text); border-color: var(--text); color: var(--bg); }
 
 @media (max-width: 640px) {
   .bar { grid-template-columns: 90px 2fr auto; }
@@ -1797,7 +2030,7 @@ table.visit-grid tfoot td { font-weight: 700; background: var(--bg-elevated); }
   padding: 0.6rem 1.2rem; border-radius: 999px; font-size: 0.88rem; z-index: 100; box-shadow: var(--shadow-lg);
   max-width: calc(100vw - 2rem);
 }
-/* Variante avec action "Annuler" (suppressions) : voir toastUndo, carnet.js. */
+/* Variante avec action "Annuler" (suppressions) : voir PDF.toastUndo, app.js. */
 .toast-msg-action { display: flex; align-items: center; gap: 0.75rem; border-radius: 999px; }
 .toast-undo-btn {
   background: transparent;
@@ -1826,6 +2059,56 @@ table.visit-grid tfoot td { font-weight: 700; background: var(--bg-elevated); }
 .confirm-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
 .confirm-dialog p { margin: 0 0 1.1rem; }
 .confirm-dialog-actions { display: flex; justify-content: flex-end; gap: 0.6rem; }
+
+/* Feuille modale générique (voir PDF.openSheet, site/js/app.js) : utilisée
+   pour les réglages/l'assistant de "Ma journée", le choix de date/formule,
+   l'ajout manuel... Centrée en desktop (comme .confirm-dialog), remonte du
+   bas de l'écran en mobile (même traitement que .nav-dropdown mobile). */
+.sheet-dialog {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  background: var(--bg-surface);
+  color: var(--text);
+  padding: 1.25rem;
+  max-width: 440px;
+  width: calc(100vw - 2.5rem);
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+}
+.sheet-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+.sheet-dialog h2, .sheet-dialog h3 { margin-top: 0; }
+.sheet-dialog-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1.1rem; }
+.sheet-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.sheet-dialog-header h2 { margin-bottom: 0; }
+/* Poignée de glissement décorative (mobile uniquement — voir plus bas, sur
+   desktop la feuille est un dialogue centré, pas une feuille qu'on glisse). */
+.sheet-drag-handle { display: none; }
+@media (max-width: 779px) {
+  .sheet-dialog {
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    max-width: none;
+    width: 100%;
+    max-height: 85vh;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    border-bottom: none;
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  }
+  .sheet-drag-handle {
+    display: block;
+    align-self: center;
+    width: 2.5rem;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--line);
+    margin-bottom: 0.5rem;
+  }
+}
 
 /* Impression (ex: le programme de la journée depuis le carnet) */
 @media print {

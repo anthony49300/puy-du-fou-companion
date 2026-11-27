@@ -4,6 +4,7 @@
 (function () {
   "use strict";
   var PDF = window.PDF;
+  var dayPlan = PDF.dayPlan;
 
   var state = {
     today: null,
@@ -283,8 +284,13 @@
 
     var ticks = [];
     for (var t = axisStart; t <= axisEnd; t += 60) ticks.push(t);
+    var legend =
+      '<div class="hgrid-legend">' +
+      '<span class="hgrid-legend-item"><span class="hgrid-legend-swatch hgrid-legend-swatch--myday"></span>Ma journée</span>' +
+      '<span class="hgrid-legend-item"><span class="hgrid-legend-swatch hgrid-legend-swatch--conflict"></span>Conflit</span>' +
+      "</div>";
     var axisRow =
-      '<div class="hgrid-row hgrid-axis"><div class="hgrid-label"></div><div class="hgrid-track">' +
+      '<div class="hgrid-row hgrid-axis"><div class="hgrid-label">' + legend + '</div><div class="hgrid-track">' +
       ticks.map(function (tk) {
         return '<div class="hgrid-tick" style="left:' + (((tk - axisStart) / span) * 100) + '%">' + String(Math.floor(tk / 60)).padStart(2, "0") + "h</div>";
       }).join("") +
@@ -350,7 +356,58 @@
     setTimeout(function () { t.remove(); }, 2600);
   }
 
-  function renderAside(dateStr, isToday, nowMinutes) {
+  // Marge "portes" du planificateur (Ma journée/Carnet, voir S.gate) : même
+  // réglage partagé, pas une valeur propre à cette page. 30 min par défaut,
+  // comme PDF.carnetEtatInitial().
+  function planGate() {
+    try {
+      var s = PDF.loadCarnetState();
+      return s && s.gate != null ? s.gate : 30;
+    } catch (e) { return 30; }
+  }
+
+  // Autres horaires officiels connus du même spectacle aujourd'hui (hors
+  // celui-ci) — pour la note "Chevauche ... — autres séances" et une
+  // résolution de conflit qui DÉPLACE plutôt que supprime (voir resolveConflict).
+  function officialStartsForSlug(allSlots, slug, excludeStart) {
+    if (!slug) return [];
+    var seen = {};
+    var out = [];
+    allSlots.forEach(function (s) {
+      if (s.rep.is_continuous || !s.rep.start) return;
+      if ((s.spectacle.slug || s.spectacle.name) !== slug) return;
+      if (s.rep.start === excludeStart || seen[s.rep.start]) return;
+      seen[s.rep.start] = true;
+      out.push({ start: s.rep.start, end: s.rep.end });
+    });
+    return out.sort(function (a, b) { return a.start.localeCompare(b.start); });
+  }
+
+  // Note affichée sous chaque séance à heure fixe de "Ma journée" — un seul
+  // message par séance, dans l'ordre de priorité du plus important au moins
+  // important : chevauchement réel > nocturne > portes (1ère séance) >
+  // marge avec la précédente. Reprend PDF.dayPlan (conflits/marge), partagé
+  // avec Ma journée (site/js/journee.js) plutôt qu'une logique propre à
+  // cette page.
+  function fixedItemNotes(fixes, conflits, gate, allSlots) {
+    return fixes.map(function (it, i) {
+      var autreConflit = dayPlan.conflitChevauchementAvec(it, conflits);
+      if (autreConflit) {
+        var alternatives = officialStartsForSlug(allSlots, it.slug || it.name, it.start).slice(0, 2);
+        var altText = alternatives.length
+          ? " — autres séances " + alternatives.map(function (a) { return PDF.formatTimeFR(a.start); }).join(", ")
+          : "";
+        return { kind: "conflict", text: "Chevauche " + autreConflit.name + altText };
+      }
+      if (it.category === "spectacle_nocturne") return { kind: "night", text: "Spectacle nocturne" };
+      if (i === 0) return { kind: "ok", text: "Portes " + gate + " min avant" };
+      var marge = dayPlan.margeMinutes(fixes[i - 1], it);
+      var tendu = marge < gate;
+      return { kind: tendu ? "warn" : "ok", text: marge + " min " + (tendu ? "pour rejoindre — serré" : "de marge") };
+    });
+  }
+
+  function renderAside(dateStr, isToday, nowMinutes, allSlots) {
     var nextSlot = document.getElementById("aside-next-slot");
     var dayListSlot = document.getElementById("aside-myday-slot");
     if (!nextSlot || !dayListSlot) return;
@@ -378,40 +435,38 @@
       return;
     }
 
-    var fixes = items.filter(function (it) { return !it.is_continuous && it.start && it.end; });
-    var conflictPairs = [];
-    for (var i = 0; i < fixes.length; i++) {
-      for (var j = i + 1; j < fixes.length; j++) {
-        if (timeRangesOverlap(fixes[i].start, fixes[i].end, fixes[j].start, fixes[j].end)) conflictPairs.push([fixes[i], fixes[j]]);
-      }
-    }
-    function isConflicting(it) { return conflictPairs.some(function (p) { return p[0] === it || p[1] === it; }); }
+    var gate = planGate();
+    var fixes = dayPlan.itemsFixesTries(items);
+    var conflits = dayPlan.detecterConflits(fixes, gate);
+    var notes = fixedItemNotes(fixes, conflits, gate, allSlots);
+    var noteByUid = {};
+    fixes.forEach(function (it, i) { noteByUid[it.uid] = notes[i]; });
+    var hasOverlap = conflits.some(function (c) { return c.chevauchement; });
 
     dayListSlot.innerHTML =
-      '<div class="card"><h3 class="mt-0">Ma journée</h3><div class="list-card">' +
+      '<div class="card"><div class="flex-between"><h3 class="mt-0">Ma journée</h3>' +
+      '<span class="text-muted" style="font-size:0.8rem">' + items.length + " spectacle" + (items.length > 1 ? "s" : "") +
+      (fixes.length ? " · " + dayPlan.formatDureeHeuresMinutes(dayPlan.dureeTotaleMinutes(fixes)) : "") + "</span></div>" +
+      '<div class="list-card">' +
       items.map(function (it) {
-        var conflict = isConflicting(it);
+        var note = it.is_continuous ? null : noteByUid[it.uid];
+        var rowCls = note && note.kind === "conflict" ? " is-conflict-row" : "";
         return (
-          '<div class="list-row' + (conflict ? " is-conflict-row" : "") + '">' +
+          '<div class="list-row' + rowCls + '">' +
           '<span class="list-row-time">' + (it.is_continuous ? "Continu" : PDF.formatTimeFR(it.start)) + "</span>" +
           '<span class="list-row-main"><span class="list-row-name">' + PDF.escapeHtml(it.name) + "</span>" +
-          (conflict ? '<span class="list-row-meta is-warn">Conflit</span>' : "") +
+          (note ? '<span class="list-row-meta is-' + note.kind + '">' + PDF.escapeHtml(note.text) + "</span>" : "") +
           "</span></div>"
         );
       }).join("") +
       "</div>" +
-      (conflictPairs.length ? '<button type="button" class="btn btn-outline" id="btn-resolve-conflict" style="margin-top:0.75rem;width:100%">Résoudre le conflit</button>' : "") +
+      (hasOverlap ? '<button type="button" class="btn btn-outline" id="btn-resolve-conflict" style="margin-top:0.75rem;width:100%">Résoudre le conflit</button>' : "") +
       '<button type="button" class="btn btn-outline" id="btn-share-aside" style="margin-top:0.6rem;width:100%">Partager</button>' +
       "</div>";
 
     var resolveBtn = document.getElementById("btn-resolve-conflict");
     if (resolveBtn) {
-      resolveBtn.addEventListener("click", function () {
-        var pair = conflictPairs[0];
-        if (!pair) return;
-        try { PDF.removeFromPlan(dateStr, pair[1].slug || pair[1].name, pair[1].start); } catch (e) { /* ignore */ }
-        renderProgramme();
-      });
+      resolveBtn.addEventListener("click", function () { resolveConflict(dateStr, fixes, conflits, allSlots); });
     }
     var shareBtn = document.getElementById("btn-share-aside");
     if (shareBtn) {
@@ -425,6 +480,51 @@
         }
       });
     }
+  }
+
+  // "Résoudre le conflit" : DÉPLACE une des deux séances en chevauchement
+  // vers une autre séance officielle du même spectacle qui ne crée plus
+  // aucun conflit avec le reste du plan (jamais une suppression silencieuse
+  // — voir le point soulevé sur la version précédente de ce bouton).
+  // Annulable, comme toute action destructive de ce site.
+  function resolveConflict(dateStr, fixes, conflits, allSlots) {
+    var pair = conflits.filter(function (c) { return c.chevauchement; })[0];
+    if (!pair) return;
+    var gate = planGate();
+
+    function essaieDeplacer(cible, autres) {
+      var alternatives = officialStartsForSlug(allSlots, cible.slug || cible.name, cible.start);
+      return alternatives.filter(function (alt) {
+        return autres.every(function (other) {
+          return !dayPlan.seancesSeChevauchent({ start: alt.start, end: alt.end }, other);
+        });
+      })[0] || null;
+    }
+
+    var autresQueA = fixes.filter(function (it) { return it !== pair.a; });
+    var autresQueB = fixes.filter(function (it) { return it !== pair.b; });
+    var altB = essaieDeplacer(pair.b, autresQueB);
+    var altA = essaieDeplacer(pair.a, autresQueA);
+    var choix = altB ? { cible: pair.b, alt: altB } : altA ? { cible: pair.a, alt: altA } : null;
+
+    if (!choix) {
+      asideToast("Aucun autre horaire de ces deux séances ne lève le chevauchement.");
+      return;
+    }
+    var cible = choix.cible, alt = choix.alt;
+    var previousStart = cible.start, previousEnd = cible.end;
+    try {
+      PDF.removeFromPlan(dateStr, cible.slug || cible.name, previousStart);
+      PDF.addToPlan(dateStr, { slug: cible.slug, name: cible.name, category: cible.category, start: alt.start, end: alt.end, is_continuous: false });
+    } catch (e) { /* stockage indisponible : ignoré */ }
+    renderProgramme();
+    PDF.toastUndo(cible.name + " déplacé à " + PDF.formatTimeFR(alt.start) + " pour lever le chevauchement.", function () {
+      try {
+        PDF.removeFromPlan(dateStr, cible.slug || cible.name, alt.start);
+        PDF.addToPlan(dateStr, { slug: cible.slug, name: cible.name, category: cible.category, start: previousStart, end: previousEnd, is_continuous: false });
+      } catch (e) { /* stockage indisponible : ignoré */ }
+      renderProgramme();
+    });
   }
 
   /* ------------------------------------------------------------------
@@ -442,7 +542,7 @@
     var continuousAll = allSlots.filter(function (s) { return s.rep.is_continuous; });
     renderContinuousGantt(continuousAll.filter(slotMatchesFilters), dayBounds(allSlots), isToday, nowMinutes);
     renderDesktopGrid(slots, dayBounds(allSlots), isToday, nowMinutes, state.today.date);
-    renderAside(state.today.date, isToday, nowMinutes);
+    renderAside(state.today.date, isToday, nowMinutes, allSlots);
 
     if (allSlots.length === 0) {
       container.innerHTML =
@@ -875,7 +975,22 @@
 
     renderDaySelect();
     renderFilterChips();
-    loadDay(0);
+
+    // "programme.html?date=2026-07-22" présélectionne cette date au lieu
+    // d'aujourd'hui (ex: lien "Choisir dans le programme" depuis une
+    // journée vide de Ma journée, voir site/js/journee.js) — ignoré si
+    // absent/invalide.
+    var requestedDate = new URLSearchParams(location.search).get("date");
+    if (requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate)) {
+      state.customDate = requestedDate;
+      state.dayOffset = null;
+      var dateInput = document.getElementById("custom-date-input");
+      if (dateInput) { dateInput.value = requestedDate; dateInput.hidden = false; }
+      renderDaySelect();
+      loadCustomDate(requestedDate);
+    } else {
+      loadDay(0);
+    }
 
     // Le décalage sous le header sticky (voir renderHourNav) dépend de sa
     // hauteur, qui change au franchissement du point de rupture mobile.
