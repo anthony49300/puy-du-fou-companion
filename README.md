@@ -20,6 +20,8 @@ officiels du Puy du Fou France**.
 - [Créer / initialiser la base SQLite](#créer--initialiser-la-base-sqlite)
 - [Lancer une collecte](#lancer-une-collecte)
 - [Statistiques](#statistiques)
+- [Distribution horaire et programme probable](#distribution-horaire-et-programme-probable)
+- [Ma journée (planificateur de visite)](#ma-journée-planificateur-de-visite)
 - [Export JSON](#export-json)
 - [Lancer le site localement](#lancer-le-site-localement)
 - [GitHub Actions](#github-actions)
@@ -66,10 +68,13 @@ simple redimensionnement :
 - **Mobile (< 780px)** : barre d'onglets fixe en bas (Aujourd'hui,
   Programme, Ma journée, Carnet, Stats), page d'accueil "en direct" (prochain
   spectacle, séances en cours, dans l'heure), Programme en liste avec
-  filtres/favoris, Carnet en timeline verticale avec détection de conflits.
+  filtres/favoris, "Ma journée" (page dédiée, voir plus bas) en timeline
+  verticale avec détection de conflits — le Carnet se limite désormais aux
+  onglets Visites/Bilan/Pass.
 - **Desktop (≥ 1100px)** : le Programme bascule sur une grille horaire (une
   ligne par spectacle, un bloc par représentation) avec un volet "Ma
-  journée" à côté.
+  journée" à côté ; la page "Ma journée" elle-même passe en deux colonnes
+  (timeline + panneau collant date/formule/réglages/assistant).
 
 <!--
   Captures d'écran à ajouter ici une fois disponibles (ex: screenshots/
@@ -355,6 +360,45 @@ part des jours de référence correspondant exactement à ce motif.
   fonctionnalités qui en dépendent ("Inhabituel aujourd'hui", "Horaires
   habituels") s'effacent silencieusement plutôt que d'afficher un signal
   statistiquement peu fiable.
+
+## Ma journée (planificateur de visite)
+
+Page dédiée (`site/journee.html`/`site/js/journee.js`) pour composer sa
+journée de visite : horaires, enchaînements, planning automatique — tout
+reste dans `localStorage` (même clé que l'onglet "Visites" du Carnet, voir
+`PDF.loadCarnetState`/`saveCarnetState`, `site/js/app.js`).
+
+- **En-tête compact** : chips "date" (calendrier, panneau ancré en desktop/
+  feuille en mobile) et "formule" (Jour/Après-midi/Soirée), réglages
+  (portes ouvertes) en feuille modale, programme officiel chargé
+  automatiquement dès la date choisie.
+- **Résumé en une ligne** : nombre de spectacles, temps de spectacle total,
+  et — distinction volontaire — un **chevauchement réel** (deux séances qui
+  se recouvrent, `--danger`) ne s'affiche jamais comme un simple
+  **enchaînement serré** (portes/marge insuffisantes mais pas de
+  recouvrement, `--warn`).
+- **Timeline** : accès continu regroupé en une ligne repliable (jamais mêlé
+  aux séances à heure fixe), cartes une ligne avec menu "…" fantôme
+  ("Changer de séance" / "Supprimer", toujours annulable — jamais de bouton
+  de suppression voyant), lignes de marge entre séances (marche à pied).
+- **"+ Ajouter ici"** : dans tout creux d'au moins 20 minutes (avant la
+  première séance, entre deux séances, après la dernière — ces deux
+  derniers toujours proposés), propose les séances officielles qui
+  tiennent **entièrement** dedans, marge de portes incluse — voir
+  `PDF.dayPlan.findFittingShowings` (`site/js/day-plan.js`), pur et testé.
+- **Assistant "Composer automatiquement"** (feuille modale) : mode "le plus
+  de spectacles possible" ou "seulement ceux que je choisis" (cases à
+  cocher), **aperçu en direct avant application** (jamais appliqué à
+  l'aveugle), et annulation en un tap après application.
+- **Desktop (≥ 1100px)** : deux colonnes — la timeline à gauche, un panneau
+  collant à droite avec le calendrier toujours visible, la formule/les
+  réglages en ligne, et un accès direct à l'assistant.
+
+La logique pure (détection de conflits, planning automatique, export
+`.ics`, créneaux qui tiennent dans un creux) vit dans `site/js/day-plan.js`
+(`PDF.dayPlan`), testée indépendamment du rendu (`tests/frontend/
+day-plan.test.js`) — partagée avec le reste du Carnet (Visites/Bilan/Pass,
+`site/js/carnet.js`) sans rien dupliquer.
 
 ## Export JSON
 

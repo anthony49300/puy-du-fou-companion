@@ -112,14 +112,30 @@
 
   function renderFormuleChip() {
     var plan = planCourant(state.dateStr);
-    $("jourFormuleChip").textContent = (plan ? plan.moment : "Jour") + " ▾";
+    var moment = plan ? plan.moment : "Jour";
+    $("jourFormuleChip").textContent = moment + " ▾";
+    // Desktop (voir .journee-aside, §2.7) : même formule, en ligne plutôt
+    // qu'en panneau — un seul réglage, deux présentations.
+    var asideSelect = $("jourFormuleAside");
+    if (asideSelect) asideSelect.value = moment;
+    var asideGate = $("jourGateAside");
+    if (asideGate) asideGate.value = S.gate;
   }
 
+  // Desktop (.journee-aside) : calendrier toujours visible, même panneau
+  // que la chip "Date" mobile (voir jourDateCalendarWrap) — PDF.renderMiniCalendar
+  // ne sait écrire que dans UN conteneur, donc on l'appelle deux fois.
   function renderDateCalendar() {
     PDF.renderMiniCalendar(
       "jourDateCalendarWrap", state.calendarPopup.year, state.calendarPopup.month, state.datesMap,
       state.dateStr, dayPlan.planDayCellInfo, selectDate, changeCalendarMonth
     );
+    if ($("jourDateCalendarAside")) {
+      PDF.renderMiniCalendar(
+        "jourDateCalendarAside", state.calendarPopup.year, state.calendarPopup.month, state.datesMap,
+        state.dateStr, dayPlan.planDayCellInfo, selectDate, changeCalendarMonth
+      );
+    }
   }
 
   function selectDate(dateStr) {
@@ -155,6 +171,44 @@
         if (formuleDropdown) formuleDropdown.close();
       });
     });
+  }
+
+  /* ----------------------------------------------------------------------
+   * Desktop (≥1100px, voir .journee-aside dans journee.html/style.css) :
+   * panneau collant avec calendrier toujours visible (renderDateCalendar
+   * s'en charge déjà), formule et réglages en ligne, entrée vers
+   * l'assistant — jamais affiché en-dessous de 1100px (display:none), donc
+   * sans incidence sur le mobile même si posé une seule fois ici.
+   * -------------------------------------------------------------------- */
+  function initDesktopAside() {
+    var formuleSelect = $("jourFormuleAside");
+    if (formuleSelect) {
+      formuleSelect.addEventListener("change", function () {
+        var plan = planCourant(state.dateStr);
+        plan.moment = formuleSelect.value;
+        sauver();
+        renderFormuleChip();
+      });
+    }
+    var gateInput = $("jourGateAside");
+    if (gateInput) {
+      gateInput.addEventListener("change", function () {
+        S.gate = Math.max(0, +gateInput.value || 0);
+        sauver();
+        renderDay();
+      });
+    }
+    var composeBtn = $("btnComposeAutoAside");
+    if (composeBtn) composeBtn.addEventListener("click", composeAutomatically);
+  }
+
+  // Décalage sous le header (lui-même sticky) pour que le panneau collant
+  // ne disparaisse pas dessous — même principe que .tab-bar (carnet.js) ou
+  // .hour-nav (programme.js).
+  function syncAsideStickyOffset() {
+    var header = document.getElementById("site-header");
+    var aside = document.querySelector(".journee-aside");
+    if (aside) aside.style.top = (header ? header.offsetHeight : 0) + 16 + "px";
   }
 
   /* ----------------------------------------------------------------------
@@ -919,7 +973,10 @@
     dateDropdown = PDF.initDropdownToggle($("jourDateChip"), $("jourDateDropdown"));
     formuleDropdown = PDF.initDropdownToggle($("jourFormuleChip"), $("jourFormuleDropdown"));
     initFormuleChip();
+    initDesktopAside();
     initContentDelegation();
+    syncAsideStickyOffset();
+    window.addEventListener("resize", syncAsideStickyOffset);
 
     Promise.all([fetchCatalogue(), fetchDatesMap()])
       .then(function () { setDate(initialDate()); })

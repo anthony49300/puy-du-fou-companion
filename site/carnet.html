@@ -4,8 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mon carnet — Puy du Fou (non officiel)</title>
-<meta name="description" content="Planifiez votre journée de visite, gardez le carnet des spectacles déjà vus, et calculez la rentabilité de votre pass — tout reste dans votre navigateur.">
+<meta name="description" content="Gardez le carnet des spectacles déjà vus et calculez la rentabilité de votre pass — tout reste dans votre navigateur.">
 <script>(function(){try{var t=localStorage.getItem("pdf-programmes-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);}}catch(e){}})();</script>
+<script>
+// L'onglet "Journée" a déménagé sur sa propre page (voir journee.html) lors
+// de la refonte "day-editor-v2" : d'anciens liens/favoris vers
+// carnet.html#journee ou #jour y redirigent, en conservant la date choisie
+// si elle était passée en paramètre (?date=...).
+(function () {
+  var hash = (location.hash || "").replace(/^#/, "");
+  if (hash === "journee" || hash === "jour") {
+    location.replace("journee.html" + location.search);
+  }
+})();
+</script>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -17,116 +29,17 @@
   <div class="container">
     <section class="page-hero">
       <h1>🗂️ Mon carnet</h1>
-      <p class="lede">Composez votre journée, gardez le carnet des spectacles vus au fil de vos visites, et suivez la rentabilité de votre pass. Tout reste enregistré dans <strong>ce navigateur uniquement</strong> — rien n'est envoyé ni stocké sur le serveur.</p>
+      <p class="lede">Gardez le carnet des spectacles vus au fil de vos visites, et suivez la rentabilité de votre pass. Tout reste enregistré dans <strong>ce navigateur uniquement</strong> — rien n'est envoyé ni stocké sur le serveur.</p>
     </section>
 
-    <div class="status-banner status-ok no-print">
-      <span aria-hidden="true">🔒</span>
-      <span>Données 100% locales : elles ne quittent jamais votre appareil. Pensez à <strong>exporter</strong> une sauvegarde de temps en temps (bouton en bas de page) si vous changez de navigateur ou d'appareil.</span>
-    </div>
-
     <div class="tab-bar" role="tablist" id="carnet-tabs" aria-label="Sections du carnet">
-      <button type="button" class="tab active" role="tab" id="tab-btn-jour" data-tab="jour" aria-selected="true" aria-controls="tab-jour" tabindex="0">Journée</button>
-      <button type="button" class="tab" role="tab" id="tab-btn-visites" data-tab="visites" aria-selected="false" aria-controls="tab-visites" tabindex="-1">Visites</button>
+      <button type="button" class="tab active" role="tab" id="tab-btn-visites" data-tab="visites" aria-selected="true" aria-controls="tab-visites" tabindex="0">Visites</button>
       <button type="button" class="tab" role="tab" id="tab-btn-bilan" data-tab="bilan" aria-selected="false" aria-controls="tab-bilan" tabindex="-1">Bilan</button>
       <button type="button" class="tab" role="tab" id="tab-btn-pass" data-tab="pass" aria-selected="false" aria-controls="tab-pass" tabindex="-1">Pass</button>
     </div>
 
-    <!-- ========== Onglet Journée ========== -->
-    <section class="tabpane" id="tab-jour" role="tabpanel" aria-labelledby="tab-btn-jour">
-      <div class="flex-between">
-        <div>
-          <p class="label-upper" id="planSelectedDateLabel">&nbsp;</p>
-          <h2 class="mt-0" style="margin-bottom:0">Ma journée</h2>
-        </div>
-        <button type="button" class="icon-btn" id="btnShareDay" aria-label="Partager ma journée"></button>
-      </div>
-
-      <div class="stat-grid" id="jourKpis" style="margin:1rem 0"></div>
-
-      <details class="past-sessions" style="margin-bottom:1.25rem">
-        <summary>Changer de date</summary>
-        <div style="padding:0.9rem 1rem 1.1rem">
-          <div class="calendar-wrap" id="planCalendarWrap" style="max-width:none;box-shadow:none;border:none;padding:0;background:none"></div>
-          <input type="date" id="planDate" hidden>
-          <p class="text-muted" id="planDatesHint" style="margin:0.5rem 0 0"></p>
-          <div id="planClosedBanner" style="margin-top:0.5rem"></div>
-        </div>
-      </details>
-
-      <div class="card">
-        <div class="season-select-row" style="margin-top:0">
-          <label for="planGate">Portes ouvertes (min. avant)
-            <br><input type="number" id="planGate" min="0" max="90" step="5" style="width:5rem">
-          </label>
-          <label for="planMoment">Formule
-            <br><select id="planMoment"><option>Jour</option><option>Après-midi</option><option>Soirée</option></select>
-          </label>
-          <button type="button" class="btn btn-outline" id="btnLoadReal">Charger le programme officiel de cette date</button>
-        </div>
-        <p class="text-muted" id="planHint" style="margin:0.5rem 0 0"></p>
-      </div>
-
-      <div class="card" id="autoPlanWrap" style="margin-top:1.25rem" hidden>
-        <div class="flex-between">
-          <h3 class="mt-0">Spectacles à caser en priorité</h3>
-          <button type="button" class="btn btn-outline" id="btnCancelAutoPlan">Fermer</button>
-        </div>
-        <p class="text-muted" style="margin-top:0">Cochez les spectacles à heure fixe que vous voulez voir : seuls ceux-là seront casés, rien d'autre. Ne rien cocher génère au contraire une journée bien remplie, avec le plus de spectacles possible. (Les attractions en accès continu, souvent les immersifs, sont de toute façon toujours incluses.)</p>
-        <div id="autoPlanChecklist" class="pick-list"></div>
-        <div class="season-select-row" style="margin-top:1rem">
-          <button type="button" class="btn" id="btnGenerateAutoPlan">Générer le planning</button>
-        </div>
-        <div id="autoPlanResult" style="margin-top:1rem"></div>
-      </div>
-
-      <div class="card" style="margin-top:1.25rem">
-        <h3 class="mt-0">Ajouter un spectacle</h3>
-        <div id="addFromRealWrap" class="season-select-row" hidden>
-          <label for="addRealSelect">Depuis le programme officiel de cette date
-            <br><select id="addRealSelect" style="min-width:280px"></select>
-          </label>
-          <button type="button" class="btn" id="btnAddReal">Ajouter</button>
-        </div>
-        <details id="addManualWrap">
-          <summary class="text-muted" style="cursor:pointer">Ou ajouter manuellement (ex : Cinéscénie, spectacle non couvert par la collecte)</summary>
-          <div class="season-select-row" style="margin-top:0.75rem">
-            <label for="addManualName">Nom
-              <br><input type="text" id="addManualName" placeholder="Cinéscénie" style="min-width:180px">
-            </label>
-            <label for="addManualStart">Début
-              <br><input type="time" id="addManualStart" value="22:00">
-            </label>
-            <label for="addManualEnd">Fin
-              <br><input type="time" id="addManualEnd" value="23:40">
-            </label>
-            <button type="button" class="btn btn-outline" id="btnAddManual">Ajouter</button>
-          </div>
-        </details>
-      </div>
-
-      <div class="card" style="margin-top:1.25rem" id="jourAlertesWrap" hidden>
-        <div id="jourAlertes"></div>
-      </div>
-
-      <div id="jourTimeline"></div>
-
-      <div class="season-select-row no-print" style="margin-top:1rem">
-        <button type="button" class="btn" id="btnAutoPlan">Proposer un planning</button>
-        <button type="button" class="btn btn-outline" id="btnExportIcs">Agenda .ics</button>
-        <div class="nav-group nav-group--inline">
-          <button type="button" class="icon-btn" id="dayActionsToggle" aria-haspopup="true" aria-expanded="false" aria-label="Plus d'actions"></button>
-          <div class="nav-dropdown" id="dayActionsMenu">
-            <button type="button" class="nav-dropdown-link" id="btnSaveVisit">Enregistrer comme visite effectuée</button>
-            <button type="button" class="nav-dropdown-link" id="btnPrintDay">Imprimer cette journée</button>
-            <button type="button" class="nav-dropdown-link" id="btnClearDay">Vider la journée</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- ========== Onglet Visites ========== -->
-    <section class="tabpane" id="tab-visites" role="tabpanel" aria-labelledby="tab-btn-visites" hidden>
+    <section class="tabpane" id="tab-visites" role="tabpanel" aria-labelledby="tab-btn-visites">
       <div class="flex-between">
         <h2>Mes visites</h2>
         <button type="button" class="btn btn-outline" id="btnAddVisit">Ajouter une visite</button>
@@ -224,14 +137,18 @@
 
     <section class="section no-print">
       <h2>Sauvegarde</h2>
-      <p class="text-muted">Vos données restent dans ce navigateur : changer d'appareil, vider le cache, ou naviguer en mode privé les effacerait. Exportez régulièrement une sauvegarde.</p>
+      <div class="status-banner status-ok">
+        <span aria-hidden="true">🔒</span>
+        <span>Données 100% locales : elles ne quittent jamais votre appareil, y compris votre journée composée dans <a href="journee.html">Ma journée</a>. Pensez à <strong>exporter</strong> une sauvegarde de temps en temps si vous changez de navigateur ou d'appareil.</span>
+      </div>
+      <p class="text-muted">Vider le cache ou naviguer en mode privé effacerait ces données. Exportez régulièrement une sauvegarde.</p>
       <div class="season-select-row">
         <button type="button" class="btn btn-outline" id="btnExport">Exporter mes données</button>
         <button type="button" class="btn btn-outline" id="btnImport">Importer une sauvegarde</button>
         <input type="file" id="fileImport" accept="application/json" hidden>
       </div>
       <div class="danger-zone">
-        <p class="text-muted" style="margin:0 0 0.5rem">Zone irréversible : supprime définitivement toutes vos données locales (plans, visites, réglages).</p>
+        <p class="text-muted" style="margin:0 0 0.5rem">Zone irréversible : supprime définitivement toutes vos données locales (journée composée, visites, réglages).</p>
         <button type="button" class="btn btn-outline-danger" id="btnResetAll">Vider le carnet</button>
       </div>
     </section>
@@ -242,8 +159,6 @@
 
 <script src="js/icons.js"></script>
 <script src="js/app.js"></script>
-<script src="js/day-plan.js"></script>
-<script src="js/schedule-stats.js"></script>
 <script src="js/carnet.js"></script>
 </body>
 </html>
