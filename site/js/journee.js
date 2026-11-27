@@ -241,28 +241,31 @@
     el.textContent = "Chargement du programme officiel…";
     fetchRealDay(dateStr).then(function (dayData) {
       if (state.dateStr !== dateStr) return; // la date a changé entre-temps
+      var slots = [];
       if (!dayData) {
-        state.currentSlots = [];
         el.textContent = "Programme officiel pas encore publié pour cette date.";
-        return;
-      }
-      if (dayData.status === "closed_day" || dayData.status === "out_of_season") {
-        state.currentSlots = [];
+      } else if (dayData.status === "closed_day" || dayData.status === "out_of_season") {
         el.textContent = "";
-        return;
+      } else {
+        slots = dayPlan.realDayToSlots(dayData);
+        if (!slots.length) {
+          el.textContent = "Le programme officiel de cette date ne contient aucun horaire.";
+        } else {
+          var distinctSlugs = {};
+          slots.forEach(function (s) { if (s.slug) distinctSlugs[s.slug] = true; });
+          var nbSpectacles = Object.keys(distinctSlugs).length;
+          el.textContent =
+            "Programme officiel chargé — " + nbSpectacles + " spectacle" + (nbSpectacles > 1 ? "s" : "") +
+            ", " + slots.length + " séance" + (slots.length > 1 ? "s" : "") + ".";
+        }
       }
-      var slots = dayPlan.realDayToSlots(dayData);
+      // Les alternatives "Changer de séance" dépendent de state.currentSlots,
+      // résolu après coup (async) — un re-rendu du contenu (déjà affiché
+      // sans elles, le fetch étant quasi toujours plus lent que ce premier
+      // rendu) les fait apparaître dès qu'elles sont disponibles.
       state.currentSlots = slots;
-      if (!slots.length) {
-        el.textContent = "Le programme officiel de cette date ne contient aucun horaire.";
-        return;
-      }
-      var distinctSlugs = {};
-      slots.forEach(function (s) { if (s.slug) distinctSlugs[s.slug] = true; });
-      var nbSpectacles = Object.keys(distinctSlugs).length;
-      el.textContent =
-        "Programme officiel chargé — " + nbSpectacles + " spectacle" + (nbSpectacles > 1 ? "s" : "") +
-        ", " + slots.length + " séance" + (slots.length > 1 ? "s" : "") + ".";
+      var plan = planCourant(dateStr);
+      if (plan.items.length) renderFilledDay(plan);
     });
   }
 
@@ -353,25 +356,250 @@
     });
   }
 
-  // Placeholder minimal pour une journée déjà composée (remplacé par la
-  // vraie timeline en phase 3 : accès continu groupé, cartes une ligne,
-  // menu "...", "Ajouter ici"...).
-  function renderFilledDayPlaceholder(plan) {
-    var el = $("jour-content");
-    var items = plan.items.slice().sort(function (a, b) {
-      if (a.is_continuous && b.is_continuous) return 0;
-      if (a.is_continuous) return -1;
-      if (b.is_continuous) return 1;
-      return (a.start || "").localeCompare(b.start || "");
+  /* ----------------------------------------------------------------------
+   * Journée composée — timeline v2 (voir §2.5 de la refonte) :
+   * - accès continu groupé en une ligne repliable (jamais "En continu"
+   *   dans la colonne horaire, qui n'existe que pour les séances à heure
+   *   fixe) ;
+   * - cartes une ligne (heure de début en gras/accent, heure de fin petite
+   *   et discrète, nom + "Portes ..." + badges), menu "..." fantôme
+   *   ("Changer de séance"/"Supprimer", jamais de × rouge visible) ;
+   * - lignes de marge entre deux séances consécutives (marche à pied),
+   *   chevauchement réel marqué en rouge sur les deux cartes + "Autres
+   *   séances" (voir dayPlan.conflitChevauchementAvec).
+   * -------------------------------------------------------------------- */
+
+  // Autres horaires connus du même spectacle ce jour-là (programme officiel
+  // déjà en mémoire, voir state.currentSlots) — jamais l'horaire déjà choisi.
+  function alternativesForSlug(slug, excludeStart) {
+    return state.currentSlots.filter(function (s) {
+      return s.slug === slug && !s.is_continuous && s.start && s.start !== excludeStart;
     });
-    el.innerHTML = "<ul class=\"day-timeline\">" + items.map(function (it) {
-      return "<li>" + (it.is_continuous ? "En continu" : PDF.formatTimeFR(it.start)) + " — " + PDF.escapeHtml(it.name) + "</li>";
-    }).join("") + "</ul>";
+  }
+
+  // `autoShow`: visible dès le rendu (chevauchement réel ou séance estimée
+  // non confirmée) — sinon replié, à révéler via "Changer de séance" dans
+  // le menu "...". Jamais rendu pour un ajout manuel (pas de slug à comparer).
+  function swapChipsBlockHtml(it, autoShow) {
+    if (!it.slug) return "";
+    var alternatives = alternativesForSlug(it.slug, it.start);
+    var inner = alternatives.length
+      ? '<div class="swap-chips-label">Autres séances</div><div class="chip-row">' +
+        alternatives.map(function (s) {
+          return '<button type="button" class="chip" data-swap-uid="' + it.uid + '" data-swap-start="' + s.start + '" data-swap-end="' + (s.end || "") + '">' +
+            PDF.escapeHtml(PDF.formatTimeFR(s.start)) + "</button>";
+        }).join("") + "</div>"
+      : '<p class="text-muted" style="margin:0">Aucun autre horaire connu pour ce spectacle aujourd’hui.</p>';
+    return '<div class="swap-chips" data-swap-for="' + it.uid + '"' + (autoShow ? "" : " hidden") + ">" + inner + "</div>";
+  }
+
+  // Menu "..." (ghost, 44px) : "Changer de séance" (seulement si un slug
+  // existe — un ajout manuel n'a pas d'"autres séances" à proposer) et
+  // "Supprimer" (toujours, avec annulation — voir deleteItem).
+  function cardMenuHtml(it, opts) {
+    opts = opts || {};
+    var changerItem = opts.allowSwap && it.slug
+      ? '<button type="button" class="nav-dropdown-link" data-menu-action="changer" data-uid="' + it.uid + '">Changer de séance</button>'
+      : "";
+    return (
+      '<div class="nav-group nav-group--inline">' +
+      '<button type="button" class="icon-btn card-menu-toggle" data-menu-toggle data-uid="' + it.uid + '" ' +
+      'aria-haspopup="true" aria-expanded="false" aria-label="Actions pour ' + PDF.escapeHtml(it.name) + '">' + PDF.icon("more-horizontal") + "</button>" +
+      '<div class="nav-dropdown" data-menu data-uid="' + it.uid + '">' +
+      changerItem +
+      '<button type="button" class="nav-dropdown-link" data-menu-action="supprimer" data-uid="' + it.uid + '">Supprimer</button>' +
+      "</div>" +
+      "</div>"
+    );
+  }
+
+  function continuousRowHtml(items) {
+    if (!items.length) return "";
+    var names = items.map(function (it) { return it.name; }).join(", ");
+    var detail = items.map(function (it) {
+      var range = it.start && it.end ? '<div class="text-muted">' + PDF.escapeHtml(PDF.formatTimeFR(it.start)) + "–" + PDF.escapeHtml(PDF.formatTimeFR(it.end)) + "</div>" : "";
+      return (
+        '<div class="continuous-row-item">' +
+        "<div><strong>" + PDF.escapeHtml(it.name) + "</strong>" + range + "</div>" +
+        cardMenuHtml(it, { allowSwap: false }) +
+        "</div>"
+      );
+    }).join("");
+    return (
+      '<div class="continuous-row-wrap">' +
+      '<button type="button" class="continuous-row-toggle" data-continuous-toggle aria-expanded="false">' +
+      PDF.icon("door") + "<span>Accès continu · " + items.length + " — " + PDF.escapeHtml(names) + "</span>" + PDF.icon("chevron-down") +
+      "</button>" +
+      '<div class="continuous-row-detail" id="continuousDetail" hidden>' + detail + "</div>" +
+      "</div>"
+    );
+  }
+
+  function accessibleCardLabel(it, gateTime) {
+    var parts = [PDF.formatTimeFR(it.start)];
+    if (it.end) parts.push("à " + PDF.formatTimeFR(it.end));
+    parts.push(it.name);
+    if (gateTime) parts.push("portes " + PDF.formatTimeFR(gateTime));
+    return parts.join(", ");
+  }
+
+  function fixedCardHtml(it, conflits) {
+    var sev = dayPlan.severiteConflit(it, conflits);
+    var autreConflit = sev === "error" ? dayPlan.conflitChevauchementAvec(it, conflits) : null;
+    var cls = "day-card day-card--oneline" +
+      (it.category === "spectacle_nocturne" ? " day-card--night" : "") +
+      (autreConflit ? " day-card--danger" : "");
+    var dotCls = "day-timeline-dot" + (autreConflit ? " is-danger" : sev === "warn" ? " is-warn" : "");
+    var badges = it.slug
+      ? PDF.representationBadges({ start: it.start, is_continuous: false, status: it.status || "scheduled" }, it.category)
+      : '<span class="badge badge-default">Ajout manuel</span>';
+    if (it.unconfirmed) badges += '<span class="badge badge-conflict-warn">Horaire non confirmé</span>';
+    else if (it.estimated) badges += '<span class="badge badge-default">Estimé</span>';
+
+    var gateTime = it.start ? dayPlan.minutesToHHMM(PDF.timeToMinutes(it.start) - S.gate) : null;
+    var gateNote = gateTime
+      ? '<div class="gate-note">' + PDF.icon("door") + " Portes " + PDF.escapeHtml(PDF.formatTimeFR(gateTime)) + "</div>"
+      : "";
+    var autoShowSwap = !!(autreConflit || it.unconfirmed);
+
+    return (
+      '<li class="day-timeline-item" aria-label="' + PDF.escapeHtml(accessibleCardLabel(it, gateTime)) + '">' +
+      '<div class="day-timeline-time tnum"><span class="card-time-start">' + PDF.escapeHtml(PDF.formatTimeFR(it.start)) + "</span>" +
+      (it.end ? '<span class="card-time-end">' + PDF.escapeHtml(PDF.formatTimeFR(it.end)) + "</span>" : "") + "</div>" +
+      '<div class="day-timeline-rail"><span class="' + dotCls + '"></span></div>' +
+      '<div class="' + cls + '">' +
+      '<div class="day-card-main"><span class="day-card-name">' + PDF.escapeHtml(it.name) + '</span><div class="day-card-badges">' + badges + "</div></div>" +
+      cardMenuHtml(it, { allowSwap: true }) +
+      (autreConflit ? '<div class="day-card-conflict">Chevauche ' + PDF.escapeHtml(autreConflit.name) + "</div>" : "") +
+      gateNote +
+      swapChipsBlockHtml(it, autoShowSwap) +
+      "</div>" +
+      "</li>"
+    );
+  }
+
+  function gapRowHtml(it, next) {
+    if (it.is_continuous || !it.end || !next || next.is_continuous || !next.start) return "";
+    var marge = dayPlan.margeMinutes(it, next);
+    if (marge < 0) return ""; // vrai chevauchement : déjà signalé par day-card--danger, pas de ligne de marge
+    var tendu = marge < S.gate;
+    return (
+      '<li class="day-gap-row"><div></div><div></div>' +
+      '<div class="day-gap-note' + (tendu ? " is-warn" : "") + '">' + PDF.icon("walking") + " " +
+      (tendu ? marge + " min pour rejoindre — enchaînement serré" : marge + " min de marge") +
+      "</div></li>"
+    );
+  }
+
+  function renderFilledDay(plan) {
+    var el = $("jour-content");
+    var continuous = plan.items.filter(function (it) { return it.is_continuous; });
+    var allFixed = plan.items
+      .filter(function (it) { return !it.is_continuous; })
+      .sort(function (a, b) { return (a.start || "").localeCompare(b.start || ""); });
+    var fixes = dayPlan.itemsFixesTries(plan.items);
+    var conflits = dayPlan.detecterConflits(fixes, S.gate);
+
+    var html = continuousRowHtml(continuous);
+    html += '<ol class="day-timeline">';
+    allFixed.forEach(function (it, idx) {
+      html += fixedCardHtml(it, conflits);
+      html += gapRowHtml(it, allFixed[idx + 1]);
+    });
+    html += "</ol>";
+    el.innerHTML = html;
+  }
+
+  function closeAllCardMenus() {
+    document.querySelectorAll("#jour-content [data-menu].open").forEach(function (m) { m.classList.remove("open"); });
+    document.querySelectorAll('#jour-content [data-menu-toggle][aria-expanded="true"]').forEach(function (t) { t.setAttribute("aria-expanded", "false"); });
+  }
+
+  // Suppression immédiate mais annulable (toast "Annuler" quelques secondes)
+  // — jamais de confirmation bloquante pour un geste aussi facilement
+  // réversible (même principe que l'ancien onglet Journée de carnet.js).
+  function deleteItem(uid) {
+    var plan = planCourant(state.dateStr);
+    var idx = -1;
+    for (var i = 0; i < plan.items.length; i++) { if (plan.items[i].uid === uid) { idx = i; break; } }
+    if (idx === -1) return;
+    var removed = plan.items[idx];
+    var removedAt = idx;
+    plan.items.splice(idx, 1);
+    sauver();
+    renderDay();
+    PDF.toastUndo(removed.name + " retiré de la journée.", function () {
+      plan.items.splice(Math.min(removedAt, plan.items.length), 0, removed);
+      sauver();
+      renderDay();
+    });
+  }
+
+  // Délégation unique sur #jour-content (régénéré en entier à chaque rendu,
+  // voir renderFilledDay/renderEmptyState) : un seul listener posé une fois
+  // dans init(), jamais réattaché, plutôt qu'un par carte/bouton éphémère.
+  function initContentDelegation() {
+    var el = $("jour-content");
+    el.addEventListener("click", function (e) {
+      var contToggle = e.target.closest("[data-continuous-toggle]");
+      if (contToggle) {
+        var detail = $("continuousDetail");
+        var willOpen = detail.hidden;
+        detail.hidden = !willOpen;
+        contToggle.setAttribute("aria-expanded", String(willOpen));
+        return;
+      }
+
+      var menuToggle = e.target.closest("[data-menu-toggle]");
+      if (menuToggle) {
+        var uid = menuToggle.getAttribute("data-uid");
+        var menu = el.querySelector('[data-menu][data-uid="' + uid + '"]');
+        var willOpenMenu = menu && !menu.classList.contains("open");
+        closeAllCardMenus();
+        if (willOpenMenu) { menu.classList.add("open"); menuToggle.setAttribute("aria-expanded", "true"); }
+        return;
+      }
+
+      var menuAction = e.target.closest("[data-menu-action]");
+      if (menuAction) {
+        var action = menuAction.getAttribute("data-menu-action");
+        var actionUid = menuAction.getAttribute("data-uid");
+        closeAllCardMenus();
+        if (action === "supprimer") deleteItem(actionUid);
+        else if (action === "changer") {
+          var swapBlock = el.querySelector('[data-swap-for="' + actionUid + '"]');
+          if (swapBlock) swapBlock.hidden = !swapBlock.hidden;
+        }
+        return;
+      }
+
+      var swapBtn = e.target.closest("[data-swap-uid]");
+      if (swapBtn) {
+        var plan = planCourant(state.dateStr);
+        var cible = plan.items.filter(function (x) { return x.uid === swapBtn.getAttribute("data-swap-uid"); })[0];
+        if (!cible) return;
+        cible.start = swapBtn.getAttribute("data-swap-start");
+        cible.end = swapBtn.getAttribute("data-swap-end") || null;
+        // On vient de choisir un horaire TIRÉ DU PROGRAMME OFFICIEL : ni
+        // estimé ni non confirmé, quel que soit l'état précédent.
+        delete cible.estimated;
+        delete cible.unconfirmed;
+        delete cible.confidence;
+        sauver();
+        renderDay();
+      }
+    });
+    document.addEventListener("click", function (e) {
+      if (!e.target.closest(".card-menu-toggle") && !e.target.closest(".nav-dropdown[data-menu]")) closeAllCardMenus();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeAllCardMenus();
+    });
   }
 
   function renderDayContent(plan) {
     if (!plan.items.length) { renderEmptyState(); return; }
-    renderFilledDayPlaceholder(plan);
+    renderFilledDay(plan);
   }
 
   function renderDay() {
@@ -405,6 +633,7 @@
     dateDropdown = PDF.initDropdownToggle($("jourDateChip"), $("jourDateDropdown"));
     formuleDropdown = PDF.initDropdownToggle($("jourFormuleChip"), $("jourFormuleDropdown"));
     initFormuleChip();
+    initContentDelegation();
 
     Promise.all([fetchCatalogue(), fetchDatesMap()])
       .then(function () { setDate(initialDate()); })

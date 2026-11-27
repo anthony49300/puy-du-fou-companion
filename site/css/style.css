@@ -1746,6 +1746,63 @@ table.data-table th[data-sort][aria-sort="descending"]::after { content: " \25BC
 .day-gap-note.is-warn { color: var(--warn); font-weight: 600; }
 .day-gap-note .icon { width: 1rem; height: 1rem; }
 
+/* ---------- Ma journée — timeline v2 (voir site/js/journee.js) ---------- */
+/* Heure de début (gras, accentué) / heure de fin (petite, discrète) empilées
+   dans la même colonne qu'avant (.day-timeline-time) — remplace l'étiquette
+   "En continu" qui s'y affichait pour les accès continus, désormais sortis
+   de la frise (voir .continuous-row-*). */
+.card-time-start { display: block; color: var(--accent-text); }
+.card-time-end { display: block; font-weight: 400; font-size: 0.75rem; }
+
+/* .day-card garde flex-wrap:wrap (hérité) : seule la ligne "nom + badges"
+   tient sur une seule ligne (.day-card-main) ; le reste (conflit, portes,
+   "Autres séances"...) garde flex:1 1 100% pour passer à la ligne suivante. */
+.day-card-main { display: flex; align-items: baseline; gap: 0.5rem; flex: 1 1 auto; min-width: 0; }
+.day-card-main .day-card-name { flex: 0 1 auto; }
+/* Pousse le menu "..." à la fin de la première ligne, quel que soit ce qui
+   la précède (nom, badges...). */
+.day-card .nav-group--inline { margin-left: auto; flex-shrink: 0; }
+.card-menu-toggle { background: transparent; border-color: transparent; }
+.card-menu-toggle:hover { background: var(--line-soft); }
+.card-menu-toggle .icon { width: 1.3rem; height: 1.3rem; }
+
+/* Accès continu groupé en une ligne repliable, avant la frise des séances à
+   heure fixe (voir §2.5 de la refonte "day-editor-v2") : on ne veut plus
+   d'une carte par attraction en continu ni du libellé "En continu" dans la
+   colonne horaire. */
+.continuous-row-wrap { margin-bottom: 1rem; }
+.continuous-row-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  padding: 0.85rem 1rem;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+  min-height: 44px;
+}
+.continuous-row-toggle span:first-of-type { flex: 1 1 auto; text-align: left; }
+.continuous-row-toggle .icon:last-child { transition: transform 0.15s ease; }
+.continuous-row-toggle[aria-expanded="true"] .icon:last-child { transform: rotate(180deg); }
+.continuous-row-detail { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.continuous-row-detail[hidden] { display: none; }
+.continuous-row-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  padding: 0.7rem 0.9rem;
+}
+.continuous-row-item > div:first-child { flex: 1 1 auto; }
+
 /* Tuile KPI qui bascule en alerte (ex: conflits > 0) */
 .stat-tile--danger { background: var(--danger-bg); border-color: var(--danger-line); }
 .stat-tile--danger .stat-value, .stat-tile--danger .stat-label { color: var(--danger); }
