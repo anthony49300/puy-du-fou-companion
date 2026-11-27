@@ -332,7 +332,7 @@ couvre qu'aujourd'hui/demain/après-demain, voir "Limites connues").
 
 `site/js/schedule-stats.js` (`PDF.scheduleStats`) calcule, à partir de ces
 JSON déjà en cache (aucune requête réseau supplémentaire par page) :
-fréquences de créneaux/plages, heatmap jour×heure, régularité, chronologie
+fréquences de créneaux/plages, heatmap jour×heure, chronologie
 des créneaux, écarts "inhabituel aujourd'hui", et le **programme probable**
 (`probableProgramme`) : jours de référence du même type (semaine/week-end/
 férié) dans une fenêtre ±21 jours (élargie à ±45, puis repliée sur la saison

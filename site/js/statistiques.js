@@ -426,8 +426,8 @@
 
   /* ------------------------------------------------------------------
    * "Créneau le plus sûr par spectacle" : meilleur créneau (ou plage en
-   * continu) + régularité de chaque spectacle, saison en cours, sans
-   * filtre de type de jour (question différente de la densité ci-dessus).
+   * continu) de chaque spectacle, saison en cours, sans filtre de type
+   * de jour (question différente de la densité ci-dessus).
    * ------------------------------------------------------------------ */
   function computeSafestSlots() {
     if (!scheduleState.index || !PDF.scheduleStats) return [];
@@ -441,11 +441,7 @@
       var freq = isContinuous ? PDF.scheduleStats.rangeFrequencies(days) : PDF.scheduleStats.startFrequencies(days);
       var best = freq.items[0];
       if (!best) return;
-      var reg = PDF.scheduleStats.regularity(days);
-      rows.push({
-        name: entry.name, time: best.time, isContinuous: isContinuous,
-        share: best.share, regularityLabel: reg.label, regularityShare: reg.share,
-      });
+      rows.push({ name: entry.name, time: best.time, isContinuous: isContinuous, share: best.share });
     });
     return rows;
   }
@@ -462,17 +458,17 @@
     var rows = computeSafestSlots();
     var key = scheduleState.safestSort.key, dir = scheduleState.safestSort.dir;
     rows.sort(function (a, b) {
-      var av = key === "name" ? a.name : key === "time" ? slotTimeLabel(a) : key === "regularity" ? a.regularityShare : a.share;
-      var bv = key === "name" ? b.name : key === "time" ? slotTimeLabel(b) : key === "regularity" ? b.regularityShare : b.share;
+      var av = key === "name" ? a.name : key === "time" ? slotTimeLabel(a) : a.share;
+      var bv = key === "name" ? b.name : key === "time" ? slotTimeLabel(b) : b.share;
       var cmp = typeof av === "string" ? av.localeCompare(bv, "fr") : av - bv;
       return dir === "asc" ? cmp : -cmp;
     });
     tbody.innerHTML = rows.length
       ? rows.map(function (r) {
           return "<tr><td>" + PDF.escapeHtml(r.name) + "</td><td>" + PDF.escapeHtml(slotTimeLabel(r)) + "</td>" +
-            "<td>" + Math.round(r.share * 100) + " %</td><td>" + PDF.escapeHtml(r.regularityLabel) + "</td></tr>";
+            "<td>" + Math.round(r.share * 100) + " %</td></tr>";
         }).join("")
-      : '<tr><td colspan="4" class="text-muted">Aucune donnée disponible.</td></tr>';
+      : '<tr><td colspan="3" class="text-muted">Aucune donnée disponible.</td></tr>';
     document.querySelectorAll("#safest-slot-table th[data-sort]").forEach(function (th) {
       th.setAttribute("aria-sort", th.getAttribute("data-sort") === key ? (dir === "asc" ? "ascending" : "descending") : "none");
     });

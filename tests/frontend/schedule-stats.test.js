@@ -123,49 +123,6 @@ test("weekdayHourHeatmap: empty history yields empty hours/rows, not a crash", (
 });
 
 /* ----------------------------------------------------------------------
- * regularity
- * -------------------------------------------------------------------- */
-test("regularity: identical pattern every day -> 'Horaires très stables'", () => {
-  const days = [day("2026-07-01", ["11:30", "16:15"]), day("2026-07-02", ["11:30", "16:15"]), day("2026-07-03", ["11:30", "16:15"])];
-  const result = scheduleStats.regularity(days);
-  assert.strictEqual(result.share, 1);
-  assert.strictEqual(result.label, "Horaires très stables");
-  assert.deepStrictEqual(result.pattern.slice().sort(), ["11:30", "16:15"]);
-});
-
-test("regularity: mixed patterns land in the right bucket by share", () => {
-  // 2 jours sur 5 (40%) partagent le même motif -> tout juste "assez stables".
-  const days = [
-    day("2026-07-01", ["11:30"]),
-    day("2026-07-02", ["11:30"]),
-    day("2026-07-03", ["16:15"]),
-    day("2026-07-04", ["10:00"]),
-    day("2026-07-05", ["09:00"]),
-  ];
-  const result = scheduleStats.regularity(days);
-  assert.strictEqual(result.share, 0.4);
-  assert.strictEqual(result.label, "Horaires assez stables");
-});
-
-test("regularity: a tie between two patterns is broken by the most recent one", () => {
-  const days = [
-    day("2026-07-01", ["11:30"]),
-    day("2026-07-02", ["11:30"]),
-    day("2026-07-10", ["16:15"]),
-    day("2026-07-11", ["16:15"]),
-  ];
-  const result = scheduleStats.regularity(days);
-  assert.deepStrictEqual(result.pattern, ["16:15"]);
-  assert.strictEqual(result.share, 0.5);
-});
-
-test("regularity: no day present at all -> 'Peu de données', not a crash", () => {
-  const result = scheduleStats.regularity([day("2026-07-01", []), day("2026-07-02", [])]);
-  assert.strictEqual(result.sample, 0);
-  assert.strictEqual(result.label, "Peu de données");
-});
-
-/* ----------------------------------------------------------------------
  * slotTimeline
  * -------------------------------------------------------------------- */
 test("slotTimeline: reports first/last seen and excludes rare slots (< 5%)", () => {

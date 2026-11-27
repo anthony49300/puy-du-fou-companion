@@ -177,44 +177,6 @@
   }
 
   /* ----------------------------------------------------------------------
-   * Regularity
-   * -------------------------------------------------------------------- */
-  function _patternKey(d) {
-    // Les accès continus entrent aussi dans le motif (un spectacle qui
-    // alterne un créneau fixe et une plage continue selon les jours reste
-    // "irrégulier" à juste titre).
-    return (d.starts || []).slice().sort().concat((d.ranges || []).slice().sort()).join("|");
-  }
-
-  function regularity(days) {
-    const present = days.filter((d) => (d.starts && d.starts.length) || (d.ranges && d.ranges.length));
-    if (!present.length) {
-      return { share: 0, label: "Peu de données", pattern: [], sample: 0 };
-    }
-    const counts = {};
-    const latestDateByPattern = {};
-    present.forEach((d) => {
-      const key = _patternKey(d);
-      counts[key] = (counts[key] || 0) + 1;
-      if (!latestDateByPattern[key] || d.date > latestDateByPattern[key]) latestDateByPattern[key] = d.date;
-    });
-    let bestKey = null;
-    Object.keys(counts).forEach((key) => {
-      if (
-        bestKey == null ||
-        counts[key] > counts[bestKey] ||
-        (counts[key] === counts[bestKey] && latestDateByPattern[key] > latestDateByPattern[bestKey])
-      ) {
-        bestKey = key;
-      }
-    });
-    const share = counts[bestKey] / present.length;
-    const label = share >= 0.7 ? "Horaires très stables" : share >= 0.4 ? "Horaires assez stables" : "Horaires variables";
-    const pattern = bestKey ? bestKey.split("|").filter(Boolean) : [];
-    return { share, label, pattern, sample: present.length };
-  }
-
-  /* ----------------------------------------------------------------------
    * Slot timeline (first/last seen + weekly presence, for a sparkline)
    * -------------------------------------------------------------------- */
   function slotTimeline(days) {
@@ -462,7 +424,6 @@
     startFrequencies,
     rangeFrequencies,
     weekdayHourHeatmap,
-    regularity,
     slotTimeline,
     unusualToday,
     indexEntryToDays,

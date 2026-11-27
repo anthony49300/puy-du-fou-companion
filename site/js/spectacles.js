@@ -202,7 +202,7 @@
   }
 
   /* ----------------------------------------------------------------------
-   * "Horaires habituels" : distribution par créneau, régularité, heatmap,
+   * "Horaires habituels" : distribution par créneau, heatmap,
    * chronologie des créneaux, comparaison inter-saisons (voir
    * site/js/schedule-stats.js pour les calculs purs, ici seulement le rendu).
    * ---------------------------------------------------------------------- */
@@ -258,19 +258,6 @@
       html += '<p class="text-muted schedule-low-sample">Peu de données (' + freq.sample + " jour" + (freq.sample > 1 ? "s" : "") + " comparable" + (freq.sample > 1 ? "s" : "") + ").</p>";
     }
     return html;
-  }
-
-  function regularityBadgeHtml(reg) {
-    var level = reg.share >= 0.7 ? "high" : reg.share >= 0.4 ? "medium" : reg.sample === 0 ? "none" : "low";
-    var patternLabel = reg.pattern.length
-      ? reg.pattern.map(function (p) { return p.indexOf("-") !== -1 ? p.replace("-", "–") : PDF.formatTimeFR(p); }).join(" · ")
-      : null;
-    return (
-      '<div class="regularity-badge regularity-' + level + '">' +
-      "<strong>" + PDF.escapeHtml(reg.label) + "</strong>" +
-      (patternLabel ? "<span> — Le plus souvent : " + PDF.escapeHtml(patternLabel) + "</span>" : "") +
-      "</div>"
-    );
   }
 
   function heatmapHtml(heatmap) {
@@ -383,7 +370,6 @@
     var hasStarts = history.some(function (h) { return h.starts && h.starts.length; });
     var isContinuous = hasRanges && !hasStarts;
     var freq = isContinuous ? PDF.scheduleStats.rangeFrequencies(filtered) : PDF.scheduleStats.startFrequencies(filtered);
-    var reg = PDF.scheduleStats.regularity(filtered);
     var heatmap = isContinuous ? { hours: [], rows: [] } : PDF.scheduleStats.weekdayHourHeatmap(filtered);
     var timeline = isContinuous ? [] : PDF.scheduleStats.slotTimeline(filtered);
 
@@ -393,7 +379,6 @@
       renderScheduleFilters(s, history) +
       '<div class="section-label">' + (isContinuous ? "Plages d'accès habituelles" : "Créneaux habituels") + "</div>" +
       slotChipsHtml(freq, isContinuous ? "range" : "start") +
-      regularityBadgeHtml(reg) +
       (heatmap.hours.length ? '<div class="section-label">Répartition par jour et heure</div>' + heatmapHtml(heatmap) : "") +
       (timeline.length ? '<div class="section-label">Chronologie des créneaux</div>' + slotTimelineHtml(timeline, isContinuous ? "range" : "start") : "") +
       '<div id="schedule-compare-slot"></div>' +
