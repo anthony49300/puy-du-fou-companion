@@ -20,11 +20,17 @@ function siteJs(name) {
 // Charge app.js (peuple window.PDF) puis, optionnellement, un second script
 // qui en dépend (`var PDF = window.PDF` en tête de fichier). Chaque module
 // est retiré du cache pour repartir d'un état propre à chaque appel.
+// day-plan.js est chargé juste après app.js, qu'il soit demandé ou non : des
+// modules comme carnet.js lisent `PDF.dayPlan.*` dès leur exécution (pas
+// seulement à l'intérieur d'une fonction), donc il doit déjà exister.
 function loadModule(name) {
   freshGlobals();
   delete require.cache[require.resolve(siteJs("app.js"))];
   require(siteJs("app.js"));
   if (name === "app.js") return global.window.PDF;
+  delete require.cache[require.resolve(siteJs("day-plan.js"))];
+  require(siteJs("day-plan.js"));
+  if (name === "day-plan.js") return global.window.PDF.dayPlan;
   delete require.cache[require.resolve(siteJs(name))];
   return require(siteJs(name));
 }

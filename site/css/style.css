@@ -945,6 +945,10 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
   color: var(--text-on-accent);
   border-color: var(--accent);
 }
+/* Variante pour un chip qui ouvre un panneau (date/formule de "Ma journée")
+   plutôt qu'un simple filtre : cible tactile pleine (44px), pas les 36px
+   habituels des chips de filtre (moins critiques, répétés en rangée). */
+.chip-lg { min-height: 44px; padding: 0.6rem 1rem; font-size: 0.9rem; }
 
 /* ---------- Contrôle segmenté (sélecteur de jour, Programme) ---------- */
 .segmented {
@@ -1542,6 +1546,8 @@ table.data-table th[data-sort][aria-sort="descending"]::after { content: " \25BC
   flex-wrap: wrap;
 }
 .text-muted { color: var(--text-soft); }
+.text-warn { color: var(--warn); }
+.text-danger { color: var(--danger); }
 .mt-0 { margin-top: 0; }
 .skeleton {
   background: linear-gradient(90deg, var(--border-soft) 25%, var(--accent-2-soft) 50%, var(--border-soft) 75%);
@@ -1826,6 +1832,42 @@ table.visit-grid tfoot td { font-weight: 700; background: var(--bg-elevated); }
 .confirm-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
 .confirm-dialog p { margin: 0 0 1.1rem; }
 .confirm-dialog-actions { display: flex; justify-content: flex-end; gap: 0.6rem; }
+
+/* Feuille modale générique (voir PDF.openSheet, site/js/app.js) : utilisée
+   pour les réglages/l'assistant de "Ma journée", le choix de date/formule,
+   l'ajout manuel... Centrée en desktop (comme .confirm-dialog), remonte du
+   bas de l'écran en mobile (même traitement que .nav-dropdown mobile). */
+.sheet-dialog {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  background: var(--bg-surface);
+  color: var(--text);
+  padding: 1.25rem;
+  max-width: 440px;
+  width: calc(100vw - 2.5rem);
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+}
+.sheet-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+.sheet-dialog h2, .sheet-dialog h3 { margin-top: 0; }
+.sheet-dialog-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1.1rem; }
+@media (max-width: 779px) {
+  .sheet-dialog {
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    max-width: none;
+    width: 100%;
+    max-height: 85vh;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    border-bottom: none;
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  }
+}
 
 /* Impression (ex: le programme de la journée depuis le carnet) */
 @media print {

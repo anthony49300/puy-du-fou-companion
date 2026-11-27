@@ -18,18 +18,11 @@
     "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
     "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
   ];
-  // Clé pseudo-slug utilisée pour les ajouts manuels (ex: Cinéscénie, non
-  // couverte par la collecte officielle) dans le carnet de visites.
-  var MANUAL_PREFIX = "manuel:";
-
-  function etatInitial() {
-    return {
-      visites: [], // [{date, moment, com, seen: {slugOuCleManuelle: nombreDeFois}}]
-      plans: {}, // {"2026-08-26": {moment, items: [{uid, slug, name, category, start, end, is_continuous}]}}
-      gate: 30,
-      pass: { prixPass: 199, prixBillet: 47, prixCine: 32, fraisVisite: 0 },
-    };
-  }
+  // Clé pseudo-slug des ajouts manuels, forme par défaut de l'état et petits
+  // widgets de dialogue (toast/confirmation) : partagés avec journee.js
+  // (voir PDF.carnetEtatInitial/PDF.CARNET_MANUAL_PREFIX/PDF.toast*,
+  // site/js/app.js) — les deux pages lisent/écrivent le même blob localStorage.
+  var MANUAL_PREFIX = PDF.CARNET_MANUAL_PREFIX;
 
   var stockageOk = true;
   // Lecture/écriture déléguées à PDF (site/js/app.js) : même clé, même
@@ -46,8 +39,8 @@
     catch (e) { stockageOk = false; }
   }
 
-  var S = charger() || etatInitial();
-  if (!S.pass) S.pass = etatInitial().pass;
+  var S = charger() || PDF.carnetEtatInitial();
+  if (!S.pass) S.pass = PDF.carnetEtatInitial().pass;
   if (S.gate == null) S.gate = 30;
   if (!S.plans) S.plans = {};
   if (!S.visites) S.visites = [];
@@ -65,71 +58,15 @@
     calendar: null, // data/json/calendar.json, résolu une fois (voir PDF.fetchCalendarOnce)
   };
 
-  function uid() {
-    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-  }
+  var uid = PDF.carnetUid;
   function eur(n) {
     return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
   }
-  function toast(msg) {
-    document.querySelectorAll(".toast-msg").forEach(function (t) { t.remove(); });
-    var t = document.createElement("div");
-    t.className = "toast-msg";
-    t.setAttribute("role", "status");
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(function () { t.remove(); }, 2600);
-  }
-  // Variante pour une suppression : l'action a déjà eu lieu (pas de blocage
-  // façon confirm()), mais reste annulable depuis le toast pendant quelques
-  // secondes — plus agréable qu'une confirmation systématique avant un geste
-  // facilement réversible.
-  function toastUndo(msg, onUndo) {
-    document.querySelectorAll(".toast-msg").forEach(function (t) { t.remove(); });
-    var t = document.createElement("div");
-    t.className = "toast-msg toast-msg-action";
-    t.setAttribute("role", "status");
-    var span = document.createElement("span");
-    span.textContent = msg;
-    var btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "toast-undo-btn";
-    btn.textContent = "Annuler";
-    t.appendChild(span);
-    t.appendChild(btn);
-    document.body.appendChild(t);
-    var timer = setTimeout(function () { t.remove(); }, 6000);
-    btn.addEventListener("click", function () {
-      clearTimeout(timer);
-      t.remove();
-      onUndo();
-    });
-  }
-  // Remplace window.confirm() (natif, non stylé, bloque le fil d'exécution)
-  // par un <dialog> cohérent avec le reste de l'UI. Résout `true`/`false` ;
-  // jamais rejetée.
-  function confirmDialog(message, okLabel) {
-    return new Promise(function (resolve) {
-      var dlg = document.createElement("dialog");
-      dlg.className = "confirm-dialog";
-      dlg.innerHTML =
-        "<p>" + PDF.escapeHtml(message) + "</p>" +
-        '<div class="confirm-dialog-actions">' +
-        '<button type="button" class="btn btn-outline" data-act="cancel">Annuler</button>' +
-        '<button type="button" class="btn btn-danger" data-act="ok">' + PDF.escapeHtml(okLabel || "Confirmer") + "</button>" +
-        "</div>";
-      document.body.appendChild(dlg);
-      function close(result) {
-        dlg.close();
-        dlg.remove();
-        resolve(result);
-      }
-      dlg.querySelector('[data-act="ok"]').addEventListener("click", function () { close(true); });
-      dlg.querySelector('[data-act="cancel"]').addEventListener("click", function () { close(false); });
-      dlg.addEventListener("cancel", function (e) { e.preventDefault(); close(false); }); // touche Échap
-      dlg.showModal();
-    });
-  }
+  // toast/toastUndo/confirmDialog : voir PDF.toast*/PDF.confirmDialog,
+  // site/js/app.js (partagés avec journee.js, pas de logique dupliquée).
+  var toast = PDF.toast;
+  var toastUndo = PDF.toastUndo;
+  var confirmDialog = PDF.confirmDialog;
   function $(id) { return document.getElementById(id); }
 
   /* ----------------------------------------------------------------------
@@ -195,58 +132,10 @@
     });
   }
 
-  function realDayToSlots(dayData) {
-    var slots = [];
-    (dayData.spectacles || []).forEach(function (sp) {
-      (sp.representations || []).forEach(function (rep) {
-        slots.push({
-          slug: sp.slug, name: sp.name, category: sp.category,
-          start: rep.start, end: rep.end, is_continuous: !!rep.is_continuous, status: rep.status,
-        });
-      });
-    });
-    slots.sort(function (a, b) {
-      if (a.is_continuous && b.is_continuous) return 0;
-      if (a.is_continuous) return -1;
-      if (b.is_continuous) return 1;
-      return (a.start || "").localeCompare(b.start || "");
-    });
-    return slots;
-  }
-
-  // Même forme que realDayToSlots, mais à partir d'une estimation (voir
-  // PDF.scheduleStats.probableProgramme) : chaque entrée porte en plus
-  // `estimated: true` et sa confiance, pour que populerSelectReel/btnAddReal
-  // les reportent sur l'item du plan (voir reconcileEstimatedItems).
-  function probableToSlots(probable) {
-    var slots = [];
-    probable.spectacles.forEach(function (item) {
-      var duration = null;
-      item.starts.forEach(function (t) {
-        duration = item.durations && item.durations[t] != null ? item.durations[t] : null;
-        slots.push({
-          slug: item.slug, name: item.name, category: item.category,
-          start: t, end: duration != null ? minutesToHHMM(PDF.timeToMinutes(t) + duration) : null,
-          is_continuous: false, status: "scheduled", estimated: true, confidence: item.confidence,
-        });
-      });
-      item.ranges.forEach(function (r) {
-        var parts = r.split("-");
-        slots.push({
-          slug: item.slug, name: item.name, category: item.category,
-          start: parts[0], end: parts[1] || null, is_continuous: true, status: "scheduled",
-          estimated: true, confidence: item.confidence,
-        });
-      });
-    });
-    slots.sort(function (a, b) {
-      if (a.is_continuous && b.is_continuous) return 0;
-      if (a.is_continuous) return -1;
-      if (b.is_continuous) return 1;
-      return (a.start || "").localeCompare(b.start || "");
-    });
-    return slots;
-  }
+  // realDayToSlots/probableToSlots : voir PDF.dayPlan, site/js/day-plan.js
+  // (partagées avec journee.js).
+  var realDayToSlots = PDF.dayPlan.realDayToSlots;
+  var probableToSlots = PDF.dayPlan.probableToSlots;
 
   // Tente une estimation pour une date sans programme officiel (voir
   // btnLoadReal) : résout toujours (jamais rejetée), même sans résultat.
@@ -368,201 +257,18 @@
     return S.plans[dateStr];
   }
 
-  function itemsFixesTries(plan) {
-    return plan.items
-      .filter(function (it) { return !it.is_continuous && it.start && it.end; })
-      .sort(function (a, b) { return a.start.localeCompare(b.start); });
-  }
-
-  function detecterConflits(fixes, gate) {
-    var out = [];
-    for (var i = 0; i < fixes.length - 1; i++) {
-      var a = fixes[i], b = fixes[i + 1];
-      var finA = PDF.timeToMinutes(a.end);
-      var debB = PDF.timeToMinutes(b.start);
-      var portesB = debB - gate;
-      if (finA > debB) out.push({ a: a, b: b, chevauchement: true });
-      else if (finA > portesB) out.push({ a: a, b: b, chevauchement: false });
-    }
-    return out;
-  }
-
-  // Pire sévérité impliquant `it` : "error" (chevauchement réel des deux
-  // séances) prime sur "warn" (juste trop juste pour les portes) ; null si
-  // l'item n'est concerné par aucune alerte.
-  function severiteConflit(it, conflits) {
-    var pire = null;
-    conflits.forEach(function (c) {
-      if (c.a !== it && c.b !== it) return;
-      if (c.chevauchement) pire = "error";
-      else if (!pire) pire = "warn";
-    });
-    return pire;
-  }
-
-  // Règle de dédoublonnage partagée avec PDF.addToPlan (accueil/Programme) :
-  // voir PDF.planItemExists, site/js/app.js, pour la logique elle-même.
-  function planItemExists(plan, candidate) {
-    return PDF.planItemExists(plan, candidate);
-  }
-
-  // Deux séances à heure fixe sont compatibles si l'une se termine avant
-  // l'ouverture des portes de l'autre (marge `gate` incluse) — peu importe
-  // laquelle des deux vient en premier.
-  function seancesCompatibles(a, b, gate) {
-    var avant = a.start <= b.start ? a : b;
-    var apres = avant === a ? b : a;
-    return PDF.timeToMinutes(avant.end) <= PDF.timeToMinutes(apres.start) - gate;
-  }
-
-  // Chevauchement réel entre deux séances, indépendamment de la marge des
-  // portes : contrairement à seancesCompatibles, une simple ouverture de
-  // portes déjà passée (mais spectacles qui ne se recouvrent pas dans le
-  // temps) n'est PAS considérée comme un vrai conflit ici — seul un
-  // recouvrement effectif des deux séances l'est.
-  function seancesSeChevauchent(a, b) {
-    var avant = a.start <= b.start ? a : b;
-    var apres = avant === a ? b : a;
-    return PDF.timeToMinutes(avant.end) > PDF.timeToMinutes(apres.start);
-  }
-
-  // Construit une proposition de journée sans conflit à partir des horaires
-  // officiels d'une date. Les attractions en continu sont toujours incluses
-  // (jamais en conflit entre elles) et les séances "complet" toujours
-  // écartées (impossible d'y assister). Deux modes pour les séances à
-  // heure fixe, selon `mandatorySlugs` :
-  //
-  // - Aucun spectacle coché ("proposition libre") : on en case le plus
-  //   grand nombre possible, glouton classique trié par heure de fin.
-  // - Des spectacles cochés ("proposition précise") : on case UNIQUEMENT
-  //   ceux-là (une séance chacune), rien d'autre — pas de remplissage avec
-  //   des spectacles non demandés. La stratégie "le plus contraint
-  //   d'abord" (comme pour une grille de sudoku : caser en premier le
-  //   spectacle qui a le moins de séances encore possibles, puis choisir
-  //   pour lui la séance qui gêne le moins les autres) donne de bien
-  //   meilleurs résultats qu'un simple tri par heure de fin, qui peut
-  //   sacrifier un spectacle à séance unique au profit d'un autre qui,
-  //   lui, avait une séance de repli plus tard dans la journée.
-  //
-  //   En mode précis, une séance dont les portes sont déjà ouvertes quand
-  //   la précédente n'est pas encore finie (marge `gate` non respectée)
-  //   n'est PAS écartée pour autant : seul un vrai chevauchement des deux
-  //   séances l'empêche. C'est exactement la même tolérance que pour un
-  //   ajout manuel ou depuis le programme officiel, qui n'a jamais bloqué
-  //   ce cas — juste affiché le badge "⚠️ Portes justes" une fois dans la
-  //   frise. On privilégie quand même les séances bien espacées quand un
-  //   choix existe (voir le calcul de `genes` ci-dessous).
-  function buildAutoPlan(slots, gate, mandatorySlugs) {
-    mandatorySlugs = mandatorySlugs || [];
-    var continus = slots.filter(function (s) { return s.is_continuous && s.status !== "complet"; });
-    var fixesAll = slots.filter(function (s) { return !s.is_continuous && s.start && s.end && s.status !== "complet"; });
-
-    if (!mandatorySlugs.length) {
-      var fixesTries = fixesAll.slice().sort(function (a, b) { return a.end.localeCompare(b.end); });
-      var choisisLibre = [];
-      var finPrecedente = null;
-      fixesTries.forEach(function (s) {
-        var portes = PDF.timeToMinutes(s.start) - gate;
-        if (finPrecedente == null || PDF.timeToMinutes(finPrecedente) <= portes) {
-          choisisLibre.push(s);
-          finPrecedente = s.end;
-        }
-      });
-      choisisLibre.sort(function (a, b) { return a.start.localeCompare(b.start); });
-      return continus.concat(choisisLibre);
-    }
-
-    // Options encore possibles pour chaque spectacle demandé.
-    var options = {};
-    mandatorySlugs.forEach(function (slug) {
-      options[slug] = fixesAll.filter(function (s) { return s.slug === slug; });
-    });
-
-    var choisis = [];
-    var aTraiter = mandatorySlugs.slice();
-    while (aTraiter.length) {
-      // Le plus contraint d'abord (le moins d'options restantes).
-      aTraiter.sort(function (a, b) { return options[a].length - options[b].length; });
-      var slug = aTraiter.shift();
-      var candidats = options[slug];
-      if (!candidats.length) continue; // aucune séance ce jour-là, ou plus aucune compatible
-
-      // Parmi ses séances encore possibles, celle qui élimine le moins
-      // d'options aux autres spectacles restants (à égalité : la plus tôt,
-      // pour laisser le plus de marge sur le reste de la journée).
-      var meilleure = null, moinsDeGenes = Infinity;
-      candidats.forEach(function (c) {
-        var genes = 0;
-        aTraiter.forEach(function (slug2) {
-          options[slug2].forEach(function (s) { if (!seancesCompatibles(c, s, gate)) genes++; });
-        });
-        if (genes < moinsDeGenes || (genes === moinsDeGenes && c.end < meilleure.end)) {
-          meilleure = c;
-          moinsDeGenes = genes;
-        }
-      });
-
-      choisis.push(meilleure);
-      aTraiter.forEach(function (slug2) {
-        options[slug2] = options[slug2].filter(function (s) { return !seancesSeChevauchent(meilleure, s); });
-      });
-    }
-
-    choisis.sort(function (a, b) { return a.start.localeCompare(b.start); });
-    return continus.concat(choisis);
-  }
-
-  // Pour un spectacle demandé qui n'a pas pu être casé : chacune de ses
-  // séances possibles ce jour-là, et le(s) spectacle(s) déjà casés qu'il
-  // faudrait retirer pour lui faire de la place.
-  // `gate` n'est plus utilisé pour déterminer un blocage (voir la note sur
-  // seancesSeChevauchent au-dessus de buildAutoPlan) : conservé dans la
-  // signature pour ne pas casser les appels existants.
-  function optionsPourManquant(slug, slots, gate, planItems) {
-    var candidats = slots.filter(function (s) {
-      return !s.is_continuous && s.start && s.end && s.status !== "complet" && s.slug === slug;
-    });
-    var fixesPlan = planItems.filter(function (it) { return !it.is_continuous && it.start && it.end; });
-    return candidats.map(function (c) {
-      return {
-        start: c.start, end: c.end,
-        blockers: fixesPlan.filter(function (it) { return seancesSeChevauchent(it, c); }),
-      };
-    });
-  }
-
-  // Spectacles demandés absents du planning actuel, avec pour chacun les
-  // choix possibles pour l'y intégrer quand même (voir optionsPourManquant).
+  // Conflits, génération automatique, calendrier : voir PDF.dayPlan,
+  // site/js/day-plan.js (partagés avec journee.js, pas de logique dupliquée).
+  function itemsFixesTries(plan) { return PDF.dayPlan.itemsFixesTries(plan.items); }
+  var detecterConflits = PDF.dayPlan.detecterConflits;
+  var severiteConflit = PDF.dayPlan.severiteConflit;
+  var planItemExists = PDF.planItemExists;
+  var buildAutoPlan = PDF.dayPlan.buildAutoPlan;
+  var optionsPourManquant = PDF.dayPlan.optionsPourManquant;
   function analyserManques(mandatorySlugs, slots, gate, planItems) {
-    var presents = {};
-    planItems.forEach(function (it) { if (it.slug) presents[it.slug] = true; });
-    return mandatorySlugs
-      .filter(function (slug) { return !presents[slug]; })
-      .map(function (slug) {
-        return {
-          slug: slug,
-          name: state.catalogueBySlug[slug] ? state.catalogueBySlug[slug].name : slug,
-          options: optionsPourManquant(slug, slots, gate, planItems),
-        };
-      });
+    return PDF.dayPlan.analyserManques(mandatorySlugs, slots, gate, planItems, state.catalogueBySlug);
   }
-
-  // Classes/titre d'une case du calendrier de "Composer la journée" : tous
-  // les jours restent cliquables (un plan manuel reste possible même sans
-  // programme officiel connu) ; seul un badge visuel distingue ceux pour
-  // lesquels un programme officiel est disponible.
-  function planDayCellInfo(record, isSelected, dateStr) {
-    var hasData = !!record;
-    var isClosed = hasData && (record.status === "closed_day" || record.status === "out_of_season");
-    var isPrivate = hasData && record.status === "private_event";
-    var cls = "cal-day" + (hasData ? " has-data" : "") + (isClosed ? " is-closed" : "") + (isPrivate ? " is-private" : "") + (isSelected ? " is-selected" : "");
-    var title = isClosed
-      ? "Puy du Fou fermé le " + PDF.formatDateFR(dateStr)
-      : isPrivate
-      ? "Privatisation probable le " + PDF.formatDateFR(dateStr) + " — programme réel disponible, hors statistiques"
-      : PDF.formatDateFR(dateStr) + (hasData ? " — programme officiel disponible" : " — pas de programme officiel connu (ajout manuel possible)");
-    return { cls: cls, disabled: false, title: title };
-  }
+  var planDayCellInfo = PDF.dayPlan.planDayCellInfo;
 
   function renderPlanCalendar() {
     PDF.renderMiniCalendar(
@@ -691,18 +397,8 @@
 
   // Durée totale des séances à heure fixe (les attractions en continu n'ont
   // pas de "temps de spectacle" ponctuel à additionner).
-  function dureeTotaleMinutes(fixes) {
-    return fixes.reduce(function (sum, it) {
-      var d = PDF.timeToMinutes(it.end) - PDF.timeToMinutes(it.start);
-      if (d < 0) d += 24 * 60;
-      return sum + d;
-    }, 0);
-  }
-
-  function formatDureeHeuresMinutes(totalMin) {
-    var h = Math.floor(totalMin / 60), m = totalMin % 60;
-    return h > 0 ? h + " h " + String(m).padStart(2, "0") : m + " min";
-  }
+  var dureeTotaleMinutes = PDF.dayPlan.dureeTotaleMinutes;
+  var formatDureeHeuresMinutes = PDF.dayPlan.formatDureeHeuresMinutes;
 
   // Menu "Plus d'actions" (Enregistrer comme visite / Imprimer / Vider) :
   // mêmes ouverture/fermeture au clic extérieur et à Échap que le panneau
@@ -778,85 +474,18 @@
   // Minutes depuis minuit -> "HH:MM" (inverse de PDF.timeToMinutes), avec
   // repli circulaire si la marge fait passer avant minuit (cas limite
   // improbable vu les horaires réels du parc, géré par prudence).
-  function minutesToHHMM(mins) {
-    mins = ((mins % 1440) + 1440) % 1440;
-    var h = Math.floor(mins / 60), m = mins % 60;
-    return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
-  }
+  var minutesToHHMM = PDF.dayPlan.minutesToHHMM;
 
   /* ----------------------------------------------------------------------
-   * Export .ics de la journée composée
+   * Export .ics de la journée composée — voir PDF.dayPlan.buildIcs,
+   * site/js/day-plan.js (partagé avec journee.js).
    * -------------------------------------------------------------------- */
-
-  // Échappement texte / horodatage ICS : délégués à PDF (site/js/app.js),
-  // partagés avec le bouton "Agenda .ics" de la carte "jour fermé" de
-  // l'accueil (voir PDF.buildAllDayIcs).
-  function icsEscape(text) {
-    return PDF.icsEscape(text);
-  }
-
-  // "2026-08-26" + "10:45" -> "20260826T104500" (heure locale, sans "Z" ni
-  // TZID : le spectacle a lieu en France quel que soit le fuseau du
-  // visiteur qui exporte — le cas d'usage n'est jamais "je consulte à
-  // distance", toujours "j'y serai"). Propre à carnet.js (événements
-  // ponctuels, pas journée entière) : pas de raison de la partager.
-  function icsDateTime(dateStr, hhmm) {
-    return dateStr.replace(/-/g, "") + "T" + hhmm.replace(":", "") + "00";
-  }
-
-  function icsUtcStamp(date) {
-    return PDF.icsUtcStamp(date);
-  }
-
-  // Construit le contenu d'un fichier .ics (RFC 5545) à partir des items
-  // d'une journée composée : un VEVENT par spectacle, avec un rappel
-  // (VALARM) à l'heure d'ouverture des portes pour les séances à heure
-  // fixe (aucun sens pour les attractions en continu, sans file d'attente).
   function buildIcs(dateStr, items, gate, now) {
-    var dtstamp = icsUtcStamp(now || new Date());
-    var lignes = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Puy du Fou Companion//Carnet//FR", "CALSCALE:GREGORIAN"];
-    items.forEach(function (it) {
-      if (!it.start) return; // rien d'exploitable sans heure de début
-      var fin = it.end || minutesToHHMM(PDF.timeToMinutes(it.start) + 30);
-      var description = it.is_continuous
-        ? "Accès en continu."
-        : "Ouverture des portes : " + PDF.formatTimeFR(minutesToHHMM(PDF.timeToMinutes(it.start) - gate)) + ".";
-      description += "\nAjouté depuis Mon carnet — Puy du Fou (non officiel).";
-
-      lignes.push("BEGIN:VEVENT");
-      lignes.push("UID:" + (it.uid || uid()) + "@puydufou-companion");
-      lignes.push("DTSTAMP:" + dtstamp);
-      lignes.push("DTSTART:" + icsDateTime(dateStr, it.start));
-      lignes.push("DTEND:" + icsDateTime(dateStr, fin));
-      lignes.push("SUMMARY:" + icsEscape(it.name));
-      lignes.push("DESCRIPTION:" + icsEscape(description));
-      lignes.push("LOCATION:" + icsEscape("Puy du Fou"));
-      if (!it.is_continuous) {
-        lignes.push("BEGIN:VALARM");
-        lignes.push("ACTION:DISPLAY");
-        lignes.push("DESCRIPTION:Ouverture des portes");
-        lignes.push("TRIGGER:-PT" + Math.max(0, gate) + "M");
-        lignes.push("END:VALARM");
-      }
-      lignes.push("END:VEVENT");
-    });
-    lignes.push("END:VCALENDAR");
-    return lignes.join("\r\n");
+    return PDF.dayPlan.buildIcs(dateStr, items, gate, now, uid);
   }
 
-  // Marge entre deux séances consécutives À HEURE FIXE (la précédente, la
-  // suivante) : négative = vrai chevauchement (pas de ligne de marge, la
-  // carte suivante passe directement en alerte "danger" — voir renderTimeline).
-  function margeMinutes(avant, apres) {
-    return PDF.timeToMinutes(apres.start) - PDF.timeToMinutes(avant.end);
-  }
-
-  // L'AUTRE séance impliquée dans un chevauchement réel avec `it`, ou null.
-  function conflitChevauchementAvec(it, conflits) {
-    var trouve = conflits.find(function (c) { return c.chevauchement && (c.a === it || c.b === it); });
-    if (!trouve) return null;
-    return trouve.a === it ? trouve.b : trouve.a;
-  }
+  var margeMinutes = PDF.dayPlan.margeMinutes;
+  var conflitChevauchementAvec = PDF.dayPlan.conflitChevauchementAvec;
 
   function renderTimeline(items, conflits) {
     var el = $("jourTimeline");
@@ -1835,12 +1464,9 @@
   document.addEventListener("DOMContentLoaded", init);
 
   // Exposé pour les tests (tests/frontend/) — no-op dans un navigateur.
+  // Le reste (conflits, planning auto, export .ics, calendrier) vit
+  // maintenant dans site/js/day-plan.js, voir tests/frontend/day-plan.test.js.
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = {
-      detecterConflits: detecterConflits, planItemExists: planItemExists, severiteConflit: severiteConflit,
-      minutesToHHMM: minutesToHHMM, cycleSeen: cycleSeen, buildAutoPlan: buildAutoPlan,
-      optionsPourManquant: optionsPourManquant, planDayCellInfo: planDayCellInfo,
-      icsEscape: icsEscape, buildIcs: buildIcs,
-    };
+    module.exports = { cycleSeen: cycleSeen };
   }
 })();

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ma journée — Puy du Fou (non officiel)</title>
+<meta name="description" content="Composez votre journée de visite au Puy du Fou : horaires, enchaînements, planning automatique — tout reste dans votre navigateur.">
+<script>(function(){try{var t=localStorage.getItem("pdf-programmes-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);}}catch(e){}})();</script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="journee">
+
+<header id="site-header"></header>
+
+<main>
+  <div class="container">
+    <section class="page-hero">
+      <div class="flex-between">
+        <h1>Ma journée</h1>
+        <div class="header-actions">
+          <button type="button" class="icon-btn" id="btnJourneeSettings" aria-label="Réglages"></button>
+          <button type="button" class="icon-btn" id="btnJourneeShare" aria-label="Partager ma journée"></button>
+        </div>
+      </div>
+    </section>
+
+    <div class="chip-row">
+      <div class="nav-group nav-group--inline">
+        <button type="button" class="chip chip-lg" id="jourDateChip" aria-haspopup="true" aria-expanded="false">&nbsp;</button>
+        <div class="nav-dropdown" id="jourDateDropdown">
+          <div class="calendar-wrap" id="jourDateCalendarWrap" style="max-width:none;box-shadow:none;border:none;padding:0.5rem;background:none"></div>
+        </div>
+      </div>
+      <div class="nav-group nav-group--inline">
+        <button type="button" class="chip chip-lg" id="jourFormuleChip" aria-haspopup="true" aria-expanded="false">Formule</button>
+        <div class="nav-dropdown" id="jourFormuleDropdown">
+          <button type="button" class="nav-dropdown-link" data-formule="Jour">Jour</button>
+          <button type="button" class="nav-dropdown-link" data-formule="Après-midi">Après-midi</button>
+          <button type="button" class="nav-dropdown-link" data-formule="Soirée">Soirée</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="jour-closed-banner" aria-live="polite"></div>
+    <p class="text-muted" id="jour-official-status" style="margin:0.6rem 0 0" aria-live="polite">&nbsp;</p>
+    <p class="jour-summary-line" id="jour-summary-line" aria-live="polite">&nbsp;</p>
+
+    <div id="jour-content" aria-live="polite">
+      <div class="empty-state"><div class="skeleton" style="height:4rem;"></div></div>
+    </div>
+  </div>
+</main>
+
+<footer id="site-footer"></footer>
+
+<script src="js/icons.js"></script>
+<script src="js/app.js"></script>
+<script src="js/day-plan.js"></script>
+<script src="js/schedule-stats.js"></script>
+<script src="js/journee.js"></script>
+</body>
+</html>

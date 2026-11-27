@@ -583,8 +583,8 @@
   const NAV_PRIMARY = [
     { key: "index", page: "index", href: "index.html", label: "Aujourd'hui", icon: "home" },
     { key: "programme", page: "programme", href: "programme.html", label: "Programme", icon: "scroll" },
-    { key: "carnet-journee", page: "carnet", tab: "jour", href: "carnet.html#journee", label: "Ma journée", icon: "map-route" },
-    { key: "carnet-visites", page: "carnet", tab: "autre", href: "carnet.html#visites", label: "Carnet", icon: "book" },
+    { key: "journee", page: "journee", href: "journee.html", label: "Ma journée", icon: "map-route" },
+    { key: "carnet", page: "carnet", href: "carnet.html", label: "Carnet", icon: "book" },
     { key: "statistiques", page: "statistiques", href: "statistiques.html", label: "Stats", icon: "chart-bar" },
   ];
   // Regroupées sous "Explorer" : pages de consultation/données, moins
@@ -594,24 +594,9 @@
     { page: "historique", href: "historique.html", label: "Historique" },
     { page: "bilan", href: "bilan.html", label: "Bilan" },
   ];
-  // "#journee" -> onglet "jour" (clé interne déjà utilisée par carnet.js) ;
-  // les 3 autres ancres gardent le même nom que l'onglet. Pas de hash du
-  // tout = état par défaut du HTML de carnet.html, c'est-à-dire "jour".
-  const CARNET_HASH_TO_TAB = { journee: "jour", visites: "visites", bilan: "bilan", pass: "pass" };
 
-  function currentCarnetTab() {
-    const hash = (global.location.hash || "").replace(/^#/, "");
-    return CARNET_HASH_TO_TAB[hash] || "jour";
-  }
-
-  // Un item de nav "carnet" a deux variantes (Ma journée / Carnet) qui
-  // partagent la même page mais pas le même onglet : il faut donc regarder
-  // le hash en plus de data-page pour savoir laquelle est active.
   function isNavItemActive(item, activePage) {
-    if (item.page !== "carnet") return item.page === activePage;
-    if (activePage !== "carnet") return false;
-    const tab = currentCarnetTab();
-    return item.tab === "jour" ? tab === "jour" : tab !== "jour";
+    return item.page === activePage;
   }
 
   function primaryItemHtml(item, activePage, cls) {
@@ -798,6 +783,63 @@
         toggles[0].focus();
       }
     });
+  }
+
+  /* ----------------------------------------------------------------------
+   * 7bis. Bascule générique bouton + panneau ancré (menu "…", chip "Date"/
+   *       "Formule" de Ma journée...) : même mécanique que initDayActionsMenu
+   *       avait dans l'ancien onglet Journée (clic extérieur + Échap
+   *       ferment, un seul panneau ouvert à la fois), généralisée ici pour
+   *       ne pas la réécrire à chaque nouveau bouton de ce genre. Pas de
+   *       repositionnement dynamique façon initNavDropdown : pensé pour un
+   *       panneau qui suit déjà son déclencheur en CSS (voir .nav-dropdown
+   *       dans .nav-group--inline).
+   * -------------------------------------------------------------------- */
+  const _dropdownToggles = [];
+  let _dropdownDocListenersBound = false;
+
+  function _closeAllDropdownTogglesExcept(keep) {
+    _dropdownToggles.forEach((d) => { if (d !== keep) d.close(); });
+  }
+
+  function initDropdownToggle(toggleEl, dropdownEl) {
+    if (!toggleEl || !dropdownEl) return null;
+    const entry = {
+      toggle: toggleEl,
+      dropdown: dropdownEl,
+      close() {
+        dropdownEl.classList.remove("open");
+        toggleEl.setAttribute("aria-expanded", "false");
+      },
+      open() {
+        _closeAllDropdownTogglesExcept(entry);
+        dropdownEl.classList.add("open");
+        toggleEl.setAttribute("aria-expanded", "true");
+      },
+    };
+    toggleEl.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (dropdownEl.classList.contains("open")) entry.close();
+      else entry.open();
+    });
+    _dropdownToggles.push(entry);
+    if (!_dropdownDocListenersBound) {
+      _dropdownDocListenersBound = true;
+      document.addEventListener("click", (e) => {
+        _dropdownToggles.forEach((d) => {
+          if (d.dropdown.classList.contains("open") && !d.dropdown.contains(e.target) && e.target !== d.toggle && !d.toggle.contains(e.target)) {
+            d.close();
+          }
+        });
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        _dropdownToggles.forEach((d) => {
+          if (d.dropdown.classList.contains("open")) { d.close(); d.toggle.focus(); }
+        });
+      });
+    }
+    return entry;
   }
 
   /* ----------------------------------------------------------------------
@@ -1146,6 +1188,115 @@
   }
 
   /* ----------------------------------------------------------------------
+   * 8sexies. État "carnet" partagé (forme par défaut + clé des ajouts
+   *    manuels) : carnet.js (Visites/Bilan/Pass) et journee.js (planificateur)
+   *    lisent/écrivent le MÊME blob localStorage (voir CARNET_STORAGE_KEY) —
+   *    centralisé ici pour que les deux restent d'accord sur sa forme par
+   *    défaut, plutôt que deux copies qui pourraient diverger avec le temps.
+   * -------------------------------------------------------------------- */
+  function carnetEtatInitial() {
+    return {
+      visites: [],
+      plans: {},
+      gate: 30,
+      pass: { prixPass: 199, prixBillet: 47, prixCine: 32, fraisVisite: 0 },
+    };
+  }
+  // Clé pseudo-slug des ajouts manuels (ex: Cinéscénie, non couverte par la
+  // collecte officielle) dans le carnet de visites — partagée par le
+  // planificateur (qui crée ces entrées) et la grille Visites (qui les lit).
+  const CARNET_MANUAL_PREFIX = "manuel:";
+
+  /* ----------------------------------------------------------------------
+   * 8septies. Petits widgets UI partagés (toast, confirmation, feuille modale)
+   *    Utilisés par carnet.js et journee.js (et potentiellement d'autres
+   *    pages) : évite de réécrire la même mécanique de popup à chaque page.
+   * -------------------------------------------------------------------- */
+  function toast(msg) {
+    document.querySelectorAll(".toast-msg").forEach((t) => t.remove());
+    const t = document.createElement("div");
+    t.className = "toast-msg";
+    t.setAttribute("role", "status");
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2600);
+  }
+
+  // Variante pour une action déjà effectuée mais annulable depuis le toast
+  // pendant quelques secondes (suppression, vidage...) — plus agréable
+  // qu'une confirmation bloquante systématique avant un geste réversible.
+  function toastUndo(msg, onUndo) {
+    document.querySelectorAll(".toast-msg").forEach((t) => t.remove());
+    const t = document.createElement("div");
+    t.className = "toast-msg toast-msg-action";
+    t.setAttribute("role", "status");
+    const span = document.createElement("span");
+    span.textContent = msg;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "toast-undo-btn";
+    btn.textContent = "Annuler";
+    t.appendChild(span);
+    t.appendChild(btn);
+    document.body.appendChild(t);
+    const timer = setTimeout(() => t.remove(), 6000);
+    btn.addEventListener("click", () => {
+      clearTimeout(timer);
+      t.remove();
+      onUndo();
+    });
+  }
+
+  // Remplace window.confirm() (natif, non stylé, bloque le fil d'exécution)
+  // par un <dialog> cohérent avec le reste de l'UI. Résout `true`/`false` ;
+  // jamais rejetée.
+  function confirmDialog(message, okLabel) {
+    return new Promise((resolve) => {
+      const dlg = document.createElement("dialog");
+      dlg.className = "confirm-dialog";
+      dlg.innerHTML =
+        "<p>" + escapeHtml(message) + "</p>" +
+        '<div class="confirm-dialog-actions">' +
+        '<button type="button" class="btn btn-outline" data-act="cancel">Annuler</button>' +
+        '<button type="button" class="btn btn-danger" data-act="ok">' + escapeHtml(okLabel || "Confirmer") + "</button>" +
+        "</div>";
+      document.body.appendChild(dlg);
+      function close(result) {
+        dlg.close();
+        dlg.remove();
+        resolve(result);
+      }
+      dlg.querySelector('[data-act="ok"]').addEventListener("click", () => close(true));
+      dlg.querySelector('[data-act="cancel"]').addEventListener("click", () => close(false));
+      dlg.addEventListener("cancel", (e) => { e.preventDefault(); close(false); }); // touche Échap
+      dlg.showModal();
+    });
+  }
+
+  // Feuille modale générique (<dialog> natif : focus piégé et Échap gérés
+  // par le navigateur) — centrée en desktop, remonte du bas en mobile (voir
+  // .sheet-dialog, style.css). `innerHtml` est injecté tel quel : à
+  // l'appelant d'y câbler ses propres boutons après l'appel. Le focus revient
+  // sur l'élément qui avait le focus avant ouverture (ex: le bouton
+  // déclencheur) à la fermeture, quelle qu'en soit la cause (Échap, clic sur
+  // le fond, ou fermeture programmatique via le `.close()` retourné).
+  function openSheet(innerHtml, opts) {
+    opts = opts || {};
+    const dlg = document.createElement("dialog");
+    dlg.className = "sheet-dialog" + (opts.className ? " " + opts.className : "");
+    dlg.innerHTML = innerHtml;
+    const trigger = document.activeElement;
+    document.body.appendChild(dlg);
+    dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); }); // clic sur le fond (::backdrop ne reçoit pas les événements)
+    dlg.addEventListener("close", () => {
+      dlg.remove();
+      if (trigger && typeof trigger.focus === "function") trigger.focus();
+    });
+    dlg.showModal();
+    return dlg;
+  }
+
+  /* ----------------------------------------------------------------------
    * 9. Barre de recherche réutilisable
    *    createSearchBar(container, options) -> { getValue, setItems }
    *    options.placeholder, options.onChange(query)
@@ -1259,6 +1410,13 @@
     dismissUnusualToday,
     unusualTodayItems,
     unusualBannerHtml,
+    carnetEtatInitial,
+    CARNET_MANUAL_PREFIX,
+    toast,
+    toastUndo,
+    confirmDialog,
+    openSheet,
+    initDropdownToggle,
   });
 
   // Injection auto du header/footer au chargement, basé sur data-page du body
