@@ -185,14 +185,33 @@ def compute_spectacle_stats(
     total_days = len(all_active_dates)
 
     per_day_count: dict[str, int] = defaultdict(int)
+    # Horaires du jour, pour la distribution par créneau (voir
+    # site/js/schedule-stats.js) : `starts` pour les séances à heure fixe,
+    # `ranges` ("HH:MM-HH:MM") pour les accès continus — jamais les deux à
+    # la fois pour une même représentation.
+    per_day_starts: dict[str, list[str]] = defaultdict(list)
+    per_day_ranges: dict[str, list[str]] = defaultdict(list)
     for r in reps:
         per_day_count[r["date"]] += 1
+        if r["is_continuous"]:
+            if r["start_time"] and r["end_time"]:
+                per_day_ranges[r["date"]].append(f"{r['start_time']}-{r['end_time']}")
+        elif r["start_time"]:
+            per_day_starts[r["date"]].append(r["start_time"])
 
     days_present = len(per_day_count)
     days_absent = max(total_days - days_present, 0)
     avg_per_day = (len(reps) / days_present) if days_present else 0.0
 
-    history = [{"date": d["date"], "count": per_day_count.get(d["date"], 0)} for d in all_active_dates]
+    history = [
+        {
+            "date": d["date"],
+            "count": per_day_count.get(d["date"], 0),
+            "starts": sorted(per_day_starts.get(d["date"], [])),
+            "ranges": sorted(per_day_ranges.get(d["date"], [])),
+        }
+        for d in all_active_dates
+    ]
 
     today_str = datetime.now().date().isoformat()
     today_count = per_day_count.get(today_str, 0)

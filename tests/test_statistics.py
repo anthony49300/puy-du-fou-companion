@@ -124,6 +124,41 @@ def test_compute_spectacle_stats_history_covers_all_active_dates(sample_conn):
     assert len(stats["history"]) == 2  # une entrée par date active
 
 
+def test_compute_spectacle_stats_history_includes_sorted_starts(sample_conn):
+    # Les Vikings joue à 11:30 ET 16:00 le 2026-08-26 (voir sample_conn) :
+    # `starts` doit lister les deux, triés, sans toucher à `count`.
+    stats = statistics.compute_spectacle_stats(sample_conn, "les-vikings")
+    by_date = {h["date"]: h for h in stats["history"]}
+    assert by_date["2026-08-26"]["count"] == 2
+    assert by_date["2026-08-26"]["starts"] == ["11:30", "16:00"]
+    assert by_date["2026-08-26"]["ranges"] == []
+    # 2026-08-25 : une seule séance (11:30), pas de "jour vide" dans ce fixture.
+    assert by_date["2026-08-25"]["starts"] == ["11:30"]
+
+
+def test_compute_spectacle_stats_history_has_empty_starts_on_an_absent_day(sample_conn):
+    # Un jour actif où le spectacle ne joue pas (days_absent) doit avoir une
+    # entrée d'historique avec count=0 et des listes vides, pas une entrée
+    # manquante ni une erreur.
+    stats = statistics.compute_spectacle_stats(sample_conn, "le-secret-de-la-lance")
+    by_date = {h["date"]: h for h in stats["history"]}
+    assert by_date["2026-08-25"]["count"] == 0
+    assert by_date["2026-08-25"]["starts"] == []
+    assert by_date["2026-08-25"]["ranges"] == []
+
+
+def test_compute_spectacle_stats_history_includes_ranges_for_continuous_shows(sample_conn):
+    _add_day(sample_conn, "2026-08-28", [
+        ("La Renaissance du Château", "la-renaissance-du-chateau", "spectacle_immersif", "09:30", "12:00", True, config.REPR_STATUS_SCHEDULED),
+        ("La Renaissance du Château", "la-renaissance-du-chateau", "spectacle_immersif", "14:30", "16:45", True, config.REPR_STATUS_SCHEDULED),
+    ])
+    stats = statistics.compute_spectacle_stats(sample_conn, "la-renaissance-du-chateau")
+    by_date = {h["date"]: h for h in stats["history"]}
+    assert by_date["2026-08-28"]["count"] == 2
+    assert by_date["2026-08-28"]["starts"] == []
+    assert by_date["2026-08-28"]["ranges"] == ["09:30-12:00", "14:30-16:45"]
+
+
 def test_compute_spectacle_stats_unknown_slug_returns_none(sample_conn):
     assert statistics.compute_spectacle_stats(sample_conn, "spectacle-inexistant") is None
 

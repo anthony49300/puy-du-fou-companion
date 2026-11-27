@@ -386,7 +386,7 @@ def test_export_spectacles_writes_a_separate_history_file_per_spectacle(conn, tm
     assert history_path.exists()
     payload = json.loads(history_path.read_text(encoding="utf-8"))
     assert payload["slug"] == "les-vikings"
-    assert payload["history"] == [{"date": "2026-08-26", "count": 1}]
+    assert payload["history"] == [{"date": "2026-08-26", "count": 1, "starts": ["11:30"], "ranges": []}]
 
 
 def test_export_spectacles_global_history_dir_is_isolated_by_config(conn, tmp_path, monkeypatch):
