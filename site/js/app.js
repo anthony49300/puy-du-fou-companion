@@ -154,30 +154,88 @@
   }
 
   /**
-   * Calcule, à partir de l'heure RÉELLE actuelle du navigateur, le prochain
-   * spectacle (toutes catégories) et le prochain spectacle nocturne du jour
-   * dans `today.spectacles` (à n'utiliser que si `isDataForToday(today.date)`
-   * est vrai). Contrairement au champ "nocturne" du JSON — figé au moment de
-   * l'export côté serveur — ceci reste exact tout au long de la journée même
-   * sans nouvelle collecte.
+   * Calcule, à partir de l'heure RÉELLE actuelle du navigateur (ou de `now`
+   * si fourni — un `Date` injecté, pour des tests déterministes), l'état
+   * "en direct" du programme du jour dans `today.spectacles` (à n'utiliser
+   * que si `isDataForToday(today.date)` est vrai). Contrairement aux champs
+   * figés au moment de l'export côté serveur (ex: "nocturne" du JSON), ceci
+   * reste exact tout au long de la journée même sans nouvelle collecte.
+   *
+   * Retourne :
+   * - next : la toute prochaine représentation (toutes catégories, hors
+   *   accès continu), ou null s'il n'y en a plus aujourd'hui ;
+   * - inProgress : les représentations EN COURS en ce moment (hors accès
+   *   continu : un spectacle en accès continu n'est pas une "séance" qu'on
+   *   peut manquer, déjà visible ailleurs sur la page) ;
+   * - withinHour : les représentations à venir dans les 60 prochaines
+   *   minutes (max 5, triées par heure) ;
+   * - nocturne : la prochaine représentation du spectacle nocturne du jour ;
+   * - lastShowingSlugs : les slugs des spectacles dont la PROCHAINE
+   *   représentation à venir (et seulement celle-là : si une autre suit
+   *   plus tard dans la journée, ce spectacle n'y figure pas) est aussi
+   *   leur dernière de la journée — pour le badge "Dernière séance" sur la
+   *   ligne de cette représentation précise.
    */
-  function computeUpcoming(today) {
-    const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  function computeUpcoming(today, now) {
+    now = now || new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
     const slots = [];
     (today.spectacles || []).forEach((spectacle) => {
       (spectacle.representations || []).forEach((rep) => {
-        if (rep.is_continuous) return;
-        const mins = timeToMinutes(rep.start);
-        if (mins == null || mins < nowMinutes) return;
-        slots.push({ spectacle, rep, mins });
+        const startMins = timeToMinutes(rep.start);
+        const endMins = timeToMinutes(rep.end);
+        slots.push({ spectacle, rep, startMins, endMins });
       });
     });
-    slots.sort((a, b) => a.mins - b.mins);
+
     const toItem = (slot) =>
-      slot && { name: slot.spectacle.name, start: slot.rep.start, category: slot.spectacle.category };
-    const next = toItem(slots[0]);
-    const nocturne = toItem(slots.find((s) => s.spectacle.category === "spectacle_nocturne"));
-    return { next: next || null, nocturne: nocturne || null };
+      slot && {
+        name: slot.spectacle.name,
+        slug: slot.spectacle.slug,
+        category: slot.spectacle.category,
+        start: slot.rep.start,
+        end: slot.rep.end,
+        is_continuous: !!slot.rep.is_continuous,
+      };
+
+    const inProgress = slots
+      .filter((s) => !s.rep.is_continuous && s.startMins != null && s.endMins != null && s.startMins <= nowMinutes && nowMinutes < s.endMins)
+      .sort((a, b) => a.startMins - b.startMins)
+      .map(toItem);
+
+    const upcomingSlots = slots
+      .filter((s) => !s.rep.is_continuous && s.startMins != null && s.startMins >= nowMinutes)
+      .sort((a, b) => a.startMins - b.startMins);
+
+    const next = toItem(upcomingSlots[0]);
+    const nocturne = toItem(upcomingSlots.find((s) => s.spectacle.category === "spectacle_nocturne"));
+    const withinHour = upcomingSlots.filter((s) => s.startMins - nowMinutes <= 60).slice(0, 5).map(toItem);
+
+    // Dernière représentation de la journée, par spectacle (toutes heures
+    // confondues, pas seulement celles à venir)...
+    const lastStartBySlug = {};
+    slots.forEach((s) => {
+      if (s.rep.is_continuous || s.startMins == null) return;
+      const slug = s.spectacle.slug;
+      if (lastStartBySlug[slug] == null || s.startMins > lastStartBySlug[slug]) {
+        lastStartBySlug[slug] = s.startMins;
+      }
+    });
+    // ...comparée à la PROCHAINE représentation à venir de ce spectacle
+    // (la première rencontrée dans upcomingSlots, déjà trié par heure) :
+    // si une autre suit plus tard le même jour, ce n'est pas "la dernière"
+    // du point de vue de cette représentation précise, même si le spectacle
+    // a par ailleurs une dernière séance plus tard.
+    const firstUpcomingBySlug = {};
+    upcomingSlots.forEach((s) => {
+      const slug = s.spectacle.slug;
+      if (firstUpcomingBySlug[slug] == null) firstUpcomingBySlug[slug] = s.startMins;
+    });
+    const lastShowingSlugs = Object.keys(firstUpcomingBySlug).filter(
+      (slug) => firstUpcomingBySlug[slug] === lastStartBySlug[slug]
+    );
+
+    return { next: next || null, inProgress, withinHour, nocturne: nocturne || null, lastShowingSlugs };
   }
 
   /* ----------------------------------------------------------------------
@@ -506,68 +564,121 @@
 
   /* ----------------------------------------------------------------------
    * 6. Header / nav / footer injectés
+   *
+   *    Nouvelle coquille de navigation (refonte "Nocturne/Parchemin") :
+   *    - mobile (< 780px) : barre fine en haut (marque + thème + "Plus") et
+   *      une barre d'onglets FIXE en bas (5 destinations principales) ;
+   *    - desktop (>= 780px) : en-tête horizontal classique (marque, liens,
+   *      thème). Les deux variantes sont injectées en même temps et
+   *      basculées en CSS (media query) plutôt qu'en JS, pour ne pas avoir
+   *      à réagir au redimensionnement de la fenêtre.
+   *
+   *    Les 3 pages de consultation moins fréquentes (Spectacles,
+   *    Historique, Bilan) restent groupées sous "Explorer" : un même
+   *    panneau (#nav-explore-dropdown) sert de menu déroulant ancré sous le
+   *    bouton en desktop, et de feuille ("sheet") remontant du bas en
+   *    mobile — seul le CSS diffère, le JS d'ouverture/fermeture est
+   *    partagé (voir initNavDropdown).
    * -------------------------------------------------------------------- */
-  // Nav directe : les 2 pages consultées au quotidien. Le logo sert déjà de
-  // lien "Accueil", pas besoin de le dupliquer dans la nav.
-  const NAV_DIRECT = [
-    { page: "programme", href: "programme.html", label: "Programme" },
-    { page: "carnet", href: "carnet.html", label: "Mon carnet" },
+  const NAV_PRIMARY = [
+    { key: "index", page: "index", href: "index.html", label: "Aujourd'hui", icon: "home" },
+    { key: "programme", page: "programme", href: "programme.html", label: "Programme", icon: "scroll" },
+    { key: "carnet-journee", page: "carnet", tab: "jour", href: "carnet.html#journee", label: "Ma journée", icon: "map-route" },
+    { key: "carnet-visites", page: "carnet", tab: "autre", href: "carnet.html#visites", label: "Carnet", icon: "book" },
+    { key: "statistiques", page: "statistiques", href: "statistiques.html", label: "Stats", icon: "chart-bar" },
   ];
   // Regroupées sous "Explorer" : pages de consultation/données, moins
-  // fréquentées au quotidien — évite une nav à 7 entrées à plat.
+  // fréquentées au quotidien — évite une nav à 8 entrées à plat.
   const NAV_EXPLORE = [
     { page: "spectacles", href: "spectacles.html", label: "Spectacles" },
-    { page: "statistiques", href: "statistiques.html", label: "Statistiques" },
     { page: "historique", href: "historique.html", label: "Historique" },
     { page: "bilan", href: "bilan.html", label: "Bilan" },
   ];
+  // "#journee" -> onglet "jour" (clé interne déjà utilisée par carnet.js) ;
+  // les 3 autres ancres gardent le même nom que l'onglet. Pas de hash du
+  // tout = état par défaut du HTML de carnet.html, c'est-à-dire "jour".
+  const CARNET_HASH_TO_TAB = { journee: "jour", visites: "visites", bilan: "bilan", pass: "pass" };
 
-  // Petit emblème SVG dessiné à la main (pas de logo officiel) :
-  // un blason simplifié couronné d'une flamme, dans la palette du site.
-  const BRAND_SVG =
-    '<svg class="brand-emblem" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-    '<path d="M24 5l14 5.2v10.5c0 10-6 17-14 21.3-8-4.3-14-11.3-14-21.3V10.2z" fill="var(--color-bordeaux, #7c2233)"/>' +
-    '<path d="M24 13c-1.3 2.6-2 4.6-2 6.3 0 1.8.9 3.1 2 4.1 1.1-1 2-2.3 2-4.1 0-1.7-.7-3.7-2-6.3z" fill="var(--color-amber, #c98a2b)"/>' +
-    '<path d="M24 20c-2 0-4 1.3-5.3 3.3-1.4 2.1-1.2 4.3.1 5.5 1 .9 2.3.9 3.1-.2-.9-1.3-1-3-.2-4.3.6-1 1.5-1.8 2.3-2.3z" fill="var(--color-amber, #c98a2b)"/>' +
-    '<path d="M24 20c2 0 4 1.3 5.3 3.3 1.4 2.1 1.2 4.3-.1 5.5-1 .9-2.3.9-3.1-.2.9-1.3 1-3 .2-4.3-.6-1-1.5-1.8-2.3-2.3z" fill="var(--color-amber, #c98a2b)"/>' +
-    '<rect x="22.3" y="30" width="3.4" height="6.5" fill="var(--color-amber, #c98a2b)"/>' +
-    '<rect x="19" y="35.6" width="10" height="2.6" rx="1" fill="var(--color-amber, #c98a2b)"/>' +
-    "</svg>";
+  function currentCarnetTab() {
+    const hash = (global.location.hash || "").replace(/^#/, "");
+    return CARNET_HASH_TO_TAB[hash] || "jour";
+  }
 
-  function navLinkHtml(item, activePage, cls) {
-    const activeCls = item.page === activePage ? " active" : "";
+  // Un item de nav "carnet" a deux variantes (Ma journée / Carnet) qui
+  // partagent la même page mais pas le même onglet : il faut donc regarder
+  // le hash en plus de data-page pour savoir laquelle est active.
+  function isNavItemActive(item, activePage) {
+    if (item.page !== "carnet") return item.page === activePage;
+    if (activePage !== "carnet") return false;
+    const tab = currentCarnetTab();
+    return item.tab === "jour" ? tab === "jour" : tab !== "jour";
+  }
+
+  function primaryItemHtml(item, activePage, cls) {
+    const active = isNavItemActive(item, activePage);
     return (
-      '<a href="' + item.href + '" class="' + cls + activeCls + '"' +
-      (item.page === activePage ? ' aria-current="page"' : "") +
+      '<a href="' + item.href + '" class="' + cls + (active ? " active" : "") + '" data-nav-key="' + item.key + '"' +
+      (active ? ' aria-current="page"' : "") +
+      ">" + PDF.icon(item.icon) + '<span class="' + (cls === "tabbar-item" ? "tabbar-label" : "nav-link-label") + '">' + item.label + "</span></a>"
+    );
+  }
+
+  function exploreItemHtml(item, activePage) {
+    const active = item.page === activePage;
+    return (
+      '<a href="' + item.href + '" class="nav-dropdown-link' + (active ? " active" : "") + '" data-nav-key="' + item.page + '"' +
+      (active ? ' aria-current="page"' : "") +
       ">" + item.label + "</a>"
     );
   }
 
   function buildHeaderHtml(activePage) {
-    const directHtml = NAV_DIRECT.map((item) => navLinkHtml(item, activePage, "nav-link")).join("");
-    const exploreHtml = NAV_EXPLORE.map((item) => navLinkHtml(item, activePage, "nav-dropdown-link")).join("");
     const isExploreActive = NAV_EXPLORE.some((item) => item.page === activePage);
+    const exploreHtml = NAV_EXPLORE.map((item) => exploreItemHtml(item, activePage)).join("");
+    const brandLink = '<a href="index.html" class="brand">' + PDF.icon("castle", "brand-emblem") + '<span class="brand-text">Puy du Fou Companion</span></a>';
+    const themeBtn = (idSuffix) =>
+      '<button type="button" class="icon-btn theme-toggle" id="theme-toggle' + idSuffix + '" ' +
+      'aria-label="Basculer le mode sombre / clair" title="Mode sombre / clair"></button>';
+    const exploreToggleBtn = (idSuffix, visibleLabel) =>
+      '<button type="button" class="nav-explore-toggle' + (isExploreActive ? " active" : "") + '" ' +
+      'id="nav-explore-toggle' + idSuffix + '" aria-haspopup="true" aria-expanded="false" ' +
+      (visibleLabel ? "" : 'aria-label="Plus de pages"') + ">" +
+      (visibleLabel ? "Explorer " + PDF.icon("chevron-down", "nav-caret") : PDF.icon("more-horizontal")) +
+      "</button>";
 
     return (
       '<div class="header-inner">' +
-      '<a href="index.html" class="brand">' +
-      BRAND_SVG +
-      '<span class="brand-text-full">Puy du Fou — Programmes</span>' +
-      '<span class="brand-text-short">PdF Programmes</span>' +
-      "</a>" +
-      '<nav class="main-nav" id="main-nav" aria-label="Navigation principale">' +
-      directHtml +
-      '<div class="nav-group">' +
-      '<button type="button" class="nav-link nav-group-toggle' + (isExploreActive ? " active" : "") + '" ' +
-      'id="nav-explore-toggle" aria-haspopup="true" aria-expanded="false">Explorer <span class="nav-caret" aria-hidden="true">▾</span></button>' +
-      '<div class="nav-dropdown" id="nav-explore-dropdown">' + exploreHtml + "</div>" +
-      "</div>" +
+      // ---- Desktop ----
+      '<div class="header-row header-desktop">' +
+      brandLink +
+      '<nav class="main-nav" aria-label="Navigation principale">' +
+      NAV_PRIMARY.map((item) => primaryItemHtml(item, activePage, "nav-link")).join("") +
+      '<div class="nav-group">' + exploreToggleBtn("-desktop", true) + "</div>" +
       "</nav>" +
       '<div class="header-actions">' +
-      '<button type="button" class="theme-toggle" id="theme-toggle" aria-label="Basculer le mode sombre / clair" title="Mode sombre / clair">🌙</button>' +
-      '<button type="button" class="hamburger" id="hamburger-btn" aria-label="Ouvrir le menu" aria-controls="main-nav" aria-expanded="false"><span></span><span></span><span></span></button>' +
+      '<span class="freshness-note" id="freshness-note"></span>' +
+      themeBtn("-desktop") +
       "</div>" +
+      "</div>" +
+      // ---- Mobile : barre fine ----
+      '<div class="header-row header-mobile">' +
+      '<a href="index.html" class="brand brand-compact" aria-label="Accueil">' + PDF.icon("castle", "brand-emblem") + "</a>" +
+      '<div class="header-actions">' +
+      themeBtn("-mobile") +
+      exploreToggleBtn("-mobile", false) +
+      "</div>" +
+      "</div>" +
+      // ---- Panneau "Explorer" partagé (dropdown desktop / sheet mobile) ----
+      '<div class="nav-dropdown" id="nav-explore-dropdown">' + exploreHtml + "</div>" +
       "</div>"
+    );
+  }
+
+  function buildTabbarHtml(activePage) {
+    return (
+      '<nav class="tabbar" id="bottom-tabbar" aria-label="Navigation principale">' +
+      NAV_PRIMARY.map((item) => primaryItemHtml(item, activePage, "tabbar-item")).join("") +
+      "</nav>"
     );
   }
 
@@ -576,21 +687,41 @@
     return (
       '<div class="footer-inner">' +
       '<div class="footer-block">' +
-      '<div class="footer-disclaimer">⚠️ Projet communautaire non officiel — données issues du programme officiel du Puy du Fou. Ce site n\'est ni édité, ni approuvé, ni affilié au Puy du Fou.</div>' +
+      '<div class="footer-disclaimer">' + PDF.icon("alert-triangle") +
+      "<span>Projet communautaire non officiel — données issues du programme officiel du Puy du Fou. Ce site n'est ni édité, ni approuvé, ni affilié au Puy du Fou.</span></div>" +
       "<p>Les horaires et informations peuvent évoluer sans préavis. Vérifiez toujours le programme officiel avant votre visite.</p>" +
       "</div>" +
       '<div class="footer-block footer-links">' +
       "<h4>Liens</h4>" +
-      '<p><a href="' +
-      GITHUB_REPO_URL +
-      '" target="_blank" rel="noopener noreferrer">📦 Dépôt GitHub du projet</a></p>' +
-      '<p><a href="https://www.puydufou.com" target="_blank" rel="noopener noreferrer">🔗 Site officiel du Puy du Fou</a></p>' +
-      "<p>© " +
-      year +
-      ' — Projet open source communautaire</p>' +
+      '<p><a href="' + GITHUB_REPO_URL + '" target="_blank" rel="noopener noreferrer">' + PDF.icon("package") + " Dépôt GitHub du projet</a></p>" +
+      '<p><a href="https://www.puydufou.com" target="_blank" rel="noopener noreferrer">' + PDF.icon("external-link") + " Site officiel du Puy du Fou</a></p>" +
+      "<p>© " + year + " — Projet open source communautaire</p>" +
       "</div>" +
       "</div>"
     );
+  }
+
+  // Ré-applique juste l'état actif des items de nav déjà rendus (classe +
+  // aria-current), sans reconstruire le HTML — appelé après un changement
+  // de hash (ex: clic sur un onglet du Carnet) pour que "Ma journée" /
+  // "Carnet" restent corrects sans perdre le focus/scroll d'un re-rendu complet.
+  function refreshNavActiveStates(activePage) {
+    document.querySelectorAll("[data-nav-key]").forEach((el) => {
+      const item = NAV_PRIMARY.find((i) => i.key === el.getAttribute("data-nav-key"));
+      const active = item ? isNavItemActive(item, activePage) : el.getAttribute("data-nav-key") === activePage;
+      el.classList.toggle("active", active);
+      if (active) el.setAttribute("aria-current", "page");
+      else el.removeAttribute("aria-current");
+    });
+  }
+
+  // Texte "Non officiel · données du JJ/MM à HH:MM" du header desktop,
+  // alimenté par chaque page une fois son today.json/stats chargé (le
+  // header, lui, est injecté sans connaître ces données).
+  function setFreshnessNote(dateTimeIso) {
+    const el = document.getElementById("freshness-note");
+    if (!el) return;
+    el.textContent = dateTimeIso ? "Non officiel · données du " + formatDateTimeFR(dateTimeIso) : "Non officiel";
   }
 
   function injectHeaderFooter(activePage) {
@@ -604,60 +735,67 @@
       footerEl.className = "site-footer";
       footerEl.innerHTML = buildFooterHtml();
     }
-    initMobileMenu();
+    // Barre d'onglets mobile : élément à part (position fixed en bas),
+    // injecté une seule fois comme enfant direct de <body>.
+    let tabbarEl = document.getElementById("bottom-tabbar");
+    if (!tabbarEl) {
+      document.body.insertAdjacentHTML("beforeend", buildTabbarHtml(activePage));
+    } else {
+      tabbarEl.outerHTML = buildTabbarHtml(activePage);
+    }
+    initNavDropdown();
     initThemeToggle();
+    global.addEventListener("hashchange", () => refreshNavActiveStates(activePage));
   }
 
   /* ----------------------------------------------------------------------
-   * 7. Menu mobile (hamburger)
+   * 7. Panneau "Explorer" (dropdown desktop / sheet mobile, même markup)
    * -------------------------------------------------------------------- */
-  function initMobileMenu() {
-    const btn = document.getElementById("hamburger-btn");
-    const nav = document.getElementById("main-nav");
-    if (!btn || !nav) return;
-    btn.addEventListener("click", () => {
-      const isOpen = nav.classList.toggle("open");
-      btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
-      btn.setAttribute("aria-label", isOpen ? "Fermer le menu" : "Ouvrir le menu");
-    });
-    // Ferme le menu après un clic sur un lien (mobile)
-    nav.addEventListener("click", (e) => {
-      if (e.target.tagName === "A") {
-        nav.classList.remove("open");
-        btn.setAttribute("aria-expanded", "false");
-      }
-    });
-    initNavDropdown();
-  }
-
-  // Menu déroulant "Explorer" (desktop : flottant sous le bouton ; mobile :
-  // s'ouvre en ligne dans le menu hamburger déjà vertical, même markup/JS).
   function initNavDropdown() {
-    const toggle = document.getElementById("nav-explore-toggle");
+    const toggles = Array.prototype.slice.call(document.querySelectorAll(".nav-explore-toggle"));
     const dropdown = document.getElementById("nav-explore-dropdown");
-    if (!toggle || !dropdown) return;
+    if (!toggles.length || !dropdown) return;
 
     function close() {
       dropdown.classList.remove("open");
-      toggle.setAttribute("aria-expanded", "false");
+      toggles.forEach((t) => t.setAttribute("aria-expanded", "false"));
     }
-    function open() {
+    // `right: 1.25rem` (CSS) suppose que le bouton est collé au bord droit
+    // de .header-inner — faux en desktop dès que la note de fraîcheur (sa
+    // largeur varie selon la page/les données) s'intercale avant le bouton
+    // thème. On recalcule donc l'écart réel au clic plutôt que de fixer une
+    // valeur CSS qui ne vaudrait que par coïncidence.
+    function open(fromToggle) {
+      if (fromToggle && fromToggle.id === "nav-explore-toggle-desktop") {
+        const headerInner = fromToggle.closest(".header-inner");
+        if (headerInner) {
+          const toggleRect = fromToggle.getBoundingClientRect();
+          const innerRect = headerInner.getBoundingClientRect();
+          dropdown.style.right = Math.max(0, innerRect.right - toggleRect.right) + "px";
+        }
+      } else {
+        // Mobile : laisse la media query (right: 0, feuille pleine largeur)
+        // reprendre la main plutôt que de garder un décalage desktop périmé.
+        dropdown.style.right = "";
+      }
       dropdown.classList.add("open");
-      toggle.setAttribute("aria-expanded", "true");
+      toggles.forEach((t) => t.setAttribute("aria-expanded", "true"));
     }
 
-    toggle.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (dropdown.classList.contains("open")) close();
-      else open();
+    toggles.forEach((toggle) => {
+      toggle.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (dropdown.classList.contains("open")) close();
+        else open(toggle);
+      });
     });
     document.addEventListener("click", (e) => {
-      if (!dropdown.contains(e.target) && e.target !== toggle) close();
+      if (!dropdown.contains(e.target) && toggles.indexOf(e.target) === -1) close();
     });
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && dropdown.classList.contains("open")) {
         close();
-        toggle.focus();
+        toggles[0].focus();
       }
     });
   }
@@ -683,22 +821,25 @@
   }
 
   function initThemeToggle() {
-    const btn = document.getElementById("theme-toggle");
-    if (!btn) return;
-    updateThemeToggleIcon(btn);
-    btn.addEventListener("click", () => {
-      const next = currentEffectiveTheme() === "dark" ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", next);
-      localStorage.setItem(THEME_KEY, next);
+    const btns = document.querySelectorAll(".theme-toggle");
+    if (!btns.length) return;
+    btns.forEach((btn) => {
       updateThemeToggleIcon(btn);
-      // Permet aux pages avec graphiques Chart.js de se redessiner avec les
-      // bonnes couleurs (texte/grille) pour le nouveau thème.
-      global.dispatchEvent(new CustomEvent("pdf:themechange", { detail: { theme: next } }));
+      btn.addEventListener("click", () => {
+        const next = currentEffectiveTheme() === "dark" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", next);
+        localStorage.setItem(THEME_KEY, next);
+        btns.forEach(updateThemeToggleIcon);
+        // Permet aux pages avec graphiques Chart.js de se redessiner avec les
+        // bonnes couleurs (texte/grille) pour le nouveau thème.
+        global.dispatchEvent(new CustomEvent("pdf:themechange", { detail: { theme: next } }));
+      });
     });
   }
 
   function updateThemeToggleIcon(btn) {
-    btn.textContent = currentEffectiveTheme() === "dark" ? "☀️" : "🌙";
+    const dark = currentEffectiveTheme() === "dark";
+    btn.innerHTML = PDF.icon(dark ? "sun" : "moon");
   }
 
   // Appliquer le thème stocké le plus tôt possible (avant l'injection du header)
@@ -723,7 +864,172 @@
       accent: read("--accent") || "#7c2233",
       accent2: read("--accent-2") || "#c98a2b",
       accent3: read("--accent-3") || "#2f4a3c",
+      // Tokens sémantiques de la refonte (voir §2 design tokens) : utiles
+      // aux graphiques qui veulent distinguer visuellement une catégorie
+      // (spectacle_nocturne, spectacle_immersif) plutôt que de réutiliser
+      // l'accent générique pour toutes les séries.
+      success: read("--success") || "#2F6B45",
+      warn: read("--warn") || "#9A5A0F",
+      danger: read("--danger") || "#A3262E",
+      night: read("--night") || "#3A4F8C",
+      immersive: read("--immersive") || "#2F6B45",
     };
+  }
+
+  /* ----------------------------------------------------------------------
+   * 8ter. Carnet (plan du jour) : stockage partagé
+   *       Le Carnet (carnet.html/carnet.js) reste seul propriétaire de SON
+   *       état complet (visites, pass, réglages) et de sa logique de
+   *       conflits — mais le bouton "+" de l'accueil et du Programme
+   *       (ajouter une séance à la journée) a besoin d'écrire dans LA MÊME
+   *       clé localStorage, avec la même règle de dédoublonnage. Plutôt que
+   *       de la réécrire ailleurs (voir les 3 bugs de cohérence déjà
+   *       rencontrés cette session sur des couples de fichiers qui se
+   *       recoupent), ces quelques primitives vivent ici et carnet.js les
+   *       appelle lui aussi (voir site/js/carnet.js, charger/sauver/
+   *       planItemExists). Ne jettent pas d'erreur transformée : un appelant
+   *       qui a besoin de savoir si le stockage a échoué garde son propre
+   *       try/catch autour de l'appel (voir carnet.js).
+   * -------------------------------------------------------------------- */
+  const CARNET_STORAGE_KEY = "pdf-carnet-v1";
+
+  function carnetUid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  function loadCarnetState() {
+    const raw = localStorage.getItem(CARNET_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }
+
+  function saveCarnetState(state) {
+    localStorage.setItem(CARNET_STORAGE_KEY, JSON.stringify(state));
+  }
+
+  // Un item "identique" (même spectacle/nom, mêmes horaires) est déjà dans
+  // le plan : évite les doublons qu'on clique une fois ou dix, depuis le
+  // Carnet, le Programme ou l'accueil (tous passent par cette même règle).
+  function planItemExists(plan, candidate) {
+    const key = candidate.slug || candidate.name;
+    return plan.items.some(
+      (it) =>
+        (it.slug || it.name) === key &&
+        it.start === candidate.start &&
+        it.end === candidate.end &&
+        !!it.is_continuous === !!candidate.is_continuous
+    );
+  }
+
+  // Ajoute une représentation au plan du jour `dateStr` (créé si besoin) et
+  // sauvegarde, ou ne fait rien si elle y est déjà (voir planItemExists).
+  // Retourne false si elle était déjà présente (rien écrit), true sinon.
+  function addToPlan(dateStr, item) {
+    const state = loadCarnetState() || { visites: [], plans: {}, gate: 30, pass: null };
+    if (!state.plans) state.plans = {};
+    if (!state.plans[dateStr]) state.plans[dateStr] = { moment: "Jour", items: [] };
+    const plan = state.plans[dateStr];
+    if (planItemExists(plan, item)) return false;
+    plan.items.push(Object.assign({ uid: carnetUid() }, item));
+    saveCarnetState(state);
+    return true;
+  }
+
+  // Une représentation précise (slug/name + heure de début) est-elle déjà
+  // dans le plan du jour `dateStr` ? Utilisé pour l'état du bouton "+"
+  // (rempli/coché quand déjà ajoutée).
+  function isInPlan(dateStr, slugOrName, start) {
+    const state = loadCarnetState();
+    const plan = state && state.plans && state.plans[dateStr];
+    if (!plan) return false;
+    return plan.items.some((it) => (it.slug || it.name) === slugOrName && it.start === start);
+  }
+
+  // Favoris (chip "Favoris" du Programme, étoile sur chaque séance) : un
+  // simple tableau de slugs dans le même état partagé que le plan du jour.
+  // Retourne true si le spectacle est désormais favori (false s'il vient
+  // d'être retiré).
+  function toggleFavorite(slug) {
+    const state = loadCarnetState() || { visites: [], plans: {}, gate: 30, pass: null, favoris: [] };
+    if (!state.favoris) state.favoris = [];
+    const i = state.favoris.indexOf(slug);
+    if (i === -1) state.favoris.push(slug);
+    else state.favoris.splice(i, 1);
+    saveCarnetState(state);
+    return i === -1;
+  }
+
+  function isFavorite(slug) {
+    const state = loadCarnetState();
+    return !!(state && state.favoris && state.favoris.indexOf(slug) !== -1);
+  }
+
+  // Retire une représentation précise du plan du jour (symétrique
+  // d'addToPlan) — utilisé par la vue grille desktop du Programme pour
+  // "décocher" une séance déjà ajoutée d'un clic. Retourne false si elle
+  // n'y était pas (rien à faire).
+  function removeFromPlan(dateStr, slugOrName, start) {
+    const state = loadCarnetState();
+    const plan = state && state.plans && state.plans[dateStr];
+    if (!plan) return false;
+    const before = plan.items.length;
+    plan.items = plan.items.filter((it) => !((it.slug || it.name) === slugOrName && it.start === start));
+    if (plan.items.length === before) return false;
+    saveCarnetState(state);
+    return true;
+  }
+
+  /* ----------------------------------------------------------------------
+   * 8quater. Export .ics (RFC 5545) : utilitaires partagés
+   *          carnet.js construit un .ics à plusieurs événements (un par
+   *          séance planifiée, avec rappel d'ouverture des portes) ; la
+   *          carte "jour fermé" de l'accueil n'a besoin que d'un seul
+   *          événement journée entière (date de réouverture) — formes trop
+   *          différentes pour une seule fonction, mais l'échappement de
+   *          texte et l'horodatage UTC, eux, sont identiques : partagés ici.
+   * -------------------------------------------------------------------- */
+  // Backslash, virgule, point-virgule et retour à la ligne doivent être
+  // préfixés d'un backslash (RFC 5545).
+  function icsEscape(text) {
+    return String(text == null ? "" : text)
+      .replace(/\\/g, "\\\\")
+      .replace(/;/g, "\\;")
+      .replace(/,/g, "\\,")
+      .replace(/\n/g, "\\n");
+  }
+
+  // Horodatage UTC "AAAAMMJJTHHMMSSZ" requis par DTSTAMP.
+  function icsUtcStamp(date) {
+    return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  }
+
+  // Un seul événement "journée entière" (DTSTART;VALUE=DATE, sans heure ni
+  // rappel) — ex: réouverture de la saison. `dateStr` au format YYYY-MM-DD.
+  function buildAllDayIcs(dateStr, title, description) {
+    const compactDate = String(dateStr).replace(/-/g, "");
+    const lines = [
+      "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Puy du Fou Companion//FR", "CALSCALE:GREGORIAN",
+      "BEGIN:VEVENT",
+      "UID:" + carnetUid() + "@puydufou-companion",
+      "DTSTAMP:" + icsUtcStamp(new Date()),
+      "DTSTART;VALUE=DATE:" + compactDate,
+      "SUMMARY:" + icsEscape(title),
+    ];
+    if (description) lines.push("DESCRIPTION:" + icsEscape(description));
+    lines.push("END:VEVENT", "END:VCALENDAR");
+    return lines.join("\r\n");
+  }
+
+  // Déclenche le téléchargement d'un contenu texte (ex: un .ics) sous le
+  // nom de fichier donné.
+  function downloadTextFile(filename, content, mimeType) {
+    const blob = new Blob([content], { type: mimeType || "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
   }
 
   /* ----------------------------------------------------------------------
@@ -778,8 +1084,11 @@
 
   /* ----------------------------------------------------------------------
    * 11. Export global
+   *     Fusionné (jamais remplacé) : site/js/icons.js s'exécute avant et
+   *     attache déjà PDF.icon, qu'un remplacement complet effacerait selon
+   *     l'ordre réel des <script> — Object.assign reste sûr dans les deux sens.
    * -------------------------------------------------------------------- */
-  global.PDF = {
+  Object.assign(global.PDF = global.PDF || {}, {
     DATA_BASE,
     GITHUB_REPO_URL,
     fetchJSON,
@@ -815,9 +1124,23 @@
     createSearchBar,
     renderErrorMessage,
     renderLoading,
-    initMobileMenu,
     initThemeToggle,
-  };
+    setFreshnessNote,
+    CARNET_STORAGE_KEY,
+    carnetUid,
+    loadCarnetState,
+    saveCarnetState,
+    planItemExists,
+    addToPlan,
+    isInPlan,
+    removeFromPlan,
+    toggleFavorite,
+    isFavorite,
+    icsEscape,
+    icsUtcStamp,
+    buildAllDayIcs,
+    downloadTextFile,
+  });
 
   // Injection auto du header/footer au chargement, basé sur data-page du body
   document.addEventListener("DOMContentLoaded", () => {

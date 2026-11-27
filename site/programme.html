@@ -16,33 +16,54 @@
 <main>
   <div class="container">
     <section class="page-hero">
-      <h1>📜 Programme du jour</h1>
-      <p class="lede" id="programme-date">Chargement de la date…</p>
+      <div class="flex-between">
+        <div>
+          <p class="label-upper" id="programme-meta">&nbsp;</p>
+          <h1>Programme</h1>
+        </div>
+        <button type="button" class="icon-btn" id="search-toggle" aria-label="Rechercher" aria-expanded="false" aria-controls="search-bar-wrap"></button>
+      </div>
     </section>
 
-    <div class="chip-row" id="day-select" role="group" aria-label="Jour affiché"></div>
+    <div class="segmented" id="day-select" role="group" aria-label="Jour affiché"></div>
 
-    <div id="status-banner-slot"></div>
+    <div id="status-banner-slot" aria-live="polite"></div>
 
-    <div class="search-bar" id="search-bar-wrap">
+    <div class="search-bar" id="search-bar-wrap" hidden>
       <div id="search-slot"></div>
-      <select id="category-filter" class="filter-select" aria-label="Filtrer par catégorie">
-        <option value="">Toutes les catégories</option>
-      </select>
     </div>
+
+    <div class="chip-row chip-row--scroll" id="category-filter-chips" role="group" aria-label="Filtrer par catégorie"></div>
+
+    <div id="continuous-gantt-slot" class="section"></div>
 
     <div class="hour-nav" id="hour-nav" hidden></div>
 
-    <div id="programme-content">
-      <div class="empty-state">
-        <div class="skeleton" style="height:2.4rem;max-width:420px;margin:0 auto;"></div>
+    <div class="programme-layout">
+      <div class="programme-main">
+        <div id="programme-content" aria-live="polite">
+          <div class="empty-state">
+            <div class="skeleton" style="height:2.4rem;max-width:420px;margin:0 auto;"></div>
+          </div>
+        </div>
+        <!-- Vue desktop (>= 1100px, voir style.css) : grille horaire, une
+             ligne par spectacle. Remplace #programme-content à cette
+             largeur plutôt que de la dupliquer en JS. -->
+        <div class="hgrid-wrap hgrid-only">
+          <div class="hgrid" id="hgrid" aria-label="Grille horaire des spectacles"></div>
+        </div>
       </div>
+      <aside class="programme-aside" aria-label="Ma journée">
+        <div id="aside-next-slot"></div>
+        <div id="aside-myday-slot"></div>
+      </aside>
     </div>
   </div>
 </main>
 
 <footer id="site-footer"></footer>
 
+<script src="js/icons.js"></script>
 <script src="js/app.js"></script>
 <script src="js/programme.js"></script>
 </body>

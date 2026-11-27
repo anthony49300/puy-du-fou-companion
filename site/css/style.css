@@ -1,136 +1,228 @@
 /* =========================================================================
    Puy du Fou — Programmes & Statistiques (projet communautaire non officiel)
    style.css — feuille de style unique, vanilla CSS, responsive + dark mode
+
+   Design system "Nocturne" (sombre) / "Parchemin" (clair). Tout composant
+   doit utiliser un token (section 1 ci-dessous), jamais une couleur en dur.
+
+   Composants principaux (voir leurs sections respectives plus bas) :
+   - .btn (+ .btn-outline/.btn-secondary/.btn-danger/.btn-outline-danger),
+     .icon-btn (bouton rond 44px, icône seule)
+   - .pill-status (pastille ouvert/fermé), .segmented (sélecteur de jour)
+   - .chip / .chip-row (+ .chip-row--scroll), .badge (+ variantes)
+   - .card (+ .hero-card, .card--night, .day-card--danger)
+   - .stat-tile / .stat-grid (KPI, + .stat-tile--danger)
+   - .list-card / .list-row, .progress-track / .progress-fill
+   - .mini-gantt-row (Programme, accès continu), .hgrid (grille desktop)
+   - .day-timeline / .day-card / .day-gap-row (timeline "Ma journée")
+   - .tabbar / .tabbar-item (barre d'onglets mobile)
+   - .nav-dropdown (menu "sheet" : dropdown ancré en desktop, feuille
+     remontant du bas en mobile — voir .nav-group--inline pour sa
+     réutilisation hors du header)
+   - .toast-msg (+ .toast-msg-action), .confirm-dialog
    ========================================================================= */
 
-/* ---------- 1. Design tokens (thème clair par défaut) ---------- */
+/* ---------- 0. Polices auto-hébergées (site/fonts/, pas de requête tierce)
+   Fraunces (titres) et Inter (corps/UI) sont des polices variables : un seul
+   fichier par famille couvre tout l'axe de graisse (100–900) — Fraunces
+   couvre aussi l'axe "optical size" (opsz), d'où font-optical-sizing ci-
+   dessous plutôt que plusieurs fichiers par taille. Sous-ensemble "latin"
+   uniquement (unicode-range ci-dessous) : suffisant pour le français
+   (Latin-1 + quelques extras : œ, €…), inutile d'embarquer cyrillique/grec. */
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../fonts/fraunces-latin-var.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../fonts/inter-latin-var.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------- 1. Design tokens (thème clair "Parchemin" par défaut) ---------- */
 :root {
-  /* Palette "parc à spectacles" : ambre, bordeaux, vert forêt, crème */
-  --color-cream: #f8f1e2;
-  --color-cream-soft: #efe4cb;
-  --color-parchment: #fffaf0;
-  --color-bordeaux: #7c2233;
-  --color-bordeaux-dark: #591824;
-  --color-amber: #c98a2b;
-  --color-amber-light: #e3ac4f;
-  --color-forest: #2f4a3c;
-  --color-forest-light: #3f6350;
-  --color-ink: #2c2118;
-  --color-ink-soft: #52453a;
-
-  --bg: var(--color-cream);
-  --bg-elevated: var(--color-parchment);
-  --bg-surface: #ffffff;
-  --bg-header: linear-gradient(135deg, var(--color-bordeaux) 0%, var(--color-bordeaux-dark) 100%);
-  --text: var(--color-ink);
-  --text-soft: var(--color-ink-soft);
-  --text-on-accent: #fff8ec;
-  --border: #ddcba4;
-  --border-soft: #e9dcb9;
-  --accent: var(--color-bordeaux);
-  --accent-soft: #f1dbdd;
-  --accent-2: var(--color-amber);
-  --accent-2-soft: #f6e6c7;
-  --accent-3: var(--color-forest);
-  --accent-3-soft: #dfe8e1;
-  --link: var(--color-bordeaux);
-  --shadow: 0 2px 10px rgba(44, 33, 24, 0.08);
-  --shadow-lg: 0 10px 30px rgba(44, 33, 24, 0.16);
-  --radius: 10px;
-  --radius-lg: 16px;
-
-  --badge-nocturne: #263a63;
-  --badge-nocturne-bg: #dfe4f2;
-  --badge-continu: var(--color-forest);
-  --badge-continu-bg: #dfe8e1;
-  --color-error: #8a2323;
-  --color-error-bg: #f6dede;
-  --badge-complet: #8a5b12;
-  --badge-complet-bg: #f6e6c7;
+  --bg: #F7F2E9;
+  --surface: #FFFFFF;
+  --surface-2: #F0E8DA;
+  --nav-bg: #FFFFFF;
+  --line: #DDD0BC;
+  --line-soft: #EAE0D0;
+  --text: #1E1813;
+  --text-2: #3D3229;
+  --muted: #6B5D4D;
+  --accent-text: #8A6114;
+  --accent-fill: #E3B055;
+  --on-accent: #1E1813;
+  --primary: #8F2639;
+  --primary-hover: #75192C;
+  --on-primary: #FFF6F2;
+  --on-primary-muted: #FFE7E2;
+  --success: #2F6B45;
+  --success-bg: #E3F0E6;
+  --warn: #9A5A0F;
+  --warn-bg: #FBEBD6;
+  --danger: #A3262E;
+  --danger-bg: #FBE3E3;
+  --danger-line: #E9A9AD;
+  --night: #3A4F8C;
+  --night-bg: #E6EBF7;
+  --night-line: #C3CDE8;
+  --immersive: #2F6B45;
+  --immersive-bg: #E3F0E6;
+  --past: #E4DACB;
+  --focus-ring: 0 0 0 3px rgba(143, 38, 57, .45);
+  /* Tokens annexes, pas dans la palette principale mais nécessaires à des
+     composants existants (badge "exceptionnel", teinte douce de --primary). */
+  --primary-soft: #F4E3E6;
   --badge-exceptionnel: #6a3c8a;
   --badge-exceptionnel-bg: #ece1f5;
-  --badge-default: #55534b;
-  --badge-default-bg: #e9e4d6;
 
-  --focus-ring: 0 0 0 3px rgba(201, 138, 43, 0.45);
+  /* Échelle de rayons */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 22px;
+  --r-pill: 999px;
+
+  /* Ombres : aucune en sombre (voir blocs ci-dessous), légère en clair */
+  --shadow: 0 1px 2px rgba(30, 24, 19, .06), 0 4px 16px rgba(30, 24, 19, .05);
+  --shadow-lg: 0 2px 6px rgba(30, 24, 19, .08), 0 10px 30px rgba(30, 24, 19, .08);
+
+  /* ---- Noms historiques : conservés en ALIAS (jamais de valeur en dur ici)
+     le temps que chaque composant soit migré vers les tokens ci-dessus au
+     fil des phases de la refonte — voir site/js/app.js (BRAND_SVG,
+     getChartTheme) qui lit encore certains de ces noms directement. Un
+     alias suit automatiquement le thème actif : pas besoin de le répéter
+     dans les blocs sombres plus bas. ---- */
+  --bg-elevated: var(--surface-2);
+  --bg-surface: var(--surface);
+  --bg-header: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  --text-soft: var(--muted);
+  --text-on-accent: var(--on-primary);
+  --border: var(--line);
+  --border-soft: var(--line-soft);
+  --accent: var(--primary);
+  --accent-soft: var(--primary-soft);
+  --accent-2: var(--accent-text);
+  --accent-2-soft: var(--warn-bg);
+  --accent-3: var(--immersive);
+  --accent-3-soft: var(--immersive-bg);
+  --link: var(--accent-text);
+  --radius: var(--r-sm);
+  --radius-lg: var(--r-lg);
+  --badge-nocturne: var(--night);
+  --badge-nocturne-bg: var(--night-bg);
+  --badge-continu: var(--immersive);
+  --badge-continu-bg: var(--immersive-bg);
+  --color-error: var(--danger);
+  --color-error-bg: var(--danger-bg);
+  --badge-complet: var(--warn);
+  --badge-complet-bg: var(--warn-bg);
+  --badge-default: var(--muted);
+  --badge-default-bg: var(--surface-2);
   /* Contour marqué des jours de fermeture ponctuelle dans les calendriers :
-     un noir franc en thème clair ; inversé (clair) en thème sombre pour
-     garder le même contraste maximal plutôt que la même valeur littérale. */
-  --cal-closed-outline: #16110c;
+     reprend --text, qui est déjà "sombre en thème clair / clair en thème
+     sombre" — donc déjà le bon contraste maximal dans les deux cas. */
+  --cal-closed-outline: var(--text);
+  --color-bordeaux: var(--primary);
+  --color-bordeaux-dark: var(--primary-hover);
+  --color-amber: var(--accent-text);
+  --color-forest: var(--immersive);
+  --color-ink: var(--text);
 }
 
 /* Dark mode via préférence système (si l'utilisateur n'a pas fait de choix explicite) */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #17130f;
-    --bg-elevated: #1f1a14;
-    --bg-surface: #241e17;
-    --bg-header: linear-gradient(135deg, #4a1520 0%, #2c0f16 100%);
-    --text: #f2e9d8;
-    --text-soft: #cbbfa9;
-    --text-on-accent: #fff8ec;
-    --border: #3a3226;
-    --border-soft: #2c261c;
-    --accent: #e0a3ad;
-    --accent-soft: #3a2226;
-    --accent-2: #e3ac4f;
-    --accent-2-soft: #3a2f19;
-    --accent-3: #7fae94;
-    --accent-3-soft: #1f2b23;
-    --link: #e6b8bf;
-    --shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55);
-
-    --badge-nocturne: #aebde6;
-    --badge-nocturne-bg: #202a42;
-    --badge-continu: #9fd0b4;
-    --badge-continu-bg: #1f2b23;
-    --color-error: #f0a3a3;
-    --color-error-bg: #3a2020;
-    --badge-complet: #e6c583;
-    --badge-complet-bg: #3a2f19;
+    /* Gardé identique au bloc [data-theme="dark"] ci-dessous, vérifié par
+       scripts/check_css_theme_blocks.py (exécuté à chaque `pytest`, voir
+       tests/test_frontend_css.py) plutôt qu'à la main. */
+    /* BEGIN DARK-TOKENS */
+    --bg: #13100D;
+    --surface: #1D1814;
+    --surface-2: #27201A;
+    --nav-bg: #1A1511;
+    --line: #3A3128;
+    --line-soft: #2A231D;
+    --text: #F4EBDD;
+    --text-2: #E9DFCF;
+    --muted: #B8AA95;
+    --accent-text: #E3B055;
+    --accent-fill: #E3B055;
+    --on-accent: #13100D;
+    --primary: #8F2639;
+    --primary-hover: #A3304A;
+    --on-primary: #FFF6F2;
+    --on-primary-muted: #FFE7E2;
+    --success: #A9D8B8;
+    --success-bg: #1F2A22;
+    --warn: #F0A04B;
+    --warn-bg: #2E2416;
+    --danger: #FF9C9C;
+    --danger-bg: #2E1A1A;
+    --danger-line: #6B3434;
+    --night: #9DB3EA;
+    --night-bg: #171C2A;
+    --night-line: #2C3550;
+    --immersive: #A9D8B8;
+    --immersive-bg: #24342A;
+    --past: #241E19;
+    --focus-ring: 0 0 0 3px rgba(227, 176, 85, .55);
+    --primary-soft: #2E1A20;
     --badge-exceptionnel: #cdadea;
     --badge-exceptionnel-bg: #2c2138;
-    --badge-default: #cfc9b8;
-    --badge-default-bg: #2a251c;
-    --cal-closed-outline: #f2e9d8;
+    --shadow: none;
+    --shadow-lg: none;
+    /* END DARK-TOKENS */
   }
 }
 
 /* Dark mode via bouton toggle (force le thème quel que soit le système) */
 :root[data-theme="dark"] {
-  --bg: #17130f;
-  --bg-elevated: #1f1a14;
-  --bg-surface: #241e17;
-  --bg-header: linear-gradient(135deg, #4a1520 0%, #2c0f16 100%);
-  --text: #f2e9d8;
-  --text-soft: #cbbfa9;
-  --text-on-accent: #fff8ec;
-  --border: #3a3226;
-  --border-soft: #2c261c;
-  --accent: #e0a3ad;
-  --accent-soft: #3a2226;
-  --accent-2: #e3ac4f;
-  --accent-2-soft: #3a2f19;
-  --accent-3: #7fae94;
-  --accent-3-soft: #1f2b23;
-  --link: #e6b8bf;
-  --shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55);
-
-  --badge-nocturne: #aebde6;
-  --badge-nocturne-bg: #202a42;
-  --badge-continu: #9fd0b4;
-  --badge-continu-bg: #1f2b23;
-  --color-error: #f0a3a3;
-  --color-error-bg: #3a2020;
-  --badge-complet: #e6c583;
-  --badge-complet-bg: #3a2f19;
+  /* BEGIN DARK-TOKENS-DUP */
+  --bg: #13100D;
+  --surface: #1D1814;
+  --surface-2: #27201A;
+  --nav-bg: #1A1511;
+  --line: #3A3128;
+  --line-soft: #2A231D;
+  --text: #F4EBDD;
+  --text-2: #E9DFCF;
+  --muted: #B8AA95;
+  --accent-text: #E3B055;
+  --accent-fill: #E3B055;
+  --on-accent: #13100D;
+  --primary: #8F2639;
+  --primary-hover: #A3304A;
+  --on-primary: #FFF6F2;
+  --on-primary-muted: #FFE7E2;
+  --success: #A9D8B8;
+  --success-bg: #1F2A22;
+  --warn: #F0A04B;
+  --warn-bg: #2E2416;
+  --danger: #FF9C9C;
+  --danger-bg: #2E1A1A;
+  --danger-line: #6B3434;
+  --night: #9DB3EA;
+  --night-bg: #171C2A;
+  --night-line: #2C3550;
+  --immersive: #A9D8B8;
+  --immersive-bg: #24342A;
+  --past: #241E19;
+  --focus-ring: 0 0 0 3px rgba(227, 176, 85, .55);
+  --primary-soft: #2E1A20;
   --badge-exceptionnel: #cdadea;
   --badge-exceptionnel-bg: #2c2138;
-  --badge-default: #cfc9b8;
-  --badge-default-bg: #2a251c;
-  --cal-closed-outline: #f2e9d8;
+  --shadow: none;
+  --shadow-lg: none;
+  /* END DARK-TOKENS-DUP */
 }
 
 /* ---------- 2. Reset & bases ---------- */
@@ -144,7 +236,8 @@ html {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Segoe UI", serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.9375rem; /* 15px, voir §2 "Typographie" de la refonte */
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.25s ease, color 0.25s ease;
@@ -154,16 +247,31 @@ body {
 }
 
 h1, h2, h3, h4 {
-  font-family: "Trajan Pro", "Cinzel", "Palatino Linotype", Georgia, serif;
-  letter-spacing: 0.02em;
+  font-family: "Fraunces", Georgia, serif;
+  font-optical-sizing: auto; /* pilote l'axe "opsz" de la variable selon la taille affichée */
+  letter-spacing: 0.01em;
   color: var(--text);
   margin: 0 0 0.5em;
-  font-weight: 700;
+  font-weight: 600;
 }
 
-h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); }
+h1 { font-size: clamp(1.875rem, 1.6rem + 1.3vw, 2.5rem); } /* 30px -> 40px */
 h2 { font-size: clamp(1.3rem, 3vw, 1.7rem); }
-h3 { font-size: 1.15rem; }
+/* Utilisée aussi comme titre de carte (nav-card, spectacle-card,
+   chart-card…) : 24-28px, voir §2 "Typographie" de la refonte. */
+h3 { font-size: clamp(1.5rem, 1.35rem + 0.5vw, 1.75rem); }
+
+/* Petits libellés (labels de stat-tile, méta de page…) */
+.label-upper {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+/* Chiffres alignés sur une grille fixe (horaires, durées, totaux) : évite
+   que "11" paraisse plus étroit que "10" dans une colonne de temps. */
+.tnum { font-variant-numeric: tabular-nums; }
 
 p { margin: 0 0 1em; }
 
@@ -173,6 +281,11 @@ a:hover { text-decoration: underline; }
 button { font-family: inherit; cursor: pointer; }
 
 img, svg { max-width: 100%; display: block; }
+
+/* Icônes trait (site/js/icons.js, PDF.icon()) : dimensionnées en em pour
+   suivre naturellement la taille du texte du contexte où elles s'insèrent
+   (bouton, item de nav, libellé…) plutôt qu'une taille fixe partout. */
+.icon { width: 1.35em; height: 1.35em; flex-shrink: 0; }
 
 :focus-visible {
   outline: none;
@@ -204,48 +317,54 @@ img, svg { max-width: 100%; display: block; }
   background: linear-gradient(to right, transparent, var(--accent-2), transparent);
 }
 
-/* ---------- 3. Header / navigation ---------- */
+/* ---------- 3. Header / navigation ----------
+   Coquille à deux visages, basculés en CSS seulement (le JS injecte les
+   deux en même temps, voir site/js/app.js buildHeaderHtml) :
+   - .header-desktop (>= 780px) : en-tête horizontal classique ;
+   - .header-mobile (< 780px) : barre fine, complétée par .tabbar fixée en
+     bas de l'écran (section 3bis).
+   Le panneau "Explorer" (#nav-explore-dropdown) est un troisième enfant de
+   .header-inner, partagé par les deux : dropdown ancré sous le bouton en
+   desktop, feuille remontant du bas en mobile (section 3ter). */
 .site-header {
-  background: var(--bg-header);
-  color: var(--text-on-accent);
-  box-shadow: var(--shadow);
+  background: var(--nav-bg);
+  color: var(--text);
+  border-bottom: 1px solid var(--line);
   position: sticky;
   top: 0;
   z-index: 50;
 }
 
 .header-inner {
+  position: relative;
   max-width: 1140px;
   margin: 0 auto;
-  padding: 0.85rem 1.25rem;
+  padding: 0 1.25rem;
+}
+
+.header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  padding: 0.65rem 0;
 }
+.header-mobile { display: none; }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  color: var(--text-on-accent);
-  font-family: "Trajan Pro", "Cinzel", "Palatino Linotype", Georgia, serif;
+  gap: 0.55rem;
+  color: var(--text);
+  font-family: "Fraunces", Georgia, serif;
   font-size: 1.15rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   white-space: nowrap;
 }
-.brand:hover { text-decoration: none; opacity: 0.92; }
-
-.brand-emblem {
-  width: 2.1rem;
-  height: 2.1rem;
-  flex-shrink: 0;
-  display: inline-block;
-}
-
-.brand-text-full { display: inline; }
-.brand-text-short { display: none; }
+.brand:hover { text-decoration: none; opacity: 0.85; }
+.brand-emblem { width: 1.7rem; height: 1.7rem; flex-shrink: 0; color: var(--primary); }
+.brand-compact .brand-emblem { width: 2rem; height: 2rem; }
 
 .main-nav {
   display: flex;
@@ -253,41 +372,50 @@ img, svg { max-width: 100%; display: block; }
   gap: 0.25rem;
 }
 
-.main-nav a {
-  color: var(--text-on-accent);
-  padding: 0.5rem 0.85rem;
-  border-radius: 999px;
-  font-size: 0.95rem;
-  letter-spacing: 0.02em;
+.main-nav .nav-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-2);
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--r-pill);
+  font-size: 0.92rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   transition: background-color 0.15s ease;
 }
-.main-nav a:hover { background: rgba(255,255,255,0.14); text-decoration: none; }
-.main-nav a.active {
-  background: rgba(255,255,255,0.22);
-  font-weight: 700;
+/* Les icônes accompagnent les items dans la barre d'onglets mobile
+   (.tabbar-item) ; en liens horizontaux desktop, le texte seul suffit. */
+.main-nav .nav-link .icon { display: none; }
+.main-nav .nav-link:hover { background: var(--surface-2); text-decoration: none; }
+.main-nav .nav-link.active {
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  font-weight: 600;
 }
 
 /* Sous-menu "Explorer" : regroupe les pages de consultation (Spectacles,
-   Statistiques, Historique, Bilan) pour ne pas afficher 7 entrées à plat. */
+   Historique, Bilan) pour ne pas afficher une nav à 8 entrées à plat. */
 .nav-group { position: relative; }
-.nav-group-toggle {
+.nav-explore-toggle {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
   background: none;
   border: none;
   font-family: inherit;
-  color: var(--text-on-accent);
-  padding: 0.5rem 0.85rem;
-  border-radius: 999px;
-  font-size: 0.95rem;
-  letter-spacing: 0.02em;
+  color: var(--text-2);
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--r-pill);
+  font-size: 0.92rem;
+  font-weight: 500;
   transition: background-color 0.15s ease;
 }
-.nav-group-toggle:hover { background: rgba(255,255,255,0.14); }
-.nav-group-toggle.active { background: rgba(255,255,255,0.22); font-weight: 700; }
-.nav-caret { font-size: 0.7em; transition: transform 0.15s ease; }
-.nav-group-toggle[aria-expanded="true"] .nav-caret { transform: rotate(180deg); }
+.nav-explore-toggle:hover { background: var(--surface-2); }
+.nav-explore-toggle.active { background: var(--accent-fill); color: var(--on-accent); font-weight: 600; }
+.nav-caret { transition: transform 0.15s ease; }
+.nav-explore-toggle[aria-expanded="true"] .nav-caret { transform: rotate(180deg); }
+/* Bouton "Plus" mobile (icône seule, pas de libellé "Explorer") */
+.header-mobile .nav-explore-toggle { padding: 0; }
 
 .nav-dropdown {
   display: none;
@@ -295,115 +423,145 @@ img, svg { max-width: 100%; display: block; }
   gap: 0.1rem;
   position: absolute;
   top: calc(100% + 0.5rem);
-  left: 0;
+  right: 1.25rem;
   min-width: 11.5rem;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
   box-shadow: var(--shadow-lg);
   padding: 0.4rem;
   z-index: 20;
 }
 .nav-dropdown.open { display: flex; }
-.main-nav .nav-dropdown-link {
+.nav-dropdown-link {
   color: var(--text);
-  padding: 0.55rem 0.75rem;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  padding: 0.6rem 0.75rem;
   border-radius: 8px;
   font-size: 0.92rem;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
 }
-.main-nav .nav-dropdown-link:hover { background: var(--accent-2-soft); text-decoration: none; }
-.main-nav .nav-dropdown-link.active { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.nav-dropdown-link:hover { background: var(--surface-2); text-decoration: none; }
+.nav-dropdown-link.active { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+
+/* Réutilisation de .nav-dropdown hors du header (ex: menu "Plus d'actions"
+   de Ma journée) : le panneau est ici un enfant direct de .nav-group (pas
+   de .header-inner plus large pour l'ancrer) — on l'aligne donc sur le
+   bord droit de .nav-group lui-même plutôt que sur le décalage pensé pour
+   le header. */
+.nav-group--inline { position: relative; display: inline-block; }
+.nav-group--inline .nav-dropdown { right: 0; min-width: 14rem; }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
-.theme-toggle {
-  background: rgba(255,255,255,0.14);
-  border: 1px solid rgba(255,255,255,0.25);
-  color: var(--text-on-accent);
-  border-radius: 999px;
-  width: 2.4rem;
-  height: 2.4rem;
+.freshness-note { white-space: nowrap; font-size: 0.78rem; color: var(--muted); }
+
+/* Bouton rond générique (thème, "Plus"…) : 44px, la cible tactile minimale
+   recommandée, même là où l'icône elle-même est plus petite. */
+.icon-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: var(--r-pill);
+  width: 2.75rem;
+  height: 2.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
   flex-shrink: 0;
 }
-.theme-toggle:hover { background: rgba(255,255,255,0.24); }
+.icon-btn:hover { background: var(--line-soft); }
+.icon-btn .icon { width: 1.25rem; height: 1.25rem; }
 
-.hamburger {
-  display: none;
-  flex-direction: column;
-  justify-content: center;
-  gap: 5px;
-  width: 2.4rem;
-  height: 2.4rem;
-  border: 1px solid rgba(255,255,255,0.25);
-  border-radius: 8px;
-  background: rgba(255,255,255,0.1);
-}
-.hamburger span {
-  display: block;
-  width: 1.2rem;
-  height: 2px;
-  background: var(--text-on-accent);
-  margin: 0 auto;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-}
-.hamburger[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-.hamburger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
-.hamburger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+@media (max-width: 779px) {
+  .header-desktop { display: none; }
+  .header-mobile { display: flex; }
 
-@media (max-width: 780px) {
-  .brand-text-full { display: none; }
-  .brand-text-short { display: inline; }
-  .hamburger { display: flex; }
-  .main-nav {
-    position: absolute;
-    top: 100%;
+  /* Le panneau "Explorer" devient une feuille qui remonte du bas de
+     l'écran plutôt qu'un dropdown ancré sous un bouton (voir
+     .nav-explore-toggle ci-dessus, bouton icône seule en mobile). */
+  .nav-dropdown {
+    position: fixed;
+    top: auto;
     left: 0;
     right: 0;
-    background: var(--color-bordeaux-dark);
-    flex-direction: column;
-    align-items: stretch;
-    padding: 0.5rem;
-    gap: 0.15rem;
-    box-shadow: var(--shadow-lg);
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.25s ease;
+    bottom: 0;
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-bottom: none;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    padding: 0.75rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.25);
   }
-  .main-nav.open { max-height: 420px; }
-  .main-nav a { padding: 0.75rem 1rem; border-radius: 8px; }
-  .site-header { position: relative; }
+  .nav-dropdown-link { font-size: 1rem; }
+}
 
-  /* Le sous-menu "Explorer" s'ouvre en ligne dans la colonne déjà verticale
-     du menu mobile, au lieu de flotter par-dessus. */
-  .nav-group-toggle { width: 100%; justify-content: space-between; padding: 0.75rem 1rem; border-radius: 8px; }
-  .nav-dropdown {
-    position: static;
-    background: rgba(0, 0, 0, 0.15);
-    border: none;
-    box-shadow: none;
-    margin: 0.15rem 0 0.15rem 0.5rem;
-  }
-  .main-nav .nav-dropdown-link { color: var(--text-on-accent); padding: 0.65rem 0.9rem; }
-  .main-nav .nav-dropdown-link:hover { background: rgba(255,255,255,0.14); }
-  .main-nav .nav-dropdown-link.active { background: rgba(255,255,255,0.22); color: var(--text-on-accent); font-weight: 700; }
+/* ---------- 3bis. Barre d'onglets mobile (bottom tab bar) ----------
+   5 destinations principales, toujours visibles — remplace le hamburger
+   de l'ancienne nav. Fixée en bas, au-dessus du contenu : voir la marge
+   ajoutée à <main> plus bas (media query mobile, section layout). */
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  background: var(--nav-bg);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tabbar-item {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.45rem 0.2rem 0.5rem;
+  min-height: 56px;
+  color: var(--muted);
+  text-align: center;
+}
+.tabbar-item:hover { text-decoration: none; }
+.tabbar-item .icon { width: 1.4rem; height: 1.4rem; }
+.tabbar-label {
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+.tabbar-item.active {
+  color: var(--accent-text);
+  font-weight: 600;
+}
+.tabbar-item.active .tabbar-label { font-weight: 600; }
+
+/* Pas de barre d'onglets fixe sur desktop (la nav horizontale du header la
+   remplace) — cette règle doit venir APRÈS la définition de base de
+   .tabbar ci-dessus : à spécificité égale, c'est l'ordre dans la feuille
+   qui tranche, pas l'ordre de lecture "logique" des sections. */
+@media (min-width: 780px) {
+  .tabbar { display: none; }
 }
 
 /* ---------- 4. Footer ---------- */
 .site-footer {
   margin-top: auto;
-  background: var(--bg-elevated);
-  border-top: 1px solid var(--border);
-  padding: 2rem 0 2.5rem;
-  color: var(--text-soft);
-  font-size: 0.9rem;
+  background: var(--bg);
+  border-top: 1px solid var(--line-soft);
+  padding: 1.75rem 0 2.25rem;
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 .footer-inner {
   max-width: 1140px;
@@ -416,20 +574,23 @@ img, svg { max-width: 100%; display: block; }
 }
 .footer-block { max-width: 480px; }
 .footer-block h4 {
-  color: var(--text);
-  font-size: 0.95rem;
+  color: var(--text-2);
+  font-size: 0.9rem;
   margin-bottom: 0.4rem;
 }
+/* Volontairement plus discret que l'ancien bandeau coloré (§ constraints
+   de la refonte : "footer visuellement plus léger") — un simple icône +
+   texte en couleur neutre plutôt qu'un fond teinté. */
 .footer-disclaimer {
-  background: var(--accent-2-soft);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius);
-  padding: 0.75rem 1rem;
-  color: var(--text);
-  font-size: 0.85rem;
-  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin-bottom: 0.6rem;
 }
-.footer-links a { display: inline-flex; align-items: center; gap: 0.35rem; }
+.footer-disclaimer .icon { margin-top: 0.1rem; color: var(--warn); }
+.footer-links a { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--accent-text); }
 
 /* ---------- 5. Page hero / intro ---------- */
 .page-hero {
@@ -441,6 +602,11 @@ img, svg { max-width: 100%; display: block; }
 }
 
 main { flex: 1; }
+@media (max-width: 779px) {
+  /* Place pour la barre d'onglets fixe (.tabbar, section 3bis) : sinon le
+     bas de page (dont le footer) se retrouve masqué derrière elle. */
+  main { padding-bottom: calc(56px + env(safe-area-inset-bottom) + 0.5rem); }
+}
 
 /* ---------- 6. Cards ---------- */
 .card {
@@ -499,23 +665,158 @@ main { flex: 1; }
   box-shadow: var(--shadow);
 }
 .stat-tile .stat-label {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   color: var(--text-soft);
   margin-bottom: 0.35rem;
 }
 .stat-tile .stat-value {
   font-size: 1.6rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--accent);
-  font-family: "Trajan Pro", "Cinzel", Georgia, serif;
+  font-family: "Fraunces", Georgia, serif;
+  font-variant-numeric: tabular-nums;
 }
 .stat-tile .stat-sub {
   font-size: 0.8rem;
   color: var(--text-soft);
   margin-top: 0.2rem;
 }
+
+/* ---------- 7bis. Composants de la page "Aujourd'hui" ---------- */
+
+/* Pastille de statut (ouvert/fermé) : jamais la couleur seule — un mot ET
+   un point, voir constraints de la refonte sur l'accessibilité. */
+.pill-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: var(--r-pill);
+  font-size: 0.82rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.pill-status::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+.pill-status.is-open { background: var(--success-bg); color: var(--success); }
+.pill-status.is-closed { background: var(--danger-bg); color: var(--danger); }
+
+/* Carte héros "Prochain spectacle" */
+.hero-card {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-radius: var(--r-xl);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  box-shadow: var(--shadow);
+}
+.hero-card .hero-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--on-primary-muted);
+}
+.hero-card h2 {
+  color: var(--on-primary);
+  font-size: clamp(1.5rem, 1.3rem + 1vw, 1.75rem);
+  margin: 0;
+}
+.hero-card .hero-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.hero-card .hero-time { font-size: 1.05rem; }
+.hero-card .hero-countdown { font-weight: 700; }
+.hero-card .hero-duration { color: var(--on-primary-muted); font-size: 0.85rem; }
+.hero-card .hero-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.hero-card .btn-on-primary { background: var(--on-primary); color: var(--primary); }
+.hero-card .btn-on-primary:hover { background: var(--on-primary-muted); }
+.hero-card .btn-outline-on-primary {
+  background: transparent;
+  color: var(--on-primary);
+  border: 1px solid var(--on-primary-muted);
+}
+.hero-card .btn-outline-on-primary:hover { background: rgba(255, 255, 255, 0.12); }
+
+/* Carte nocturne ("Ce soir") */
+.card--night { background: var(--night-bg); border: 1px solid var(--night-line); }
+.card--night .section-label { color: var(--night); }
+
+/* En-têtes de section discrets ("En cours", "Dans l'heure", "Ce soir"…) */
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 0.6rem;
+}
+.section-label .icon { width: 1.1rem; height: 1.1rem; }
+
+/* "En cours" : jusqu'à 2 petites cartes avec barre de progression */
+.inprogress-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; }
+.inprogress-card { display: flex; flex-direction: column; gap: 0.4rem; }
+.inprogress-card .inprogress-name { font-weight: 600; }
+.inprogress-card .inprogress-sub { font-size: 0.8rem; color: var(--muted); }
+
+/* Liste "Dans l'heure" */
+.list-card { display: flex; flex-direction: column; }
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.list-row:last-child { border-bottom: none; }
+.list-row .list-row-time { font-weight: 600; color: var(--accent-text); min-width: 3.4rem; }
+.list-row .list-row-main { flex: 1; min-width: 0; }
+.list-row .list-row-name { font-weight: 600; }
+.list-row .list-row-meta { font-size: 0.8rem; color: var(--muted); }
+.list-row .list-row-meta.is-warn { color: var(--warn); font-weight: 600; }
+
+/* Bouton "+" (ajouter à ma journée) / "✓" une fois ajouté */
+.add-to-day-btn {
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.add-to-day-btn:hover { background: var(--line-soft); }
+.add-to-day-btn.is-added { background: var(--success-bg); color: var(--success); border-color: var(--success); }
+
+/* Carte "jour fermé" : compte à rebours de réouverture */
+.reopen-card { text-align: center; padding: 2rem 1.25rem; }
+.reopen-number {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: clamp(3rem, 8vw, 4.5rem);
+  color: var(--accent-text);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.reopen-sub { color: var(--muted); margin-top: 0.5rem; }
+.reopen-actions { display: flex; justify-content: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 1.25rem; }
 
 /* ---------- 8. Badges ---------- */
 .badge {
@@ -606,19 +907,151 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
   flex-wrap: wrap;
   gap: 0.4rem;
 }
+/* Variante défilement horizontal (filtres du Programme) : une seule ligne,
+   jamais de retour à la ligne qui pousserait le contenu vers le bas. */
+.chip-row--scroll {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+  margin: 0.75rem 0;
+}
+.chip-row--scroll::-webkit-scrollbar { display: none; }
 .chip {
   border: 1px solid var(--border);
   background: var(--bg-surface);
   color: var(--text-soft);
   border-radius: 999px;
-  padding: 0.4rem 0.85rem;
+  padding: 0.5rem 0.9rem;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
   font-size: 0.83rem;
+  flex-shrink: 0;
 }
 .chip.active {
   background: var(--accent);
   color: var(--text-on-accent);
   border-color: var(--accent);
 }
+
+/* ---------- Contrôle segmenté (sélecteur de jour, Programme) ---------- */
+.segmented {
+  display: flex;
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  padding: 3px;
+  gap: 2px;
+  margin: 1rem 0;
+}
+.segmented .segment {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  min-height: 40px;
+  border: none;
+  background: none;
+  border-radius: calc(var(--r-md) - 3px);
+  color: var(--text-2);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.segmented .segment .segment-date { font-size: 0.7rem; font-weight: 500; color: var(--muted); }
+.segmented .segment.active { background: var(--primary); color: var(--on-primary); }
+.segmented .segment.active .segment-date { color: var(--on-primary-muted); }
+
+/* ---------- Étoile "favori" sur une séance ---------- */
+.star-btn {
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--line);
+}
+.star-btn .icon { width: 1.15rem; height: 1.15rem; }
+.star-btn:hover { color: var(--muted); }
+.star-btn.is-fav { color: var(--accent-text); }
+
+/* ---------- Vue desktop du Programme (>= 1100px) ---------- */
+.programme-layout { display: flex; flex-wrap: wrap; gap: 1.5rem; }
+.programme-main { flex: 999 1 640px; min-width: 0; }
+.programme-aside { flex: 1 1 320px; }
+.hgrid-only, .programme-aside { display: none; }
+@media (min-width: 1100px) {
+  .hgrid-only { display: block; }
+  .programme-aside { display: block; }
+  #programme-content, #hour-nav, #continuous-gantt-slot { display: none !important; }
+}
+
+.hgrid-wrap { overflow-x: auto; }
+.hgrid { min-width: 760px; }
+.hgrid-row { display: grid; grid-template-columns: 11rem 1fr; align-items: center; gap: 0.75rem; min-height: 2.5rem; border-bottom: 1px solid var(--line-soft); }
+.hgrid-row:last-child { border-bottom: none; }
+.hgrid-label { display: flex; flex-direction: column; gap: 0.1rem; padding: 0.4rem 0; }
+.hgrid-show-name { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hgrid-show-cat { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.hgrid-show-cat.is-muted { color: var(--muted); }
+.hgrid-show-cat.is-immersive { color: var(--immersive); }
+.hgrid-show-cat.is-night { color: var(--night); }
+.hgrid-track { position: relative; height: 1.6rem; }
+.hgrid-axis .hgrid-track { height: 1.4rem; }
+.hgrid-tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.hgrid-block {
+  position: absolute;
+  top: 2px;
+  height: 16px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  padding: 0;
+  cursor: pointer;
+}
+.hgrid-block--neutral { background: var(--surface-2); border-color: var(--line); }
+.hgrid-block--past { background: var(--past); border-color: var(--past); }
+.hgrid-block--myday { background: var(--accent-fill); border-color: var(--accent-fill); }
+.hgrid-block--conflict { background: var(--danger); border-color: var(--danger); }
+.hgrid-block:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.hgrid-now-line { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--text); opacity: 0.6; }
+.hgrid-now-label {
+  position: absolute;
+  bottom: -1.4rem;
+  transform: translateX(-50%);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.programme-aside .card { margin-bottom: 1rem; }
+.list-row.is-conflict-row { background: var(--danger-bg); margin: 0 -0.5rem; padding-left: 0.5rem; padding-right: 0.5rem; border-radius: var(--r-sm); }
+
+/* ---------- Mini-Gantt "Accès continu" (Programme) ---------- */
+.mini-gantt-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.3rem 0; }
+.mini-gantt-label {
+  flex: 0 0 9rem;
+  font-size: 0.82rem;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mini-gantt-track { position: relative; flex: 1; height: 10px; background: var(--surface-2); border-radius: var(--r-pill); }
+.mini-gantt-bar { position: absolute; top: 0; bottom: 0; background: var(--accent-fill); border-radius: var(--r-pill); }
+.mini-gantt-bar.is-past { background: var(--past); }
+.mini-gantt-now { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--text); }
 
 /* Vrai tab bar (ex: onglets du Carnet) : soulignement plutôt que des chips
    remplies, pour ne pas se confondre avec les filtres/sélecteurs de même
@@ -671,7 +1104,7 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
   gap: 0.6rem;
 }
 .timeline-hour-label {
-  font-family: "Trajan Pro", "Cinzel", Georgia, serif;
+  font-family: "Fraunces", Georgia, serif;
   font-size: 0.95rem;
   color: var(--accent);
   margin: 1rem 0 0.25rem;
@@ -694,66 +1127,60 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
 .rep-card.is-past { opacity: 0.55; }
 .rep-time-wrap { min-width: 4.6rem; }
 .rep-time {
-  font-family: "Trajan Pro", "Cinzel", Georgia, serif;
-  font-weight: 700;
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
   font-size: 1.1rem;
   color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 .rep-duration { font-size: 0.72rem; color: var(--text-soft); }
-/* Ouverture des portes (carnet uniquement) : un jalon à part entière avant
-   la carte de la séance — pas juste une donnée officielle parmi d'autres,
-   d'où sa mise à part visuelle plutôt qu'une sous-ligne dans la carte. */
-.gate-marker {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin: 0.6rem 0 0.35rem;
-  color: var(--text-soft);
-  font-size: 0.78rem;
-}
-.gate-marker::before, .gate-marker::after {
-  content: "";
-  flex: 1 1 auto;
-  height: 1px;
-  background: var(--border);
-}
-.timeline > .gate-marker:first-child { margin-top: 0; }
 .rep-name { font-weight: 600; flex: 1 1 180px; }
 .rep-badges { display: flex; gap: 0.35rem; flex-wrap: wrap; }
 
 /* Séances déjà commencées (jour réel du visiteur uniquement) : repliées
-   plutôt que mélangées aux séances à venir — voir programme.js. */
+   plutôt que mélangées aux séances à venir — voir programme.js. Présenté
+   comme un bouton à contour pointillé (voir §4.3 de la refonte), pas comme
+   une simple ligne de texte cliquable. */
 .past-sessions {
-  border: 1px dashed var(--border);
-  border-radius: var(--radius);
-  padding: 0.5rem 0.85rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-pill);
+  overflow: hidden;
 }
 .past-sessions summary {
   cursor: pointer;
-  color: var(--text-soft);
+  color: var(--text-2);
+  font-weight: 600;
   font-size: 0.85rem;
-  padding: 0.35rem 0;
+  padding: 0.6rem 1rem;
+  text-align: center;
+  list-style: none;
 }
-.past-sessions[open] summary { margin-bottom: 0.5rem; }
-.past-sessions .timeline-hour-group { gap: 0.6rem; }
+.past-sessions summary::-webkit-details-marker { display: none; }
+.past-sessions[open] { border-radius: var(--r-md); }
+.past-sessions[open] summary { border-bottom: 1px dashed var(--line); }
+.past-sessions .timeline-hour-group { gap: 0.6rem; padding: 0.75rem 1rem 0.25rem; }
 
-/* Séances commençant dans l'heure : mise en avant, pas de sous-titrage par
-   heure (une seule séance suffit à comprendre "maintenant"). */
-.within-hour-group {
+/* Séparateur "Maintenant · HH:MM" entre les séances passées (repliées) et
+   à venir — remplace l'ancien encart "dans l'heure" mis en avant : chaque
+   séance à venir porte déjà son propre délai ("dans 25 min"), voir
+   .rep-duration ci-dessous. */
+.now-divider {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 0.6rem;
-  background: var(--accent-2-soft);
-  border: 1px solid var(--accent-2);
-  border-radius: var(--radius);
-  padding: 0.75rem;
+  color: var(--accent-text);
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin: 1rem 0;
 }
-.within-hour-label {
-  font-family: "Trajan Pro", "Cinzel", Georgia, serif;
-  font-size: 0.95rem;
-  color: var(--accent);
+.now-divider::before, .now-divider::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--accent-text);
+  opacity: 0.35;
 }
-.rep-countdown { font-size: 0.72rem; color: var(--accent); font-weight: 600; }
+.rep-duration.is-warn { color: var(--warn); font-weight: 600; }
 
 /* Barre d'heures collante : navigation rapide sur une page potentiellement
    très longue (nombreuses séances/jour) — surtout utile sur mobile. */
@@ -834,8 +1261,6 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
   height: 280px;
   margin-top: 1rem;
 }
-.chart-wrap.chart-wrap-sm { height: 220px; }
-
 /* ---------- 12. Charts grid (statistiques) ---------- */
 .charts-grid {
   display: grid;
@@ -898,7 +1323,7 @@ table.data-table tr.is-changed td:first-child { font-weight: 600; }
   color: var(--text);
 }
 .calendar-head button:hover { background: var(--accent-2); color: var(--text-on-accent); }
-.calendar-title { font-family: "Trajan Pro", "Cinzel", Georgia, serif; text-transform: capitalize; }
+.calendar-title { font-family: "Fraunces", Georgia, serif; text-transform: capitalize; }
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -1061,7 +1486,6 @@ table.data-table tr.is-changed td:first-child { font-weight: 600; }
   font-weight: 600;
 }
 .btn:hover { background: var(--color-bordeaux-dark); text-decoration: none; }
-.btn.btn-secondary { background: var(--accent-3); }
 .btn.btn-danger { background: var(--color-error); }
 .btn.btn-danger:hover { opacity: 0.88; }
 .btn.btn-outline {
@@ -1112,19 +1536,17 @@ table.data-table tr.is-changed td:first-child { font-weight: 600; }
 
 @media (max-width: 640px) {
   .rep-time-wrap { min-width: auto; }
-  .header-inner { padding: 0.7rem 1rem; }
+  .header-inner { padding: 0 1rem; }
+  .header-row { padding: 0.55rem 0; }
   /* Hero + tuiles de l'accueil : moins hauts sur mobile pour remonter le
      contenu du jour, qui doit rester visible sans défiler. */
   .page-hero { padding: 1.25rem 0 0.75rem; }
   .page-hero h1 { font-size: 1.35rem; }
   .page-hero p.lede { font-size: 0.85rem; }
-  #today-stats {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.5rem;
-  }
-  #today-stats .stat-tile { padding: 0.6rem 0.5rem; }
-  #today-stats .stat-label { font-size: 0.65rem; }
-  #today-stats .stat-value { font-size: 1.15rem; }
+  /* Grille KPI de Statistiques : garantit 2 colonnes sur mobile (minmax un
+     peu plus étroit que le défaut de .stat-grid, qui retomberait à 1 seule
+     colonne en dessous de ~360px). */
+  #global-stats { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
 }
 
 /* ---------- 15. Carnet personnel (planificateur, visites, bilan, pass) ---------
@@ -1133,13 +1555,86 @@ table.data-table tr.is-changed td:first-child { font-weight: 600; }
    catalogue de spectacles et les horaires proposés, eux, viennent des vraies
    données déjà collectées (spectacles.json / today.json / history). */
 
-.rep-card.is-conflict { border-left-color: var(--color-error); background: var(--color-error-bg); }
-.rep-card.is-conflict-warn { border-left-color: var(--accent-2); background: var(--accent-2-soft); }
-.badge-conflict-error { color: var(--color-error); background: var(--color-error-bg); border: 1px solid var(--color-error); }
-.badge-conflict-warn { color: var(--badge-complet); background: var(--accent-2-soft); border: 1px solid var(--accent-2); }
+/* Timeline verticale "Ma journée" : colonne d'heures, rail avec pucettes,
+   cartes à droite — remplace les .rep-card à bordure gauche (voir
+   constraints de la refonte : "retirer l'accent en bordure gauche"). */
+.day-timeline { list-style: none; margin: 1.25rem 0; padding: 0; display: flex; flex-direction: column; }
+.day-timeline-item { display: grid; grid-template-columns: 3.4rem 1.2rem 1fr; gap: 0.75rem; align-items: start; }
+.day-timeline-time { font-weight: 600; font-variant-numeric: tabular-nums; padding-top: 0.9rem; text-align: right; font-size: 0.9rem; }
+.day-timeline-rail { position: relative; display: flex; justify-content: center; align-self: stretch; }
+.day-timeline-rail::before { content: ""; position: absolute; top: 0; bottom: 0; width: 2px; background: var(--line); }
+.day-timeline-item:last-child .day-timeline-rail::before { display: none; }
+.day-timeline-dot {
+  position: relative;
+  z-index: 1;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--muted);
+  margin-top: 1.1rem;
+  flex-shrink: 0;
+}
+.day-timeline-dot.is-warn { background: var(--warn); }
+.day-timeline-dot.is-danger { background: var(--danger); }
 
-.field-inline { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: var(--text-soft); }
-.field-inline > span { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.day-card {
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+.day-card .day-card-name { font-weight: 600; flex: 1 1 160px; }
+.day-card .day-card-badges { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.day-card--night { background: var(--night-bg); border-color: var(--night-line); }
+.day-card--danger { background: var(--danger-bg); border-color: var(--danger-line); }
+.day-card-conflict { flex: 1 1 100%; color: var(--danger); font-size: 0.85rem; font-weight: 600; }
+.day-card .gate-note { flex: 1 1 100%; color: var(--muted); font-size: 0.78rem; display: flex; align-items: center; gap: 0.35rem; }
+.day-card .gate-note .icon { width: 1rem; height: 1rem; }
+.day-card .remove-btn {
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.day-card .remove-btn .icon { width: 1.1rem; height: 1.1rem; }
+
+/* Autres séances du même spectacle, proposées en chips pour "déplacer" la
+   séance en conflit (voir renderSwapChipsAsync, carnet.js). */
+.swap-chips { flex: 1 1 100%; }
+.swap-chips-label { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.3rem; }
+
+/* Entre deux séances consécutives : marge confortable (neutre) ou tendue
+   (avertissement) — un vrai chevauchement n'a pas de ligne de marge, la
+   carte suivante passe directement en --day-card--danger. */
+.day-gap-row {
+  display: grid;
+  grid-template-columns: 3.4rem 1.2rem 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  margin: -0.3rem 0 0.6rem;
+}
+.day-gap-note {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.day-gap-note.is-warn { color: var(--warn); font-weight: 600; }
+.day-gap-note .icon { width: 1rem; height: 1rem; }
+
+/* Tuile KPI qui bascule en alerte (ex: conflits > 0) */
+.stat-tile--danger { background: var(--danger-bg); border-color: var(--danger-line); }
+.stat-tile--danger .stat-value, .stat-tile--danger .stat-label { color: var(--danger); }
 
 /* Classement horizontal (palmarès, coût par visite...) */
 .bars { display: flex; flex-direction: column; gap: 0.5rem; margin: 1rem 0; }
@@ -1252,7 +1747,7 @@ table.visit-grid tfoot td { font-weight: 700; background: var(--bg-elevated); }
 
 /* Impression (ex: le programme de la journée depuis le carnet) */
 @media print {
-  .site-header, .site-footer, .no-print, .chip-row, .hour-nav, .tab-bar, .decorative-rule { display: none !important; }
+  .site-header, .site-footer, .tabbar, .no-print, .chip-row, .hour-nav, .tab-bar, .decorative-rule { display: none !important; }
   body { background: #fff; color: #000; }
   .card, .rep-card { border-color: #bbb; box-shadow: none; break-inside: avoid; }
 }

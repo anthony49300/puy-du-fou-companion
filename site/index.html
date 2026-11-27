@@ -16,31 +16,22 @@
 <main>
   <div class="container">
     <section class="page-hero">
-      <h1>🏰 Programme &amp; statistiques du Puy du Fou</h1>
-      <p class="lede">
-        Consultez le programme du jour, la liste des spectacles et des statistiques
-        historiques, construits à partir des données publiques du programme officiel.
-      </p>
-    </section>
-
-    <div id="status-banner-slot"></div>
-
-    <section class="section" id="today-summary">
       <div class="flex-between">
-        <h2 id="today-title">Aujourd'hui</h2>
-        <span class="text-muted" id="today-updated"></span>
+        <div>
+          <p class="label-upper" id="today-date-label">&nbsp;</p>
+          <h1 id="today-title">Aujourd'hui</h1>
+        </div>
+        <span id="status-pill-slot"></span>
       </div>
-
-      <div class="stat-grid" id="today-stats">
-        <div class="stat-tile"><div class="skeleton" style="height:2.4rem;"></div></div>
-        <div class="stat-tile"><div class="skeleton" style="height:2.4rem;"></div></div>
-        <div class="stat-tile"><div class="skeleton" style="height:2.4rem;"></div></div>
-      </div>
-
-      <div class="card-grid" id="today-highlights"></div>
-
-      <p class="text-muted" id="source-line"></p>
     </section>
+
+    <div id="status-banner-slot" aria-live="polite"></div>
+
+    <div id="today-content" aria-live="polite">
+      <div class="card"><div class="skeleton" style="height:9rem;"></div></div>
+    </div>
+
+    <p class="text-muted" id="source-line" style="margin-top:1rem"></p>
 
     <div class="decorative-rule">⚜ ⚜ ⚜</div>
 
@@ -74,91 +65,313 @@
 
 <footer id="site-footer"></footer>
 
+<script src="js/icons.js"></script>
 <script src="js/app.js"></script>
 <script>
   (function () {
     "use strict";
     var PDF = window.PDF;
+    var refreshTimer = null;
+    var latestToday = null;
+    var latestIsToday = false;
 
-    function renderStats(today) {
-      var el = document.getElementById("today-stats");
-      el.innerHTML =
-        '<div class="stat-tile"><div class="stat-label">Spectacles au programme</div>' +
-        '<div class="stat-value">' + (today.spectacle_count != null ? today.spectacle_count : "—") + "</div></div>" +
-        '<div class="stat-tile"><div class="stat-label">Représentations</div>' +
-        '<div class="stat-value">' + (today.representation_count != null ? today.representation_count : "—") + "</div></div>" +
-        '<div class="stat-tile"><div class="stat-label">Saison</div>' +
-        '<div class="stat-value">' + PDF.escapeHtml((today.season && today.season.name) || "—") + "</div></div>";
+    /* ------------------------------------------------------------------
+     * Utilitaires d'affichage
+     * ---------------------------------------------------------------- */
+    function durationLabel(start, end) {
+      var s = PDF.timeToMinutes(start), e = PDF.timeToMinutes(end);
+      if (s == null || e == null) return "";
+      var d = e - s;
+      if (d < 0) d += 24 * 60;
+      return d + " min";
     }
 
-    function highlightCard(icon, label, item) {
+    function countdownLabel(startMinutes, nowMinutes) {
+      var diff = startMinutes - nowMinutes;
+      if (diff <= 0) return "en cours";
+      if (diff < 60) return "dans " + diff + " min";
+      return "dans " + Math.round(diff / 60) + " h";
+    }
+
+    // Le spectacle actuellement "en tête" du plan du jour dans le carnet
+    // (localStorage), s'il y en a un à venir : prime sur le prochain
+    // spectacle du programme officiel pour le héros (voir §4.1 de la refonte).
+    function myDayNext(dateStr, nowMinutes) {
+      var state;
+      try { state = PDF.loadCarnetState(); } catch (e) { return null; }
+      var plan = state && state.plans && state.plans[dateStr];
+      if (!plan || !plan.items || !plan.items.length) return null;
+      var items = plan.items.filter(function (it) {
+        if (it.is_continuous) return false;
+        var m = PDF.timeToMinutes(it.start);
+        return m != null && m >= nowMinutes;
+      });
+      items.sort(function (a, b) { return PDF.timeToMinutes(a.start) - PDF.timeToMinutes(b.start); });
+      return items[0] || null;
+    }
+
+    /* ------------------------------------------------------------------
+     * Jour OUVERT
+     * ---------------------------------------------------------------- */
+    function heroCardHtml(item, isMyDay, nowMinutes) {
       if (!item) {
         return (
-          '<div class="card nav-card" style="cursor:default;">' +
-          '<span class="nav-card-icon" aria-hidden="true">' + icon + "</span>" +
-          "<h3>" + label + "</h3><p>Aucune information disponible pour le moment.</p></div>"
+          '<div class="card hero-card">' +
+          '<div class="hero-label">Prochain spectacle</div>' +
+          '<h2>Plus rien de prévu aujourd\'hui</h2>' +
+          '<div class="hero-actions"><a class="btn btn-outline-on-primary" href="programme.html">Voir le programme</a></div>' +
+          "</div>"
         );
       }
+      var startMinutes = PDF.timeToMinutes(item.start);
+      var dur = durationLabel(item.start, item.end);
       return (
-        '<a class="card nav-card" href="programme.html">' +
-        '<span class="nav-card-icon" aria-hidden="true">' + icon + "</span>" +
-        "<h3>" + label + "</h3>" +
-        "<p><strong>" + PDF.escapeHtml(item.name) + "</strong> — " + PDF.formatTimeFR(item.start) + "</p></a>"
+        '<div class="card hero-card">' +
+        '<div class="hero-label">' + (isMyDay ? "Prochain dans ma journée" : "Prochain spectacle") + "</div>" +
+        "<h2>" + PDF.escapeHtml(item.name) + "</h2>" +
+        '<div class="hero-meta">' +
+        '<span class="hero-time">' + PDF.formatTimeFR(item.start) + " — <span class=\"hero-countdown\">" + countdownLabel(startMinutes, nowMinutes) + "</span></span>" +
+        (dur ? '<span class="hero-duration">' + dur + "</span>" : "") +
+        "</div>" +
+        '<div class="hero-actions">' +
+        (isMyDay
+          ? '<button type="button" class="btn btn-on-primary" disabled>Déjà dans ma journée ✓</button>'
+          : '<button type="button" class="btn btn-on-primary add-to-day-trigger" data-slug="' + PDF.escapeHtml(item.slug || "") + '" ' +
+            'data-name="' + PDF.escapeHtml(item.name) + '" data-category="' + PDF.escapeHtml(item.category || "") + '" ' +
+            'data-start="' + item.start + '" data-end="' + (item.end || "") + '">Ajouter à ma journée</button>') +
+        '<a class="btn btn-outline-on-primary" href="programme.html">Programme</a>' +
+        "</div>" +
+        "</div>"
       );
     }
 
-    function renderHighlights(today, isToday) {
-      var el = document.getElementById("today-highlights");
-      if (!isToday) {
-        // today.json n'est pas daté d'aujourd'hui (horloge réelle du
-        // navigateur) : impossible de dire quel est le spectacle nocturne
-        // du jour sans mentir. On l'indique clairement plutôt que
-        // d'afficher un horaire figé au moment de la dernière collecte.
-        var message = today.status === "out_of_season"
-          ? (today.next_opening
-              ? "Parc fermé pour la saison — réouverture prévue le " + PDF.formatDateFR(today.next_opening) + "."
-              : "Parc fermé pour la saison — date de réouverture pas encore annoncée.")
-          : "Indisponible : les dernières données connues datent du " + PDF.formatDateFR(today.date) + ", pas d'aujourd'hui.";
-        el.innerHTML =
-          '<div class="card nav-card" style="cursor:default;">' +
-          '<span class="nav-card-icon" aria-hidden="true">🕰️</span>' +
-          "<h3>Spectacle nocturne</h3><p>" + PDF.escapeHtml(message) + "</p></div>";
-        return;
-      }
-      // Calculé à partir de l'heure réelle du navigateur (voir
-      // PDF.computeUpcoming), pas du champ "nocturne" du JSON qui est figé
-      // au moment de la dernière collecte automatique.
-      var upcoming = PDF.computeUpcoming(today);
-      // Le nocturne EST déjà le prochain spectacle (ex: en fin de journée) :
-      // une seule carte suffit, pas de doublon avec le même horaire deux fois.
-      var isSameSlot = upcoming.next && upcoming.nocturne &&
-        upcoming.next.start === upcoming.nocturne.start && upcoming.next.name === upcoming.nocturne.name;
-      var cards = highlightCard("🎭", "Prochain spectacle", upcoming.next);
-      if (!isSameSlot) cards += highlightCard("🌙", "Spectacle nocturne", upcoming.nocturne);
-      el.innerHTML = cards;
+    function inProgressHtml(items, nowMinutes) {
+      if (!items.length) return "";
+      return (
+        '<section class="section">' +
+        '<div class="section-label">En cours</div>' +
+        '<div class="inprogress-grid">' +
+        items.slice(0, 2).map(function (item) {
+          var s = PDF.timeToMinutes(item.start), e = PDF.timeToMinutes(item.end);
+          var pct = s != null && e != null && e > s ? Math.min(100, Math.max(0, Math.round(((nowMinutes - s) / (e - s)) * 100))) : 0;
+          return (
+            '<div class="card inprogress-card">' +
+            '<div class="inprogress-name">' + PDF.escapeHtml(item.name) + "</div>" +
+            '<div class="progress-track"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
+            '<div class="inprogress-sub">jusqu\'à ' + PDF.formatTimeFR(item.end) + "</div>" +
+            "</div>"
+          );
+        }).join("") +
+        "</div></section>"
+      );
     }
 
+    function withinHourHtml(items, lastShowingSlugs, dateStr) {
+      if (!items.length) return "";
+      return (
+        '<section class="section">' +
+        '<div class="section-label">' + PDF.icon("clock") + " Dans l'heure</div>" +
+        '<div class="card list-card">' +
+        items.map(function (item) {
+          var isLast = lastShowingSlugs.indexOf(item.slug) !== -1;
+          var dur = durationLabel(item.start, item.end);
+          var meta = isLast ? "Dernière séance" + (dur ? " · " + dur : "") : dur;
+          var already = false;
+          try { already = PDF.isInPlan(dateStr, item.slug || item.name, item.start); } catch (e) { /* ignore */ }
+          return (
+            '<div class="list-row">' +
+            '<span class="list-row-time">' + PDF.formatTimeFR(item.start) + "</span>" +
+            '<span class="list-row-main"><span class="list-row-name">' + PDF.escapeHtml(item.name) + "</span>" +
+            (meta ? '<span class="list-row-meta' + (isLast ? " is-warn" : "") + '"> · ' + PDF.escapeHtml(meta) + "</span>" : "") +
+            "</span>" +
+            '<button type="button" class="add-to-day-btn add-to-day-trigger' + (already ? " is-added" : "") + '" ' +
+            'data-slug="' + PDF.escapeHtml(item.slug || "") + '" data-name="' + PDF.escapeHtml(item.name) + '" ' +
+            'data-category="' + PDF.escapeHtml(item.category || "") + '" data-start="' + item.start + '" data-end="' + (item.end || "") + '" ' +
+            'aria-label="' + (already ? "Déjà dans ma journée" : "Ajouter à ma journée") + '" aria-pressed="' + already + '">' +
+            (already ? "✓" : "+") +
+            "</button>" +
+            "</div>"
+          );
+        }).join("") +
+        "</div></section>"
+      );
+    }
+
+    function nocturneHtml(item, heroItem) {
+      if (!item) return "";
+      if (heroItem && heroItem.start === item.start && heroItem.name === item.name) return "";
+      return (
+        '<section class="section">' +
+        '<div class="card card--night">' +
+        '<div class="section-label">' + PDF.icon("moon") + " Ce soir</div>" +
+        '<div class="inprogress-name" style="font-weight:600">' + PDF.escapeHtml(item.name) + "</div>" +
+        '<div class="inprogress-sub">' + PDF.formatTimeFR(item.start) + "</div>" +
+        "</div></section>"
+      );
+    }
+
+    function renderOpenDay(today) {
+      var now = new Date();
+      var nowMinutes = now.getHours() * 60 + now.getMinutes();
+      var upcoming = PDF.computeUpcoming(today, now);
+      var mine = myDayNext(today.date, nowMinutes);
+      var heroItem = mine || upcoming.next;
+      var isMyDay = !!mine;
+
+      var html = heroCardHtml(heroItem, isMyDay, nowMinutes);
+      html += inProgressHtml(upcoming.inProgress, nowMinutes);
+      html += withinHourHtml(upcoming.withinHour, upcoming.lastShowingSlugs, today.date);
+      html += nocturneHtml(upcoming.nocturne, heroItem);
+      document.getElementById("today-content").innerHTML = html;
+    }
+
+    /* ------------------------------------------------------------------
+     * Jour FERMÉ / hors saison
+     * ---------------------------------------------------------------- */
+    function daysUntil(targetIso) {
+      var a = PDF.parseISODate(PDF.isoDateToday());
+      var b = PDF.parseISODate(targetIso);
+      if (!a || !b) return null;
+      return Math.round((b - a) / 86400000);
+    }
+
+    function renderClosedDay(today) {
+      var el = document.getElementById("today-content");
+      var n = today.next_opening ? daysUntil(today.next_opening) : null;
+      var seasonEnd = today.season && today.season.end_date;
+
+      var numberHtml = n != null && n >= 0
+        ? '<div class="reopen-number">' + n + "</div><p>Réouverture dans " + (n === 0 ? "0 jour (aujourd'hui !)" : n + (n > 1 ? " jours" : " jour")) + "</p>"
+        : "<p>Date de réouverture pas encore annoncée.</p>";
+      var dateHtml = today.next_opening
+        ? '<p class="reopen-sub">' + PDF.escapeHtml(PDF.formatDateLongFR(today.next_opening)) +
+          (seasonEnd ? " · saison jusqu'au " + PDF.escapeHtml(PDF.formatDateFR(seasonEnd)) : "") + "</p>"
+        : "";
+      var actionsHtml = '<div class="reopen-actions">';
+      if (today.next_opening) {
+        actionsHtml +=
+          '<a class="btn" href="carnet.html?date=' + encodeURIComponent(today.next_opening) + '#journee">Préparer ma visite</a>' +
+          '<button type="button" class="btn btn-outline" id="btn-download-reopening-ics">' + PDF.icon("external-link") + " Agenda .ics</button>";
+      }
+      actionsHtml += "</div>";
+
+      el.innerHTML =
+        '<div class="card reopen-card">' + numberHtml + dateHtml + actionsHtml + "</div>" +
+        '<section class="section"><h2>La saison ' + (today.season ? today.season.year : "") + "</h2>" +
+        '<div class="stat-grid" id="season-kpis"><div class="stat-tile"><div class="skeleton" style="height:2.2rem"></div></div></div>' +
+        "</section>";
+
+      var btn = document.getElementById("btn-download-reopening-ics");
+      if (btn) {
+        btn.addEventListener("click", function () {
+          var ics = PDF.buildAllDayIcs(
+            today.next_opening,
+            "Réouverture du Puy du Fou",
+            "Première journée de la saison " + (today.season ? today.season.name : "") + "."
+          );
+          PDF.downloadTextFile("reouverture-puy-du-fou-" + today.next_opening + ".ics", ics, "text/calendar");
+        });
+      }
+
+      if (today.season && today.season.year) {
+        PDF.fetchJSON("history/" + today.season.year + "/stats.json")
+          .then(function (stats) {
+            var g = stats.global || {};
+            var kpis = document.getElementById("season-kpis");
+            if (!kpis) return;
+            kpis.innerHTML =
+              '<div class="stat-tile"><div class="stat-label">Représentations</div><div class="stat-value">' + PDF.formatNumberFR(g.total_representations) + "</div></div>" +
+              '<div class="stat-tile"><div class="stat-label">Spectacles</div><div class="stat-value">' + PDF.formatNumberFR(g.total_spectacles) + "</div></div>" +
+              '<div class="stat-tile"><div class="stat-label">Moyenne / jour</div><div class="stat-value">' + PDF.formatNumberFR(g.avg_per_day, { maximumFractionDigits: 1 }) + "</div></div>" +
+              '<div class="stat-tile"><div class="stat-label">Record</div><div class="stat-value">' + PDF.formatNumberFR(g.max_per_day && g.max_per_day.count) +
+              '</div><div class="stat-sub">' + (g.max_per_day ? PDF.formatDateFR(g.max_per_day.date) : "") + "</div></div>";
+          })
+          .catch(function () {
+            var kpis = document.getElementById("season-kpis");
+            if (kpis) kpis.innerHTML = "";
+          });
+      }
+    }
+
+    /* ------------------------------------------------------------------
+     * Ajout au plan du jour (clic sur un bouton "+")
+     * ---------------------------------------------------------------- */
+    document.getElementById("today-content").addEventListener("click", function (e) {
+      var btn = e.target.closest(".add-to-day-trigger");
+      if (!btn || !latestToday) return;
+      var item = {
+        slug: btn.getAttribute("data-slug") || null,
+        name: btn.getAttribute("data-name"),
+        category: btn.getAttribute("data-category") || null,
+        start: btn.getAttribute("data-start"),
+        end: btn.getAttribute("data-end") || null,
+        is_continuous: false,
+      };
+      try {
+        var added = PDF.addToPlan(latestToday.date, item);
+        if (added) renderOpenDay(latestToday);
+      } catch (err) {
+        PDF.renderErrorMessage(document.getElementById("today-content"), "Impossible d'enregistrer dans le carnet (" + err.message + ").");
+      }
+    });
+
+    /* ------------------------------------------------------------------
+     * Rafraîchissement en direct (toutes les minutes, en pause en arrière-plan)
+     * ---------------------------------------------------------------- */
+    function stopAutoRefresh() {
+      if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+    }
+    function startAutoRefresh() {
+      stopAutoRefresh();
+      if (!latestIsToday) return;
+      refreshTimer = setInterval(function () { renderOpenDay(latestToday); }, 60000);
+    }
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) { stopAutoRefresh(); return; }
+      if (latestToday) { renderOpenDay(latestToday); startAutoRefresh(); }
+    });
+
+    /* ------------------------------------------------------------------
+     * Chargement initial
+     * ---------------------------------------------------------------- */
     PDF.fetchJSON("today.json")
       .then(function (today) {
-        var isToday = PDF.isDataForToday(today.date);
-        document.getElementById("today-title").textContent = isToday
-          ? "Aujourd'hui — " + PDF.formatDateLongFR(today.date)
-          : "Dernières données disponibles — " + PDF.formatDateLongFR(today.date);
-        document.getElementById("today-updated").textContent =
-          "Mis à jour le " + PDF.formatDateTimeFR(today.updated_at);
+        latestToday = today;
+        latestIsToday = PDF.isDataForToday(today.date);
+        document.getElementById("today-date-label").textContent = PDF.formatDateLongFR(today.date);
+        document.getElementById("today-title").textContent = latestIsToday ? "Aujourd'hui" : "Dernières données disponibles";
+
+        var isOpen = today.status === "ok" || today.status === "partial";
+        document.getElementById("status-pill-slot").innerHTML =
+          '<span class="pill-status ' + (isOpen ? "is-open" : "is-closed") + '">' + (isOpen ? "Ouvert" : "Fermé") + "</span>";
+
         document.getElementById("status-banner-slot").innerHTML =
           PDF.seasonClosedBannerHtml(today) ||
           PDF.statusBannerHtml(today.status, today.date, (today.representation_count || 0) > 0, true);
-        renderStats(today);
-        renderHighlights(today, isToday);
+
         var src = today.source || {};
         document.getElementById("source-line").textContent = src.retrieved_at
           ? "Source : programme officiel du Puy du Fou — récupéré le " + PDF.formatDateTimeFR(src.retrieved_at)
           : "";
+        PDF.setFreshnessNote(src.retrieved_at || today.updated_at);
+
+        if (isOpen && latestIsToday) {
+          renderOpenDay(today);
+          startAutoRefresh();
+        } else if (today.status === "closed_day" || today.status === "out_of_season") {
+          renderClosedDay(today);
+        } else if (!latestIsToday) {
+          // "ok" mais daté d'un autre jour que celui du navigateur (collecte
+          // à l'arrêt) : impossible d'afficher un "en direct" fiable. Le
+          // bandeau "status-stale" ci-dessus l'explique déjà.
+          document.getElementById("today-content").innerHTML = "";
+        } else {
+          renderOpenDay(today);
+        }
       })
       .catch(function (err) {
         PDF.renderErrorMessage(
-          document.getElementById("today-summary"),
+          document.getElementById("today-content"),
           "Impossible de charger le programme du jour (" + err.message + "). Réessayez plus tard."
         );
       });
