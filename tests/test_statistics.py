@@ -159,6 +159,33 @@ def test_compute_spectacle_stats_history_includes_ranges_for_continuous_shows(sa
     assert by_date["2026-08-28"]["ranges"] == ["09:30-12:00", "14:30-16:45"]
 
 
+def test_spectacle_start_durations_picks_the_most_frequent_duration(sample_conn):
+    # Les Vikings à 11:30 : sans end_time (-> durée par défaut, 25 min) les
+    # deux jours existants du fixture, contre 20 min explicites un 3e jour
+    # -> le défaut, majoritaire, l'emporte.
+    _add_day(sample_conn, "2026-08-27", [
+        ("Les Vikings", "les-vikings", "spectacle", "11:30", "11:50", False, config.REPR_STATUS_SCHEDULED),
+    ])
+    valid_dates = {"2026-08-25", "2026-08-26", "2026-08-27"}
+    durations = statistics.spectacle_start_durations(sample_conn, "les-vikings", valid_dates)
+    assert durations["11:30"] == config.DEFAULT_SHOW_DURATION_MINUTES
+    assert durations["16:00"] == config.DEFAULT_SHOW_DURATION_MINUTES
+
+
+def test_spectacle_start_durations_ignores_dates_outside_valid_dates(sample_conn):
+    durations = statistics.spectacle_start_durations(sample_conn, "les-vikings", {"2026-08-25"})
+    assert "16:00" not in durations  # seule séance du 26, hors de valid_dates ici
+    assert durations["11:30"] == config.DEFAULT_SHOW_DURATION_MINUTES
+
+
+def test_spectacle_start_durations_excludes_continuous_shows(sample_conn):
+    _add_day(sample_conn, "2026-08-28", [
+        ("La Renaissance du Château", "la-renaissance-du-chateau", "spectacle_immersif", "09:30", "12:00", True, config.REPR_STATUS_SCHEDULED),
+    ])
+    durations = statistics.spectacle_start_durations(sample_conn, "la-renaissance-du-chateau", {"2026-08-28"})
+    assert durations == {}
+
+
 def test_compute_spectacle_stats_unknown_slug_returns_none(sample_conn):
     assert statistics.compute_spectacle_stats(sample_conn, "spectacle-inexistant") is None
 

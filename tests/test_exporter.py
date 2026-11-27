@@ -8,7 +8,7 @@ import json
 
 import pytest
 
-from src import config, database, exporter, season_config
+from src import calendar_config, config, database, exporter, normalizer, season_config
 from src.models import now_iso
 
 
@@ -414,3 +414,149 @@ def test_export_per_year_views_skips_a_season_not_yet_started(conn, tmp_path, mo
     assert (tmp_path / "history" / "2026" / "stats.json").exists()
     assert (tmp_path / "history" / "2026" / "spectacles.json").exists()
     assert not (tmp_path / "history" / "2027").exists()
+
+
+def test_export_schedule_index_builds_compact_days_string(conn, tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "HISTORY_JSON_DIR", tmp_path / "history")
+    _add_day(conn, "2026-08-26")
+    # Une 2e séance de Les Vikings le même jour, pour vérifier le tri et la
+    # jonction par virgule de plusieurs créneaux.
+    date_row = database.get_active_date(conn, "2026-08-26")
+    spectacle_id = database.get_or_create_spectacle(conn, name="Les Vikings", slug="les-vikings", category="spectacle")
+    database.insert_representation(
+        conn, date_id=date_row["id"], spectacle_id=spectacle_id, start_time="16:00", end_time=None,
+        is_continuous=False, status=config.REPR_STATUS_SCHEDULED, source_text="16:00 Les Vikings",
+    )
+
+    payload = exporter.export_schedule_index(conn, 2026)
+
+    assert payload["season"] == 2026
+    entry = payload["spectacles"]["les-vikings"]
+    assert entry["name"] == "Les Vikings"
+    assert entry["category"] == "spectacle"
+    assert entry["days"] == {"2026-08-26": "11:30,16:00"}
+    assert entry["durations"]["11:30"] == config.DEFAULT_SHOW_DURATION_MINUTES
+    assert payload["excluded_dates"] == []
+    assert (tmp_path / "history" / "2026" / "schedule-index.json").exists()
+
+
+def test_export_schedule_index_uses_ranges_for_continuous_shows(conn, tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "HISTORY_JSON_DIR", tmp_path / "history")
+    season_id = database.get_or_create_season(conn, 2026)
+    date_id, _ = database.create_date_version(
+        conn, date_str="2026-08-26", season_id=season_id, source_url="https://example.test",
+        source_file=None, source_hash="hash", retrieved_at=now_iso(), program_published_at=None, status="ok",
+    )
+    spectacle_id = database.get_or_create_spectacle(
+        conn, name="La Renaissance du Château", slug="la-renaissance-du-chateau", category="spectacle_immersif"
+    )
+    database.insert_representation(
+        conn, date_id=date_id, spectacle_id=spectacle_id, start_time="09:30", end_time="12:00",
+        is_continuous=True, status=config.REPR_STATUS_SCHEDULED, source_text="continu",
+    )
+
+    payload = exporter.export_schedule_index(conn, 2026)
+
+    assert payload["spectacles"]["la-renaissance-du-chateau"]["days"] == {"2026-08-26": "09:30-12:00"}
+    # Pas de durée pour un accès continu (voir statistics.spectacle_start_durations).
+    assert payload["spectacles"]["la-renaissance-du-chateau"]["durations"] == {}
+
+
+def test_export_schedule_index_lists_closed_and_private_dates_as_excluded(conn, tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "HISTORY_JSON_DIR", tmp_path / "history")
+    _add_day(conn, "2026-08-26")
+    _add_day(conn, "2026-08-27", status=config.DATE_STATUS_CLOSED_DAY)
+    _add_day(conn, "2026-08-28", status=config.DATE_STATUS_PRIVATE_EVENT)
+
+    payload = exporter.export_schedule_index(conn, 2026)
+
+    assert payload["excluded_dates"] == ["2026-08-27", "2026-08-28"]
+    # Un jour exclu ne doit apparaître dans AUCUN "days" de spectacle.
+    assert "2026-08-27" not in payload["spectacles"]["les-vikings"]["days"]
+    assert "2026-08-28" not in payload["spectacles"]["les-vikings"]["days"]
+
+
+def test_export_schedule_index_never_predicts_an_ephemeral_show_outside_its_period(conn, tmp_path, monkeypatch):
+    # Même règle que compute_spectacle_stats (active_periods) : un spectacle
+    # éphémère ne doit apparaître dans l'index QUE pour les jours de sa
+    # période, jamais pour un jour où il n'est en réalité pas programmé.
+    known_path = tmp_path / "known_spectacles.json"
+    known_path.write_text(json.dumps({
+        "la-frairie-de-la-toussaint": {
+            "name": "La Frairie de la Toussaint",
+            "category": "spectacle",
+            "aliases": ["La Frairie de la Toussaint"],
+            "active_periods": [{"from": "2026-10-03", "to": "2026-10-31"}],
+        }
+    }), encoding="utf-8")
+    monkeypatch.setattr(config, "KNOWN_SPECTACLES_PATH", known_path)
+    monkeypatch.setattr(config, "HISTORY_JSON_DIR", tmp_path / "history")
+    normalizer.clear_cache()
+    try:
+        season_id = database.get_or_create_season(conn, 2026)
+        date_id, _ = database.create_date_version(
+            conn, date_str="2026-08-26", season_id=season_id, source_url="https://example.test",
+            source_file=None, source_hash="hash", retrieved_at=now_iso(), program_published_at=None, status="ok",
+        )
+        spectacle_id = database.get_or_create_spectacle(
+            conn, name="La Frairie de la Toussaint", slug="la-frairie-de-la-toussaint", category="spectacle"
+        )
+        database.insert_representation(
+            conn, date_id=date_id, spectacle_id=spectacle_id, start_time="14:00", end_time=None,
+            is_continuous=False, status=config.REPR_STATUS_SCHEDULED, source_text="14:00 Frairie",
+        )
+
+        payload = exporter.export_schedule_index(conn, 2026)
+
+        # 2026-08-26 est hors de la période active (octobre) : absent de
+        # l'index, même si une représentation existe bel et bien en base
+        # pour cette date précise (donnée réelle anormale, improbable, mais
+        # la règle doit s'appliquer quoi qu'il arrive).
+        assert "la-frairie-de-la-toussaint" not in payload["spectacles"]
+    finally:
+        normalizer.clear_cache()
+
+
+def test_export_current_schedule_index_writes_the_global_path(conn, tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "HISTORY_JSON_DIR", tmp_path / "history")
+    monkeypatch.setattr(config, "SCHEDULE_INDEX_JSON", tmp_path / "schedule-index.json")
+    _add_day(conn, "2026-08-26")
+    # get_season_for_date cherche par PLAGE de dates : il faut que la
+    # saison 2026 ait des dates renseignées pour que "today" y tombe.
+    database.set_season_dates(conn, 2026, start_date="2026-04-04", end_date="2026-11-08")
+
+    payload = exporter.export_current_schedule_index(conn, today="2026-08-26")
+
+    assert payload is not None
+    assert payload["season"] == 2026
+    assert (tmp_path / "schedule-index.json").exists()
+
+
+def test_export_current_schedule_index_returns_none_outside_any_known_season(conn, tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "HISTORY_JSON_DIR", tmp_path / "history")
+    monkeypatch.setattr(config, "SCHEDULE_INDEX_JSON", tmp_path / "schedule-index.json")
+    # Aucune saison n'a de dates renseignées ici (pas de set_season_dates) :
+    # get_season_for_date ne peut rien affirmer -> pas de saison "courante".
+    assert exporter.export_current_schedule_index(conn, today="2026-08-26") is None
+    assert not (tmp_path / "schedule-index.json").exists()
+
+
+def test_export_calendar_copies_the_config_file(tmp_path, monkeypatch):
+    source = tmp_path / "calendar.json"
+    source.write_text(json.dumps({
+        "_comment": "ignored",
+        "source": "Test",
+        "school_holidays": [{"name": "Test", "start": "2026-01-01", "end": "2026-01-05"}],
+        "public_holidays": ["2026-01-01"],
+    }), encoding="utf-8")
+    dest = tmp_path / "out" / "calendar.json"
+    monkeypatch.setattr(config, "CALENDAR_CONFIG_PATH", source)
+    monkeypatch.setattr(config, "CALENDAR_JSON", dest)
+    calendar_config.clear_cache()
+    try:
+        payload = exporter.export_calendar()
+        assert payload["source"] == "Test"
+        assert "_comment" not in payload
+        assert json.loads(dest.read_text(encoding="utf-8"))["source"] == "Test"
+    finally:
+        calendar_config.clear_cache()

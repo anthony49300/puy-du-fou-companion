@@ -1,0 +1,64 @@
+{
+  "source": "Calendrier scolaire officiel (education.gouv.fr) - zone B, academie de Nantes (Vendee)",
+  "school_holidays": [
+    {
+      "name": "Vacances de printemps 2025",
+      "start": "2025-04-05",
+      "end": "2025-04-21"
+    },
+    {
+      "name": "Vacances de la Toussaint 2025",
+      "start": "2025-10-18",
+      "end": "2025-11-02"
+    },
+    {
+      "name": "Vacances de Noël 2025",
+      "start": "2025-12-20",
+      "end": "2026-01-04"
+    },
+    {
+      "name": "Vacances de printemps 2026",
+      "start": "2026-04-11",
+      "end": "2026-04-26"
+    },
+    {
+      "name": "Vacances d'été 2026",
+      "start": "2026-07-04",
+      "end": "2026-08-31"
+    },
+    {
+      "name": "Vacances de la Toussaint 2026",
+      "start": "2026-10-17",
+      "end": "2026-11-01"
+    },
+    {
+      "name": "Vacances de Noël 2026",
+      "start": "2026-12-19",
+      "end": "2027-01-03"
+    }
+  ],
+  "public_holidays": [
+    "2025-01-01",
+    "2025-04-21",
+    "2025-05-01",
+    "2025-05-08",
+    "2025-05-29",
+    "2025-06-09",
+    "2025-07-14",
+    "2025-08-15",
+    "2025-11-01",
+    "2025-11-11",
+    "2025-12-25",
+    "2026-01-01",
+    "2026-04-06",
+    "2026-05-01",
+    "2026-05-08",
+    "2026-05-14",
+    "2026-05-25",
+    "2026-07-14",
+    "2026-08-15",
+    "2026-11-01",
+    "2026-11-11",
+    "2026-12-25"
+  ]
+}

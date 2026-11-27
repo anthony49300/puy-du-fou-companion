@@ -233,6 +233,32 @@ def compute_spectacle_stats(
     }
 
 
+def spectacle_start_durations(conn: sqlite3.Connection, slug: str, valid_dates: set[str]) -> dict[str, int]:
+    """Durée la plus fréquente (minutes) par heure de début, pour les
+    séances à heure fixe de `slug` tombant dans `valid_dates` — l'appelant
+    (`src/exporter.py:export_schedule_index`) y passe l'ensemble des dates
+    déjà validées par `compute_spectacle_stats` pour CE spectacle/cette
+    saison (jours de fermeture/hors saison/privatisation exclus, et hors
+    `active_periods` pour un spectacle éphémère), plutôt que de refaire ce
+    filtrage ici d'une façon qui pourrait diverger.
+
+    Sert à reconstruire une fin plausible pour un horaire du "programme
+    probable" (voir site/js/schedule-stats.js) : la source officielle ne
+    donne qu'un début pour la plupart des spectacles ponctuels.
+    """
+    spectacle = database.get_spectacle_by_slug(conn, slug)
+    if not spectacle:
+        return {}
+    reps = database.get_representations_for_spectacle(conn, spectacle["id"])
+    by_start: dict[str, Counter] = defaultdict(Counter)
+    for r in reps:
+        if r["date"] not in valid_dates or r["is_continuous"] or not r["start_time"]:
+            continue
+        duration = _duration_minutes(r["start_time"], r["end_time"])
+        by_start[r["start_time"]][duration] += 1
+    return {start: counter.most_common(1)[0][0] for start, counter in by_start.items()}
+
+
 # ---------------------------------------------------------------------------
 # Statistiques avancées
 # ---------------------------------------------------------------------------
