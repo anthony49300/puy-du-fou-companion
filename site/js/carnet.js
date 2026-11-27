@@ -61,6 +61,8 @@
     currentVisit: null, // visite actuellement ouverte dans le panneau de détail (onglet Visites)
     autoPlanSlots: [], // horaires officiels proposés pour le panneau "planning automatique"
     planCalendar: { year: null, month: null }, // mois affiché par le calendrier de "Composer la journée"
+    reconciledDates: {}, // "2026-08-26" -> true une fois réconciliée (voir reconcileEstimatedItems) : pas deux fois le même toast
+    calendar: null, // data/json/calendar.json, résolu une fois (voir PDF.fetchCalendarOnce)
   };
 
   function uid() {
@@ -210,6 +212,62 @@
       return (a.start || "").localeCompare(b.start || "");
     });
     return slots;
+  }
+
+  // Même forme que realDayToSlots, mais à partir d'une estimation (voir
+  // PDF.scheduleStats.probableProgramme) : chaque entrée porte en plus
+  // `estimated: true` et sa confiance, pour que populerSelectReel/btnAddReal
+  // les reportent sur l'item du plan (voir reconcileEstimatedItems).
+  function probableToSlots(probable) {
+    var slots = [];
+    probable.spectacles.forEach(function (item) {
+      var duration = null;
+      item.starts.forEach(function (t) {
+        duration = item.durations && item.durations[t] != null ? item.durations[t] : null;
+        slots.push({
+          slug: item.slug, name: item.name, category: item.category,
+          start: t, end: duration != null ? minutesToHHMM(PDF.timeToMinutes(t) + duration) : null,
+          is_continuous: false, status: "scheduled", estimated: true, confidence: item.confidence,
+        });
+      });
+      item.ranges.forEach(function (r) {
+        var parts = r.split("-");
+        slots.push({
+          slug: item.slug, name: item.name, category: item.category,
+          start: parts[0], end: parts[1] || null, is_continuous: true, status: "scheduled",
+          estimated: true, confidence: item.confidence,
+        });
+      });
+    });
+    slots.sort(function (a, b) {
+      if (a.is_continuous && b.is_continuous) return 0;
+      if (a.is_continuous) return -1;
+      if (b.is_continuous) return 1;
+      return (a.start || "").localeCompare(b.start || "");
+    });
+    return slots;
+  }
+
+  // Tente une estimation pour une date sans programme officiel (voir
+  // btnLoadReal) : résout toujours (jamais rejetée), même sans résultat.
+  function loadProbableSlots(dateStr) {
+    return Promise.all([PDF.fetchScheduleIndexOnce(), PDF.fetchCalendarOnce()]).then(function (results) {
+      var index = results[0];
+      state.calendar = results[1];
+      var probable = index ? PDF.scheduleStats.probableProgramme(index, state.calendar, dateStr) : null;
+      if (!probable || !probable.spectacles.length) {
+        populerSelectReel([]);
+        toast("Aucune donnée officielle ni estimation fiable pour cette date : ajoutez manuellement si besoin.");
+        return;
+      }
+      var slots = probableToSlots(probable);
+      populerSelectReel(slots);
+      toast(
+        slots.length + " horaire(s) estimé(s) (" + Math.round(
+          probable.spectacles.reduce(function (sum, s) { return sum + s.confidence; }, 0) / probable.spectacles.length * 100
+        ) + "% de confiance moyenne) — programme officiel pas encore publié."
+      );
+    });
   }
 
   /* ----------------------------------------------------------------------
@@ -574,6 +632,61 @@
     renderTimeline(tous, conflits);
     renderAlertes(tous, conflits);
     renderSwapChipsAsync(dateStr, tous, conflits);
+    reconcileEstimatedItems(dateStr);
+    updateLoadButtonLabel(dateStr);
+  }
+
+  // Une fois que le programme officiel existe pour une date qui n'en avait
+  // pas au moment de l'ajout (séances "estimées", voir programme.html/
+  // "Programme probable"), confronte chaque séance estimée au programme
+  // réel : une correspondance exacte (même slug, même heure de début) lève
+  // silencieusement le drapeau "estimated" ; sinon l'item est gardé mais
+  // marqué "unconfirmed" (voir renderTimeline/renderSwapChipsAsync), et un
+  // toast résume l'écart. Ne tourne qu'une fois par date (state.reconciledDates)
+  // pour ne pas re-déclencher le toast à chaque rendu de la même journée.
+  function reconcileEstimatedItems(dateStr) {
+    if (state.reconciledDates[dateStr]) return;
+    var plan = planCourant(dateStr);
+    var estimatedItems = plan.items.filter(function (it) { return it.estimated && !it.unconfirmed; });
+    if (!estimatedItems.length) { state.reconciledDates[dateStr] = true; return; }
+    fetchRealDay(dateStr).then(function (dayData) {
+      if (!dayData) return; // pas encore publié : on retentera au prochain rendu de cette date
+      state.reconciledDates[dateStr] = true;
+      var officialSlots = realDayToSlots(dayData);
+      var matched = [];
+      var unmatched = [];
+      estimatedItems.forEach(function (it) {
+        var hit = officialSlots.some(function (s) { return s.slug === it.slug && s.start === it.start; });
+        if (hit) matched.push(it); else unmatched.push(it);
+      });
+      matched.forEach(function (it) { delete it.estimated; delete it.confidence; });
+      unmatched.forEach(function (it) { it.unconfirmed = true; });
+      if (matched.length || unmatched.length) { sauver(); renderJour(); }
+      if (unmatched.length) {
+        toast(
+          unmatched.length + " séance" + (unmatched.length > 1 ? "s" : "") + " estimée" + (unmatched.length > 1 ? "s" : "") +
+          " non confirmée" + (unmatched.length > 1 ? "s" : "") + " par le programme officiel : " +
+          unmatched.map(function (it) { return it.name + " (" + PDF.formatTimeFR(it.start) + ")"; }).join(", ") +
+          " — voir les autres séances proposées."
+        );
+      } else if (matched.length) {
+        toast(matched.length + " séance" + (matched.length > 1 ? "s" : "") + " estimée" + (matched.length > 1 ? "s" : "") + " confirmée" + (matched.length > 1 ? "s" : "") + " par le programme officiel.");
+      }
+    });
+  }
+
+  // "Charger le programme officiel" devient "... probable" quand aucun
+  // programme officiel n'existe encore pour la date sélectionnée (voir
+  // PDF.scheduleStats.probableProgramme) — fetchRealDay est déjà mis en
+  // cache par date, ce changement de libellé ne coûte donc pas de requête
+  // supplémentaire au clic.
+  function updateLoadButtonLabel(dateStr) {
+    var btn = $("btnLoadReal");
+    if (!btn || !dateStr) return;
+    fetchRealDay(dateStr).then(function (dayData) {
+      if ($("planDate").value !== dateStr) return; // la date a changé entre-temps
+      btn.textContent = dayData ? "Charger le programme officiel de cette date" : "Charger le programme probable de cette date";
+    });
   }
 
   // Durée totale des séances à heure fixe (les attractions en continu n'ont
@@ -767,10 +880,18 @@
       var badges = it.slug
         ? PDF.representationBadges({ start: it.start, is_continuous: it.is_continuous, status: it.status || "scheduled" }, it.category)
         : '<span class="badge badge-default">Ajout manuel</span>';
+      // Voir reconcileEstimatedItems : "estimated" = pas encore de programme
+      // officiel pour cette date (programme probable) ; "unconfirmed" = le
+      // programme officiel existe désormais mais ne confirme pas CET
+      // horaire précis (ni ajouté ni retiré automatiquement, à l'utilisateur
+      // de décider — voir les chips "Autres séances" ci-dessous).
+      if (it.unconfirmed) badges += '<span class="badge badge-conflict-warn">Horaire non confirmé</span>';
+      else if (it.estimated) badges += '<span class="badge badge-default">Estimé</span>';
       var gateNote = (!it.is_continuous && it.start)
         ? '<div class="gate-note">' + PDF.icon("door") + " Portes " +
           PDF.escapeHtml(PDF.formatTimeFR(minutesToHHMM(PDF.timeToMinutes(it.start) - S.gate))) + "</div>"
         : "";
+      var needsSwapChips = (autreConflit || it.unconfirmed) && it.slug;
 
       html +=
         '<li class="day-timeline-item">' +
@@ -780,7 +901,7 @@
         '<div class="day-card-name">' + PDF.escapeHtml(it.name) + "</div>" +
         '<div class="day-card-badges">' + badges + "</div>" +
         (autreConflit ? '<div class="day-card-conflict">Chevauche ' + PDF.escapeHtml(autreConflit.name) + "</div>" : "") +
-        (autreConflit && it.slug ? '<div class="swap-chips" id="swap-' + it.uid + '"></div>' : "") +
+        (needsSwapChips ? '<div class="swap-chips" id="swap-' + it.uid + '"></div>' : "") +
         gateNote +
         '<button type="button" class="btn btn-outline no-print remove-btn" data-remove="' + it.uid + '" aria-label="Retirer ' + PDF.escapeHtml(it.name) + '">' + PDF.icon("x") + "</button>" +
         "</div>" +
@@ -815,13 +936,14 @@
     });
   }
 
-  // Pour chaque séance en chevauchement réel, propose en chips les autres
-  // horaires connus du MÊME spectacle ce jour-là (programme officiel) pour
-  // la déplacer en un tap — n'affiche rien si le programme officiel de
-  // cette date n'est pas disponible (ex: ajout manuel, jour trop ancien).
+  // Pour chaque séance en chevauchement réel OU "non confirmée" par le
+  // programme officiel (voir reconcileEstimatedItems), propose en chips les
+  // autres horaires connus du MÊME spectacle ce jour-là pour la déplacer en
+  // un tap — n'affiche rien si le programme officiel de cette date n'est
+  // pas disponible (ex: ajout manuel, jour trop ancien, pas encore publié).
   function renderSwapChipsAsync(dateStr, items, conflits) {
     var cibles = items.filter(function (it) {
-      return it.slug && conflits.some(function (c) { return c.chevauchement && (c.a === it || c.b === it); });
+      return it.slug && (it.unconfirmed || conflits.some(function (c) { return c.chevauchement && (c.a === it || c.b === it); }));
     });
     if (!cibles.length) return;
     fetchRealDay(dateStr).then(function (dayData) {
@@ -847,6 +969,11 @@
             if (!cible) return;
             cible.start = btn.getAttribute("data-swap-start");
             cible.end = btn.getAttribute("data-swap-end") || null;
+            // On vient de choisir un horaire TIRÉ DU PROGRAMME OFFICIEL :
+            // ni estimé ni non confirmé, quel que soit l'état précédent.
+            delete cible.estimated;
+            delete cible.unconfirmed;
+            delete cible.confidence;
             sauver();
             renderJour();
           });
@@ -887,7 +1014,8 @@
         (s.is_continuous
           ? "En continu" + (s.end ? " " + PDF.formatTimeFR(s.start) + "–" + PDF.formatTimeFR(s.end) : "")
           : PDF.formatTimeFR(s.start)) +
-        " — " + s.name;
+        " — " + s.name +
+        (s.estimated ? " (estimé, " + Math.round(s.confidence * 100) + "%)" : "");
       return '<option value="' + i + '">' + PDF.escapeHtml(label) + "</option>";
     }).join("");
     wrap.hidden = false;
@@ -1041,23 +1169,24 @@
       var btn = $("btnLoadReal");
       btn.disabled = true;
       fetchRealDay(dateStr).then(function (dayData) {
-        btn.disabled = false;
-        if (!dayData) {
-          populerSelectReel([]);
-          toast("Aucune donnée officielle pour cette date (hors saison, pas encore publiée, ou trop ancienne) : ajoutez manuellement, ou choisissez une date suggérée par le champ date.");
+        if (dayData) {
+          btn.disabled = false;
+          var slots = realDayToSlots(dayData);
+          populerSelectReel(slots);
+          if (!slots.length) {
+            toast(
+              dayData.status === "closed_day" || dayData.status === "out_of_season"
+                ? "Le Puy du Fou est fermé ce jour-là : ajoutez manuellement si besoin."
+                : "Le programme officiel de cette date ne contient aucun horaire."
+            );
+          } else {
+            toast(slots.length + " horaire(s) chargé(s) depuis le programme officiel.");
+          }
           return;
         }
-        var slots = realDayToSlots(dayData);
-        populerSelectReel(slots);
-        if (!slots.length) {
-          toast(
-            dayData.status === "closed_day" || dayData.status === "out_of_season"
-              ? "Le Puy du Fou est fermé ce jour-là : ajoutez manuellement si besoin."
-              : "Le programme officiel de cette date ne contient aucun horaire."
-          );
-        } else {
-          toast(slots.length + " horaire(s) chargé(s) depuis le programme officiel.");
-        }
+        // Pas (encore) de programme officiel : tente une estimation (voir
+        // PDF.scheduleStats.probableProgramme) plutôt que de s'arrêter là.
+        loadProbableSlots(dateStr).then(function () { btn.disabled = false; });
       });
     });
 
@@ -1135,6 +1264,7 @@
         slug: slot.slug, name: slot.name, category: slot.category,
         start: slot.start, end: slot.end, is_continuous: slot.is_continuous, status: slot.status,
       };
+      if (slot.estimated) { candidat.estimated = true; candidat.confidence = slot.confidence; }
       if (planItemExists(plan, candidat)) return toast(slot.name + " est déjà dans cette journée.");
       candidat.uid = uid();
       plan.items.push(candidat);
@@ -1599,8 +1729,16 @@
   // Numéro de version du format exporté — permet de distinguer, à l'import,
   // un futur format incompatible d'un ancien export. Les exports déjà en
   // circulation n'ont pas ce champ : acceptés quand même (traités comme la
-  // version 1), rien à migrer pour l'instant.
-  var EXPORT_VERSION = 1;
+  // version 1).
+  // v2 : les items de plan peuvent porter `estimated`/`confidence`
+  // (séance ajoutée depuis un "programme probable", voir
+  // PDF.scheduleStats.probableProgramme) et `unconfirmed` (confrontée
+  // depuis au programme officiel, sans correspondance exacte — voir
+  // reconcileEstimatedItems). Purement additif : un export v1 importé tel
+  // quel a simplement ces champs absents, ce qui équivaut déjà à "jamais
+  // estimée" — aucune migration de données n'est donc nécessaire, seul le
+  // numéro de version progresse pour documenter le changement de forme.
+  var EXPORT_VERSION = 2;
 
   function initIoListeners() {
     $("btnExport").addEventListener("click", function () {

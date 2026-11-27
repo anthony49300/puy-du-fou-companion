@@ -185,14 +185,33 @@ def compute_spectacle_stats(
     total_days = len(all_active_dates)
 
     per_day_count: dict[str, int] = defaultdict(int)
+    # Horaires du jour, pour la distribution par créneau (voir
+    # site/js/schedule-stats.js) : `starts` pour les séances à heure fixe,
+    # `ranges` ("HH:MM-HH:MM") pour les accès continus — jamais les deux à
+    # la fois pour une même représentation.
+    per_day_starts: dict[str, list[str]] = defaultdict(list)
+    per_day_ranges: dict[str, list[str]] = defaultdict(list)
     for r in reps:
         per_day_count[r["date"]] += 1
+        if r["is_continuous"]:
+            if r["start_time"] and r["end_time"]:
+                per_day_ranges[r["date"]].append(f"{r['start_time']}-{r['end_time']}")
+        elif r["start_time"]:
+            per_day_starts[r["date"]].append(r["start_time"])
 
     days_present = len(per_day_count)
     days_absent = max(total_days - days_present, 0)
     avg_per_day = (len(reps) / days_present) if days_present else 0.0
 
-    history = [{"date": d["date"], "count": per_day_count.get(d["date"], 0)} for d in all_active_dates]
+    history = [
+        {
+            "date": d["date"],
+            "count": per_day_count.get(d["date"], 0),
+            "starts": sorted(per_day_starts.get(d["date"], [])),
+            "ranges": sorted(per_day_ranges.get(d["date"], [])),
+        }
+        for d in all_active_dates
+    ]
 
     today_str = datetime.now().date().isoformat()
     today_count = per_day_count.get(today_str, 0)
@@ -212,6 +231,32 @@ def compute_spectacle_stats(
         },
         "history": history,
     }
+
+
+def spectacle_start_durations(conn: sqlite3.Connection, slug: str, valid_dates: set[str]) -> dict[str, int]:
+    """Durée la plus fréquente (minutes) par heure de début, pour les
+    séances à heure fixe de `slug` tombant dans `valid_dates` — l'appelant
+    (`src/exporter.py:export_schedule_index`) y passe l'ensemble des dates
+    déjà validées par `compute_spectacle_stats` pour CE spectacle/cette
+    saison (jours de fermeture/hors saison/privatisation exclus, et hors
+    `active_periods` pour un spectacle éphémère), plutôt que de refaire ce
+    filtrage ici d'une façon qui pourrait diverger.
+
+    Sert à reconstruire une fin plausible pour un horaire du "programme
+    probable" (voir site/js/schedule-stats.js) : la source officielle ne
+    donne qu'un début pour la plupart des spectacles ponctuels.
+    """
+    spectacle = database.get_spectacle_by_slug(conn, slug)
+    if not spectacle:
+        return {}
+    reps = database.get_representations_for_spectacle(conn, spectacle["id"])
+    by_start: dict[str, Counter] = defaultdict(Counter)
+    for r in reps:
+        if r["date"] not in valid_dates or r["is_continuous"] or not r["start_time"]:
+            continue
+        duration = _duration_minutes(r["start_time"], r["end_time"])
+        by_start[r["start_time"]][duration] += 1
+    return {start: counter.most_common(1)[0][0] for start, counter in by_start.items()}
 
 
 # ---------------------------------------------------------------------------

@@ -298,6 +298,64 @@ Le module `src/statistics.py` couvre :
   d'activités (tri par heure de fin, choix glouton) — optimal pour
   maximiser le *nombre* de représentations vues.
 
+## Distribution horaire et programme probable
+
+Au-delà du programme officiel du jour, le site montre **quand un spectacle
+joue habituellement** et peut **estimer un programme probable** pour une
+date que le site officiel n'a pas encore publiée (la fenêtre officielle ne
+couvre qu'aujourd'hui/demain/après-demain, voir "Limites connues").
+
+**Données (Python)**
+
+- `compute_spectacle_stats` (`src/statistics.py`) ajoute `starts`/`ranges` à
+  chaque jour de l'historique par spectacle (`spectacle-history/{slug}.json`),
+  avec les mêmes exclusions que partout ailleurs (jours fermés/hors
+  saison/privatisés exclus, spectacles éphémères limités à leurs
+  `active_periods`).
+- `export_schedule_index` (`src/exporter.py`) exporte un index compact,
+  `schedule-index.json` (saison en cours) et un par saison dans
+  `history/{année}/`, qui liste pour chaque spectacle les jours où il a
+  joué (`"2026-07-22": "11:30,13:00,16:15"`) — **les jours sans
+  représentation sont omis**, pas listés avec un horaire vide : le fichier
+  reste petit, mais une part/fréquence calculée dessus porte sur "les jours
+  où le spectacle a joué", pas sur "tous les jours ouverts de la saison"
+  (contrairement à l'historique par spectacle, complet, lui).
+- `data/calendar.json` (vacances scolaires zone B — académie de Nantes,
+  couvrant la Vendée — et jours fériés) classe un jour en semaine/week-end/
+  vacances. **Maintenu à la main**, comme `data/seasons.json` : pas de
+  calcul automatique, à compléter chaque année. Les dates actuelles viennent
+  du calendrier scolaire officiel (education.gouv.fr) et sont correctes au
+  moment de leur saisie, mais rien ne les revalide automatiquement d'une
+  saison à l'autre.
+
+**Analyse (JS, pure, testée)**
+
+`site/js/schedule-stats.js` (`PDF.scheduleStats`) calcule, à partir de ces
+JSON déjà en cache (aucune requête réseau supplémentaire par page) :
+fréquences de créneaux/plages, heatmap jour×heure, chronologie
+des créneaux, écarts "inhabituel aujourd'hui", et le **programme probable**
+(`probableProgramme`) : jours de référence du même type (semaine/week-end/
+férié) dans une fenêtre ±21 jours (élargie à ±45, puis repliée sur la saison
+précédente si besoin), spectacle inclus si présent sur ≥ 50 % de ces jours
+et au moins une fois proche de la date cible (protection des spectacles
+éphémères), créneaux = motif le plus fréquent parmi ces jours, confiance =
+part des jours de référence correspondant exactement à ce motif.
+
+**Limites à garder en tête**
+
+- Une estimation n'est **jamais** présentée comme officielle : toujours
+  étiquetée "Estimation"/"Programme probable" avec sa confiance, et jamais
+  affichée pour une date déjà publiée ou explicitement fermée/privatisée.
+- Un spectacle qui change réellement d'horaire d'une saison à l'autre (nouvel
+  horaire officiel, pas une anomalie ponctuelle) sera lu comme "habituel"
+  dès qu'il domine ses jours de référence — l'algorithme ne distingue pas
+  "changement durable" de "variation normale", seule la fenêtre ±21/±45
+  jours limite l'effet d'un historique trop ancien.
+- Avec moins de 10 jours comparables (saison tout juste commencée), les
+  fonctionnalités qui en dépendent ("Inhabituel aujourd'hui", "Horaires
+  habituels") s'effacent silencieusement plutôt que d'afficher un signal
+  statistiquement peu fiable.
+
 ## Export JSON
 
 ```bash
@@ -558,6 +616,9 @@ visite optimal), et validité des JSON exportés.
   protégée (revues obligatoires, etc.), il faudra soit assouplir la
   protection pour le bot, soit utiliser un jeton dédié avec les permissions
   adéquates.
+- **`data/calendar.json` maintenu à la main** : voir "Distribution horaire
+  et programme probable" ci-dessus — pas de calcul automatique des vacances
+  scolaires/jours fériés, à mettre à jour chaque saison.
 - **Une exécution cron par jour** (le matin) ne garantit pas une fraîcheur
   à la minute (l'heure réelle de déclenchement d'un cron GitHub Actions
   peut varier de plusieurs heures selon la charge de la plateforme) :

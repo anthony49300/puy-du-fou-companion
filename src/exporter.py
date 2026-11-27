@@ -18,7 +18,7 @@ import sqlite3
 from pathlib import Path
 from typing import Optional
 
-from src import config, database, season_config, statistics
+from src import calendar_config, config, database, season_config, statistics
 from src.models import now_iso, today_paris
 
 
@@ -395,6 +395,75 @@ def export_spectacles(conn: sqlite3.Connection, season_year: Optional[int] = Non
     return payload
 
 
+def export_schedule_index(conn: sqlite3.Connection, season_year: int) -> dict:
+    """data/json/history/{année}/schedule-index.json : index compact de TOUS
+    les horaires habituels de chaque spectacle sur la saison `season_year`,
+    pour construire un "programme probable" (voir site/js/schedule-stats.js)
+    sans une requête par spectacle. Construit entièrement à partir de
+    `statistics.compute_spectacle_stats` (mêmes règles d'exclusion — jours
+    de fermeture/hors saison/privatisation, `active_periods` pour les
+    spectacles éphémères — réutilisées, jamais réécrites ici).
+
+    `days` : un jour PRÉSENT (count > 0) associe sa clé date à une chaîne
+    des créneaux de ce jour séparés par des virgules — heures de début
+    ("11:30,13:00") pour les séances à heure fixe, plages ("12:00-20:45")
+    pour les accès continus, les deux mélangeables si besoin. Un jour
+    absent (spectacle non présent) est omis plutôt que listé à vide, pour
+    garder le fichier compact.
+    """
+    excluded_statuses = (config.DATE_STATUS_CLOSED_DAY, config.DATE_STATUS_OUT_OF_SEASON, config.DATE_STATUS_PRIVATE_EVENT)
+    excluded_dates = sorted({
+        d["date"] for d in database.list_active_dates(conn, season_year) if d["status"] in excluded_statuses
+    })
+
+    payload_spectacles: dict[str, dict] = {}
+    for s in database.list_spectacles(conn):
+        stats = statistics.compute_spectacle_stats(conn, s["slug"], season_year)
+        if not stats:
+            continue
+        days = {
+            h["date"]: ",".join(h["starts"] + h["ranges"])
+            for h in stats["history"]
+            if h["count"] > 0 and (h["starts"] or h["ranges"])
+        }
+        if not days:
+            continue  # jamais programmé cette saison : rien à indexer
+        valid_dates = {h["date"] for h in stats["history"]}
+        payload_spectacles[s["slug"]] = {
+            "name": stats["name"],
+            "category": stats["category"],
+            "durations": statistics.spectacle_start_durations(conn, s["slug"], valid_dates),
+            "days": days,
+        }
+
+    payload = {
+        "season": season_year,
+        "updated_at": now_iso(),
+        "spectacles": payload_spectacles,
+        "excluded_dates": excluded_dates,
+    }
+    _write_json(config.HISTORY_JSON_DIR / str(season_year) / "schedule-index.json", payload)
+    return payload
+
+
+def export_current_schedule_index(conn: sqlite3.Connection, *, today: Optional[str] = None) -> Optional[dict]:
+    """Copie aussi l'index de la saison EN COURS (celle qui couvre `today`)
+    vers le chemin global `data/json/schedule-index.json`, sans sélecteur
+    d'année : contrairement aux autres exports globaux (spectacles/stats),
+    il n'y a pas de notion "toutes saisons confondues" qui ferait sens ici
+    — mélanger les horaires d'une saison passée n'aiderait pas à prédire
+    celle d'aujourd'hui. Ne fait rien (retourne None) si `today` ne tombe
+    dans aucune saison connue (hors saison : rien à prédire pour l'instant).
+    """
+    today = today or today_paris().isoformat()
+    season_row = database.get_season_for_date(conn, today)
+    if season_row is None:
+        return None
+    payload = export_schedule_index(conn, season_row["year"])
+    _write_json(config.SCHEDULE_INDEX_JSON, payload)
+    return payload
+
+
 def export_dates(conn: sqlite3.Connection) -> dict:
     rows = database.list_active_dates(conn)
     dates_payload = []
@@ -412,6 +481,18 @@ def export_dates(conn: sqlite3.Connection) -> dict:
         )
     payload = {"updated_at": now_iso(), "dates": dates_payload}
     _write_json(config.DATES_JSON, payload)
+    return payload
+
+
+def export_calendar() -> dict:
+    """Copie `data/calendar.json` (calendrier scolaire zone B + jours
+    fériés, voir `src/calendar_config.py`) tel quel vers
+    `data/json/calendar.json`, sans rien recalculer : la seule
+    transformation est le nettoyage déjà fait par `calendar_config.load`
+    (retrait de `_comment`, valeurs par défaut si le fichier est absent).
+    """
+    payload = calendar_config.load()
+    _write_json(config.CALENDAR_JSON, payload)
     return payload
 
 
@@ -465,6 +546,7 @@ def export_per_year_views(conn: sqlite3.Connection, *, today: Optional[str] = No
             continue  # saison pas encore commencée : rien à afficher
         export_stats(conn, season["year"])
         export_spectacles(conn, season["year"])
+        export_schedule_index(conn, season["year"])
         processed.append(season["year"])
     return processed
 
@@ -478,6 +560,8 @@ def export_all(conn: sqlite3.Connection, *, reference_date: Optional[str] = None
     history_count = export_history(conn)
     season_recaps_generated = maybe_export_season_recaps(conn)
     export_per_year_views(conn)
+    export_current_schedule_index(conn, today=reference_date)
+    export_calendar()
     return {
         "today_status": today_payload["status"],
         "spectacle_count": len(spectacles_payload["spectacles"]),

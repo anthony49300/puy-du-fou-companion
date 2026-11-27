@@ -858,6 +858,18 @@ main { flex: 1; }
 .status-banner.status-error { background: var(--color-error-bg); color: var(--color-error); border-color: var(--color-error); }
 .status-banner.status-stale { background: var(--accent-2-soft); color: var(--badge-complet); border-color: var(--accent-2); }
 .status-banner.status-warn { background: var(--accent-2-soft); color: var(--badge-complet); border-color: var(--accent-2); }
+/* "Programme probable" (estimation, pas une erreur ni un avertissement
+   générique) : teinte distincte de la famille rouge/ambre déjà utilisée
+   pour les erreurs/avertissements, pour ne pas laisser croire à un souci. */
+.status-banner.status-probable { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
+
+/* "Inhabituel aujourd'hui" (voir PDF.unusualBannerHtml) : même habillage que
+   .status-warn, avec un bouton "masquer" aligné à droite — transparent pour
+   ne pas ajouter une seconde pastille de fond par-dessus la bannière. */
+.unusual-banner { align-items: center; }
+.unusual-banner > span:nth-child(2) { flex: 1 1 auto; }
+.unusual-banner .icon-btn { background: transparent; border-color: transparent; }
+.unusual-banner .icon-btn:hover { background: rgba(0, 0, 0, 0.08); }
 
 /* ---------- 9. Search bar & filters ---------- */
 .search-bar {
@@ -1037,6 +1049,68 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
 
 .programme-aside .card { margin-bottom: 1rem; }
 .list-row.is-conflict-row { background: var(--danger-bg); margin: 0 -0.5rem; padding-left: 0.5rem; padding-right: 0.5rem; border-radius: var(--r-sm); }
+
+/* ---------- "Horaires habituels" (détail d'un spectacle) ---------- */
+.schedule-section { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line-soft); }
+.schedule-filters { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin: 0.75rem 0 1.25rem; }
+.schedule-filters .segmented { flex: 0 0 auto; min-width: 13rem; }
+
+.slot-chip.is-fixed { border-color: var(--accent-text); color: var(--accent-text); font-weight: 600; }
+.schedule-low-sample { font-size: 0.85rem; margin-top: 0.5rem; }
+
+.heatmap-wrap { margin-bottom: 1.25rem; }
+.heatmap-grid {
+  display: grid;
+  /* "start" : empêche la colonne des libellés de jour ("auto") d'absorber
+     tout l'espace libre quand peu d'heures sont représentées (sinon elle
+     pousse toute la grille à droite, voir la note de l'algorithme de
+     dimensionnement des grilles CSS sur le "stretch" des pistes "auto"
+     avec justify-content: normal, le comportement par défaut). */
+  justify-content: start;
+  gap: 2px;
+  align-items: center;
+  overflow-x: auto;
+}
+.heatmap-corner { min-width: 3rem; }
+.heatmap-hour-label, .heatmap-row-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: center;
+  white-space: nowrap;
+}
+.heatmap-row-label { text-align: right; padding-right: 0.4rem; }
+.heatmap-cell {
+  aspect-ratio: 1;
+  min-width: 1.6rem;
+  border-radius: 4px;
+  background: var(--primary);
+  opacity: calc(0.08 + var(--cell-share, 0) * 0.92);
+}
+.heatmap-cell:focus-visible { outline: none; box-shadow: var(--focus-ring); opacity: 1; }
+.heatmap-legend { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.6rem; font-size: 0.78rem; color: var(--muted); }
+.heatmap-legend-swatch {
+  display: inline-block;
+  width: 2.5rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: linear-gradient(to right, color-mix(in srgb, var(--primary) 8%, transparent), var(--primary));
+}
+
+.slot-timeline { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem; }
+.slot-timeline-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; font-size: 0.85rem; }
+.slot-timeline-time { font-weight: 600; min-width: 4rem; font-variant-numeric: tabular-nums; }
+.slot-timeline-dates { font-size: 0.78rem; }
+.sparkline { display: inline-flex; gap: 1px; align-items: center; }
+.sparkline-dot { width: 4px; height: 10px; border-radius: 1px; background: var(--line); }
+.sparkline-dot.is-on { background: var(--accent-text); }
+
+.season-compare-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.season-compare-chip {
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  font-size: 0.85rem;
+}
 
 /* ---------- Mini-Gantt "Accès continu" (Programme) ---------- */
 .mini-gantt-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.3rem 0; }
@@ -1297,6 +1371,14 @@ table.data-table th {
 table.data-table tbody tr:hover { background: var(--accent-2-soft); }
 table.data-table tr.is-changed { background: var(--accent-2-soft); }
 table.data-table tr.is-changed td:first-child { font-weight: 600; }
+
+/* En-tête triable (voir "Créneau le plus sûr par spectacle",
+   statistiques.js) : flèche ascendant/descendant pilotée par aria-sort,
+   jamais par la couleur seule. */
+table.data-table th[data-sort] { cursor: pointer; user-select: none; }
+table.data-table th[data-sort]:hover { color: var(--text); }
+table.data-table th[data-sort][aria-sort="ascending"]::after { content: " \25B2"; }
+table.data-table th[data-sort][aria-sort="descending"]::after { content: " \25BC"; }
 
 /* ---------- 13. Calendar (historique) ---------- */
 .calendar-wrap {

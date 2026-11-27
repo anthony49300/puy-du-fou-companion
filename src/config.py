@@ -37,11 +37,26 @@ SEASONS_CONFIG_PATH = DATA_DIR / "seasons.json"
 # privatisation plutôt qu'un jour ouvert normal (voir src/planned_closures.py).
 PLANNED_CLOSURES_PATH = DATA_DIR / "planned_closures.json"
 
+# Calendrier scolaire (zone B) + jours fériés, éditable à la main comme les
+# fichiers ci-dessus — sert à classifier un jour (semaine/week-end/vacances)
+# pour la distribution horaire par créneau et le programme probable (voir
+# src/exporter.py:export_schedule_index, site/js/schedule-stats.js).
+CALENDAR_CONFIG_PATH = DATA_DIR / "calendar.json"
+
 # Fichiers JSON générés pour le frontend
 TODAY_JSON = JSON_DIR / "today.json"
 SPECTACLES_JSON = JSON_DIR / "spectacles.json"
 DATES_JSON = JSON_DIR / "dates.json"
 STATS_JSON = JSON_DIR / "stats.json"
+CALENDAR_JSON = JSON_DIR / "calendar.json"
+# Index compact de tous les horaires habituels (toutes saisons), utilisé
+# pour construire un "programme probable" sans devoir interroger chaque
+# spectacle séparément (voir src/exporter.py:export_schedule_index). Chemin
+# "courant" (sans sélecteur d'année) : copie de l'index de la saison en
+# cours, voir export_current_schedule_index — resterait trompeur à
+# agréger "toutes saisons confondues" comme les autres exports globaux
+# (mélanger les horaires d'anciennes saisons n'aiderait pas une prédiction).
+SCHEDULE_INDEX_JSON = JSON_DIR / "schedule-index.json"
 # Historique journalier détaillé par spectacle, un petit fichier par slug —
 # séparé de SPECTACLES_JSON pour ne pas alourdir la liste principale avec
 # des centaines de points par spectacle (voir src/exporter.py:export_spectacles).

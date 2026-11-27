@@ -9,8 +9,12 @@
     today: null,
     query: "",
     filter: "tout", // "tout" | "spectacle" | "spectacle_immersif" | "spectacle_nocturne" | "favoris"
-    dayOffset: 0, // 0 = aujourd'hui, 1 = demain, 2 = après-demain
+    dayOffset: 0, // 0 = aujourd'hui, 1 = demain, 2 = après-demain ; null si une date libre est choisie
+    customDate: null, // date ISO choisie via "Choisir une date", ou null si on suit un des 3 onglets
     refreshTimer: null,
+    calendar: null, // résolu une fois (voir PDF.fetchCalendarOnce), null si absent
+    isProbable: false, // la vue actuelle montre-t-elle une estimation (voir tryProbableProgramme) ?
+    probable: null, // dernier résultat de PDF.scheduleStats.probableProgramme (pour re-rendre après un ajout, sans refetch)
   };
 
   var searchBar = null; // affecté dans init() ; utilisé pour vider le champ au changement de jour
@@ -561,17 +565,35 @@
     wrap.querySelectorAll(".segment").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var offset = +btn.getAttribute("data-offset");
-        if (offset === state.dayOffset) return;
+        if (offset === state.dayOffset && !state.customDate) return;
         state.dayOffset = offset;
+        exitCustomDateMode();
         renderDaySelect();
         loadDay(offset);
       });
     });
   }
 
+  // Quitte le mode "date libre" (ré-affiche/réactive les 3 onglets Aujourd'hui/
+  // Demain/Après-demain) — appelé en cliquant un de ces onglets directement.
+  function exitCustomDateMode() {
+    state.customDate = null;
+    var input = document.getElementById("custom-date-input");
+    if (input) { input.value = ""; input.hidden = true; }
+  }
+
+  function updateCustomDateBounds(payload) {
+    var input = document.getElementById("custom-date-input");
+    if (!input || !payload || !payload.season) return;
+    if (payload.season.start_date) input.min = payload.season.start_date;
+    if (payload.season.end_date) input.max = payload.season.end_date;
+  }
+
   function applyPayload(payload, offset) {
     state.today = payload;
     state.query = "";
+    state.isProbable = false;
+    state.probable = null;
     if (searchBar) searchBar.inputEl.value = "";
     document.getElementById("programme-meta").textContent =
       (payload.representation_count != null ? payload.representation_count : "?") + " représentations · " +
@@ -582,14 +604,42 @@
     var hasSlots = (payload.spectacles || []).length > 0;
     var filterChips = document.getElementById("category-filter-chips");
     if (filterChips) filterChips.hidden = !hasSlots;
+    updateCustomDateBounds(payload);
     renderProgramme();
     scheduleAutoRefresh();
+    renderUnusualBanner(payload, offset);
+  }
+
+  // Voir §4.4 de la spec "schedule-distribution" : seulement pour le
+  // programme officiel d'AUJOURD'HUI (jamais sur une estimation ni sur un
+  // autre jour), et seulement si l'utilisateur ne l'a pas déjà masqué pour
+  // cette date (voir PDF.dismissUnusualToday).
+  function renderUnusualBanner(payload, offset) {
+    var slot = document.getElementById("unusual-banner-slot");
+    if (!slot) return;
+    slot.innerHTML = "";
+    if (offset !== 0 || !PDF.isDataForToday(payload.date) || PDF.isUnusualDismissedToday(payload.date)) return;
+    Promise.all([PDF.fetchScheduleIndexOnce(), PDF.fetchCalendarOnce()])
+      .then(function (results) {
+        var items = PDF.unusualTodayItems(payload, results[0], results[1]).slice(0, 3);
+        if (!items.length) return;
+        slot.innerHTML = PDF.unusualBannerHtml(items, payload.date);
+        var btn = slot.querySelector("[data-dismiss-unusual]");
+        if (btn) {
+          btn.addEventListener("click", function () {
+            PDF.dismissUnusualToday(payload.date);
+            slot.innerHTML = "";
+          });
+        }
+      })
+      .catch(function () { /* analytique secondaire : jamais bloquant pour le programme officiel */ });
   }
 
   function loadDay(offset) {
     document.getElementById("programme-content").innerHTML =
       '<div class="empty-state"><div class="skeleton" style="height:2.4rem;max-width:420px;margin:0 auto;"></div></div>';
     document.getElementById("status-banner-slot").innerHTML = "";
+    document.getElementById("unusual-banner-slot").innerHTML = "";
     document.getElementById("continuous-gantt-slot").innerHTML = "";
     var promise = offset === 0
       ? PDF.fetchJSON("today.json")
@@ -614,6 +664,151 @@
           "Impossible de charger le programme (" + err.message + "). Vérifiez votre connexion ou réessayez plus tard."
         );
       });
+  }
+
+  /* ------------------------------------------------------------------
+   * Date libre : programme officiel s'il existe déjà, sinon "programme
+   * probable" (voir PDF.scheduleStats.probableProgramme) — jamais pour
+   * une date exclue (fermeture/privatisation) ou hors de la saison.
+   * ---------------------------------------------------------------- */
+  function loadCustomDate(dateStr) {
+    document.getElementById("programme-content").innerHTML =
+      '<div class="empty-state"><div class="skeleton" style="height:2.4rem;max-width:420px;margin:0 auto;"></div></div>';
+    document.getElementById("status-banner-slot").innerHTML = "";
+    document.getElementById("unusual-banner-slot").innerHTML = "";
+    document.getElementById("continuous-gantt-slot").innerHTML = "";
+    // La vue desktop (grille horaire + volet "Ma journée") ne sait pas
+    // encore représenter un programme probable (seule la liste l'affiche,
+    // voir renderProbableProgramme) : on la vide plutôt que de laisser un
+    // autre jour affiché, trompeur, à côté.
+    document.getElementById("hgrid").innerHTML = "";
+    document.getElementById("aside-next-slot").innerHTML = "";
+    document.getElementById("aside-myday-slot").innerHTML = "";
+    var seasonYear = state.today && state.today.season ? state.today.season.year : null;
+    PDF.fetchJSON(PDF.historyJsonPath(dateStr, seasonYear))
+      .then(function (payload) { applyPayload(payload, null); })
+      .catch(function (err) {
+        if (err.notFound) { tryProbableProgramme(dateStr); return; }
+        document.getElementById("programme-meta").textContent = "";
+        PDF.renderErrorMessage(
+          document.getElementById("programme-content"),
+          "Impossible de charger le programme (" + err.message + ")."
+        );
+      });
+  }
+
+  function tryProbableProgramme(dateStr) {
+    Promise.all([PDF.fetchScheduleIndexOnce(), PDF.fetchCalendarOnce()])
+      .then(function (results) {
+        var index = results[0];
+        state.calendar = results[1];
+        if (!index) { renderProbableUnavailable(); return; }
+        var probable = PDF.scheduleStats.probableProgramme(index, state.calendar, dateStr);
+        if (!probable) { renderClosedForDate(dateStr); return; }
+        renderProbableProgramme(dateStr, probable);
+      })
+      .catch(function () { renderProbableUnavailable(); });
+  }
+
+  function renderProbableUnavailable() {
+    document.getElementById("programme-meta").textContent = "";
+    document.getElementById("programme-content").innerHTML =
+      '<div class="empty-state"><div class="empty-icon" aria-hidden="true">🌙</div>' +
+      "<p>Programme pas encore publié pour ce jour, et aucune estimation n'est disponible.</p></div>";
+    var filterChips = document.getElementById("category-filter-chips");
+    if (filterChips) filterChips.hidden = true;
+    renderHourNav([]);
+  }
+
+  // Date exclue (fermeture, privatisation…) ou hors des bornes connues de
+  // l'index : même traitement visuel qu'un jour officiellement fermé,
+  // sans prétendre savoir LAQUELLE de ces deux raisons s'applique ici
+  // (probableProgramme ne fait pas la différence, voir schedule-stats.js).
+  function renderClosedForDate(dateStr) {
+    document.getElementById("programme-meta").textContent = "";
+    document.getElementById("status-banner-slot").innerHTML = PDF.statusBannerHtml("closed_day", dateStr, false, false);
+    document.getElementById("programme-content").innerHTML = "";
+    var filterChips = document.getElementById("category-filter-chips");
+    if (filterChips) filterChips.hidden = true;
+    renderHourNav([]);
+  }
+
+  function probableRowTimeLabel(item) {
+    if (item.starts.length) return item.starts.map(function (t) { return PDF.formatTimeFR(t); }).join(", ");
+    return item.ranges.map(function (r) { return r.replace("-", "–"); }).join(", ");
+  }
+
+  // Une seule heure de référence pour le bouton "+" même si le motif prédit
+  // comporte plusieurs horaires ce jour-là (cas rare) : on propose d'ajouter
+  // le premier, cohérent avec le badge de confiance qui porte sur LE motif
+  // dans son ensemble, pas séance par séance.
+  function renderProbableRow(dateStr, item) {
+    var pct = Math.round(item.confidence * 100);
+    var low = item.confidence < 0.5;
+    var start = item.starts[0] || null;
+    var already = false;
+    if (start) { try { already = PDF.isInPlan(dateStr, item.slug, start); } catch (e) { /* ignore */ } }
+    return (
+      '<div class="rep-card">' +
+      '<div class="rep-time-wrap"><div class="rep-time tnum">' + PDF.escapeHtml(probableRowTimeLabel(item)) + "</div>" +
+      '<div class="rep-duration' + (low ? " is-warn" : "") + '">' + (low ? PDF.icon("alert-triangle") + " " : "") +
+      "probable " + pct + "%</div></div>" +
+      '<div class="rep-name">' + PDF.escapeHtml(item.name) + "</div>" +
+      '<div class="rep-badges">' + PDF.categoryBadgeHtml(item.category) + "</div>" +
+      (start
+        ? '<button type="button" class="add-to-day-btn add-to-day-trigger' + (already ? " is-added" : "") + '" ' +
+          'data-slug="' + PDF.escapeHtml(item.slug) + '" data-name="' + PDF.escapeHtml(item.name) + '" ' +
+          'data-category="' + PDF.escapeHtml(item.category || "") + '" data-start="' + start + '" data-end="" data-estimated="true" ' +
+          'aria-label="' + (already ? "Déjà dans ma journée" : "Ajouter à ma journée (estimation)") + '" aria-pressed="' + already + '">' +
+          (already ? "✓" : "+") + "</button>"
+        : "") +
+      "</div>"
+    );
+  }
+
+  function renderProbableProgramme(dateStr, probable) {
+    state.isProbable = true;
+    state.probable = probable;
+    // Repère minimal pour que le reste (bouton "+", favoris) continue de
+    // fonctionner sur CETTE date, même sans vrai payload officiel.
+    state.today = { date: dateStr, spectacles: [] };
+
+    var n = probable.basis.referenceDays;
+    document.getElementById("programme-meta").textContent = probable.spectacles.length + " spectacle(s) estimé(s)";
+    document.getElementById("status-banner-slot").innerHTML =
+      '<div class="status-banner status-probable">' + PDF.icon("alert-triangle") +
+      "<span>Programme probable — estimation basée sur " + n + " journée" + (n > 1 ? "s" : "") +
+      " comparable" + (n > 1 ? "s" : "") + " (" + PDF.escapeHtml(probable.basis.rule) + "). " +
+      "Le programme officiel est publié environ 2 jours avant.</span></div>";
+
+    var filterChips = document.getElementById("category-filter-chips");
+    if (filterChips) filterChips.hidden = true; // recherche/filtres/favoris ne s'appliquent pas à cette vue simplifiée
+    document.getElementById("continuous-gantt-slot").innerHTML = "";
+    renderHourNav([]);
+
+    if (!probable.spectacles.length) {
+      document.getElementById("programme-content").innerHTML = '<div class="empty-state"><p>Aucune estimation fiable pour cette date.</p></div>';
+      return;
+    }
+    document.getElementById("programme-content").innerHTML =
+      '<div class="timeline">' + probable.spectacles.map(function (item) { return renderProbableRow(dateStr, item); }).join("") + "</div>";
+  }
+
+  function initCustomDatePicker() {
+    var toggle = document.getElementById("custom-date-toggle");
+    var input = document.getElementById("custom-date-input");
+    if (!toggle || !input) return;
+    toggle.addEventListener("click", function () {
+      input.hidden = !input.hidden;
+      if (!input.hidden) input.focus();
+    });
+    input.addEventListener("change", function () {
+      if (!input.value) return;
+      state.customDate = input.value;
+      state.dayOffset = null;
+      renderDaySelect();
+      loadCustomDate(input.value);
+    });
   }
 
   function initSearchToggle() {
@@ -651,8 +846,16 @@
           end: addBtn.getAttribute("data-end") || null,
           is_continuous: false,
         };
+        // Une séance ajoutée depuis le "programme probable" (pas encore
+        // officiel) porte ce drapeau — voir PDF.addToPlan et la
+        // réconciliation à l'ouverture du carnet une fois le programme
+        // officiel publié (phase suivante de la fonctionnalité).
+        if (addBtn.getAttribute("data-estimated") === "true") item.estimated = true;
         try {
-          if (PDF.addToPlan(state.today.date, item)) renderProgramme();
+          if (PDF.addToPlan(state.today.date, item)) {
+            if (state.isProbable && state.probable) renderProbableProgramme(state.today.date, state.probable);
+            else renderProgramme();
+          }
         } catch (err) { /* stockage indisponible : ignoré, rien à afficher ici */ }
       }
     });
@@ -667,6 +870,7 @@
       },
     });
     initSearchToggle();
+    initCustomDatePicker();
     initListClickDelegation();
 
     renderDaySelect();
