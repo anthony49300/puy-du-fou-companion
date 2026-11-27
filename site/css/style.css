@@ -1899,7 +1899,22 @@ table.visit-grid tfoot td { font-weight: 700; background: var(--bg-elevated); }
 /* Liste à cocher (spectacles incontournables avant de générer un planning
    automatique) : simple case à cocher, contrairement à .visit-check-btn qui
    cycle un compteur. */
+/* Assistant "Composer automatiquement" (voir PDF.openSheet, journee.js) */
+.assistant-modes { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.75rem 0; }
+.radio-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  padding: 0.75rem 0.9rem;
+  cursor: pointer;
+}
+.radio-card.is-selected { border-color: var(--accent); background: var(--surface-2); }
+.radio-card input[type="radio"] { margin-top: 0.2rem; flex-shrink: 0; width: 1.1rem; height: 1.1rem; }
+
 .pick-list { display: flex; flex-direction: column; gap: 0.1rem; max-height: 20rem; overflow-y: auto; margin-top: 0.5rem; }
+.pick-list[hidden] { display: none; }
 .pick-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.3rem 0.4rem; border-radius: 8px; }
 .pick-item:hover { background: var(--bg-elevated); }
 .pick-item input[type="checkbox"] { width: 1.15rem; height: 1.15rem; flex-shrink: 0; }

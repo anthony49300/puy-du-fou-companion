@@ -309,26 +309,132 @@
   // Version minimale (mode "libre", sans aperçu ni annulation) : l'assistant
   // complet (modes précis/libre, aperçu avant application, annulation) est
   // prévu phase 5 de la refonte — remplacera cet appel direct.
+  /* ----------------------------------------------------------------------
+   * Assistant "Composer automatiquement" (feuille modale, voir §2.6 de la
+   * refonte) : deux modes (libre par défaut / précis), aperçu en direct
+   * avant application, jamais appliqué sans ce passage par l'aperçu —
+   * l'ancien comportement (phase 2) appliquait buildAutoPlan directement.
+   * -------------------------------------------------------------------- */
   function composeAutomatically() {
     if (!state.currentSlots.length) {
       PDF.toast("Programme officiel indisponible pour cette date : impossible de proposer un planning.");
       return;
     }
-    var propose = dayPlan.buildAutoPlan(state.currentSlots, S.gate, []);
-    if (!propose.length) {
-      PDF.toast("Aucune séance ne peut être proposée pour cette date.");
-      return;
-    }
+    openAssistantSheet();
+  }
+
+  function openAssistantSheet() {
     var plan = planCourant(state.dateStr);
-    plan.items = propose.map(function (s) {
-      return {
-        slug: s.slug, name: s.name, category: s.category,
-        start: s.start, end: s.end, is_continuous: s.is_continuous, status: s.status, uid: PDF.carnetUid(),
-      };
+    var continuousCount = state.currentSlots.filter(function (s) { return s.is_continuous; }).length;
+
+    var distinctShows = {};
+    state.currentSlots.forEach(function (s) {
+      if (!s.is_continuous && s.slug && !distinctShows[s.slug]) distinctShows[s.slug] = { slug: s.slug, name: s.name, category: s.category };
     });
-    sauver();
-    renderDay();
-    PDF.toast("Planning proposé : " + propose.length + " spectacle" + (propose.length > 1 ? "s" : "") + ".");
+    var pickList = Object.keys(distinctShows).map(function (k) { return distinctShows[k]; }).sort(function (a, b) {
+      var pa = a.category === "spectacle_immersif" ? 0 : 1;
+      var pb = b.category === "spectacle_immersif" ? 0 : 1;
+      return pa !== pb ? pa - pb : a.name.localeCompare(b.name, "fr");
+    });
+
+    var replaceNote = plan.items.length
+      ? '<p class="text-warn">Remplacera les ' + plan.items.length + " spectacle" + (plan.items.length > 1 ? "s" : "") + " déjà dans votre journée.</p>"
+      : "";
+
+    var html =
+      "<h2>Composer automatiquement</h2>" +
+      '<div class="assistant-modes" role="radiogroup" aria-label="Mode de composition">' +
+      '<label class="radio-card"><input type="radio" name="assistantMode" value="libre" checked>' +
+      "<span><strong>Le plus de spectacles possible</strong><br><span class=\"text-muted\">Casé automatiquement, sans conflit d'horaire.</span></span></label>" +
+      '<label class="radio-card"><input type="radio" name="assistantMode" value="precis">' +
+      "<span><strong>Seulement ceux que je choisis</strong><br><span class=\"text-muted\">Vous cochez les spectacles, rien d'autre n'est ajouté.</span></span></label>" +
+      "</div>" +
+      '<div class="pick-list" id="assistantPickList" hidden>' +
+      pickList.map(function (s) {
+        return '<label class="pick-item"><input type="checkbox" value="' + PDF.escapeHtml(s.slug) + '"><span class="pick-name">' + PDF.escapeHtml(s.name) + "</span>" + PDF.categoryBadgeHtml(s.category) + "</label>";
+      }).join("") +
+      "</div>" +
+      '<p class="text-muted" id="assistantInfoLine"></p>' +
+      replaceNote +
+      '<div id="assistantPreview" aria-live="polite"></div>' +
+      '<div class="sheet-dialog-actions">' +
+      '<button type="button" class="btn btn-outline" data-act="cancel">Annuler</button>' +
+      '<button type="button" class="btn" data-act="apply">Appliquer à ma journée</button>' +
+      "</div>";
+
+    var dlg = PDF.openSheet(html, { className: "assistant-sheet" });
+
+    var continuousNote = continuousCount === 0
+      ? "Aucun accès continu ce jour-là."
+      : continuousCount === 1
+      ? "L’unique accès continu est toujours ajouté."
+      : "Les " + continuousCount + " accès continus sont toujours ajoutés.";
+    dlg.querySelector("#assistantInfoLine").textContent =
+      continuousNote + " Portes " + S.gate + " min avant · formule " + (plan.moment || "Jour") + ".";
+
+    function currentMode() { return dlg.querySelector('input[name="assistantMode"]:checked').value; }
+    function selectedSlugs() {
+      return Array.prototype.slice.call(dlg.querySelectorAll("#assistantPickList input:checked")).map(function (cb) { return cb.value; });
+    }
+
+    function updatePreview() {
+      var mode = currentMode();
+      dlg.querySelectorAll(".radio-card").forEach(function (card) {
+        card.classList.toggle("is-selected", card.querySelector("input").value === mode);
+      });
+      dlg.querySelector("#assistantPickList").hidden = mode !== "precis";
+      var previewEl = dlg.querySelector("#assistantPreview");
+      if (mode === "libre") {
+        var propose = dayPlan.buildAutoPlan(state.currentSlots, S.gate, []);
+        var fixesDispo = state.currentSlots.filter(function (s) { return !s.is_continuous && s.start && s.end && s.status !== "complet"; }).length;
+        var fixesRetenues = propose.filter(function (s) { return !s.is_continuous; }).length;
+        var ecartees = fixesDispo - fixesRetenues;
+        previewEl.innerHTML =
+          '<div class="status-banner status-ok"><span aria-hidden="true">✅</span><span>Aperçu : ' + propose.length + " spectacle" + (propose.length > 1 ? "s" : "") +
+          (ecartees > 0 ? " (" + ecartees + " séance" + (ecartees > 1 ? "s" : "") + " incompatible" + (ecartees > 1 ? "s" : "") + " écartée" + (ecartees > 1 ? "s" : "") + ")" : "") +
+          ".</span></div>";
+        return;
+      }
+      var mandatory = selectedSlugs();
+      if (!mandatory.length) {
+        previewEl.innerHTML = '<p class="text-muted">Cochez au moins un spectacle.</p>';
+        return;
+      }
+      var manques = dayPlan.analyserManques(mandatory, state.currentSlots, S.gate, [], state.catalogueBySlug);
+      previewEl.innerHTML = !manques.length
+        ? '<div class="status-banner status-ok"><span aria-hidden="true">✅</span><span>Aperçu : ' + mandatory.length + " spectacle" + (mandatory.length > 1 ? "s" : "") +
+          " demandé" + (mandatory.length > 1 ? "s" : "") + " " + (mandatory.length > 1 ? "seront tous casés" : "sera casé") + ".</span></div>"
+        : '<div class="status-banner status-warn"><span aria-hidden="true">⚠️</span><span>' +
+          manques.map(function (m) { return PDF.escapeHtml(m.name) + " ne peut pas être casé"; }).join(", ") + ".</span></div>";
+    }
+
+    dlg.querySelectorAll('input[name="assistantMode"]').forEach(function (r) { r.addEventListener("change", updatePreview); });
+    dlg.querySelector("#assistantPickList").addEventListener("change", updatePreview);
+    updatePreview();
+
+    dlg.querySelector('[data-act="cancel"]').addEventListener("click", function () { dlg.close(); });
+    dlg.querySelector('[data-act="apply"]').addEventListener("click", function () {
+      var mode = currentMode();
+      var mandatory = mode === "precis" ? selectedSlugs() : [];
+      if (mode === "precis" && !mandatory.length) { PDF.toast("Cochez au moins un spectacle."); return; }
+      var propose = dayPlan.buildAutoPlan(state.currentSlots, S.gate, mandatory);
+      if (!propose.length) { PDF.toast("Aucune séance ne peut être proposée pour cette date."); return; }
+      var previousItems = plan.items;
+      plan.items = propose.map(function (s) {
+        return {
+          slug: s.slug, name: s.name, category: s.category,
+          start: s.start, end: s.end, is_continuous: s.is_continuous, status: s.status, uid: PDF.carnetUid(),
+        };
+      });
+      sauver();
+      dlg.close();
+      renderDay();
+      PDF.toastUndo("Planning appliqué : " + propose.length + " spectacle" + (propose.length > 1 ? "s" : "") + ".", function () {
+        plan.items = previousItems;
+        sauver();
+        renderDay();
+      });
+    });
   }
 
   function openManualAddSheet() {
@@ -569,7 +675,31 @@
     });
 
     html += "</ol>";
+    html += footerActionsHtml();
     el.innerHTML = html;
+  }
+
+  // Actions de bas de page (voir §2.5 de la refonte) : jamais sticky,
+  // seulement pour une journée déjà composée (une journée vide propose
+  // "Composer automatiquement"/"Choisir dans le programme" à la place,
+  // voir renderEmptyState). Réutilise le menu "..." générique (voir
+  // [data-menu-toggle]/[data-menu] dans initContentDelegation) avec
+  // data-uid="footer" plutôt qu'un mécanisme séparé.
+  function footerActionsHtml() {
+    return (
+      '<div class="season-select-row no-print" style="margin-top:1.25rem">' +
+      '<button type="button" class="btn" data-footer-action="compose">Composer automatiquement</button>' +
+      '<button type="button" class="btn btn-outline" data-footer-action="ics">Agenda .ics</button>' +
+      '<div class="nav-group nav-group--inline">' +
+      '<button type="button" class="icon-btn" data-menu-toggle data-uid="footer" aria-haspopup="true" aria-expanded="false" aria-label="Plus d’actions">' + PDF.icon("more-horizontal") + "</button>" +
+      '<div class="nav-dropdown" data-menu data-uid="footer">' +
+      '<button type="button" class="nav-dropdown-link" data-footer-action="save-visit">Enregistrer comme visite effectuée</button>' +
+      '<button type="button" class="nav-dropdown-link" data-footer-action="print">Imprimer cette journée</button>' +
+      '<button type="button" class="nav-dropdown-link" data-footer-action="clear">Vider la journée</button>' +
+      "</div>" +
+      "</div>" +
+      "</div>"
+    );
   }
 
   function closeAllCardMenus() {
@@ -592,6 +722,59 @@
     renderDay();
     PDF.toastUndo(removed.name + " retiré de la journée.", function () {
       plan.items.splice(Math.min(removedAt, plan.items.length), 0, removed);
+      sauver();
+      renderDay();
+    });
+  }
+
+  /* ----------------------------------------------------------------------
+   * Actions de bas de page (Agenda .ics / Enregistrer comme visite /
+   * Imprimer / Vider) — voir footerActionsHtml.
+   * -------------------------------------------------------------------- */
+  function exportIcs() {
+    var plan = planCourant(state.dateStr);
+    if (!plan.items.length) { PDF.toast("Cette journée est vide."); return; }
+    var contenu = dayPlan.buildIcs(state.dateStr, plan.items, S.gate, new Date(), PDF.carnetUid);
+    var blob = new Blob([contenu], { type: "text/calendar;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "journee-puy-du-fou-" + state.dateStr + ".ics";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    PDF.toast("Fichier .ics téléchargé — importez-le dans votre calendrier.");
+  }
+
+  function saveAsVisit() {
+    var dateStr = state.dateStr;
+    var plan = planCourant(dateStr);
+    if (!plan.items.length) { PDF.toast("Cette journée est vide."); return; }
+    var visite = S.visites.filter(function (v) { return v.date === dateStr; })[0];
+    if (!visite) {
+      visite = { date: dateStr, moment: plan.moment || "Jour", com: "", seen: {} };
+      S.visites.push(visite);
+    } else {
+      visite.moment = plan.moment || visite.moment;
+    }
+    plan.items.forEach(function (it) {
+      var key = it.slug || (PDF.CARNET_MANUAL_PREFIX + it.name);
+      visite.seen[key] = (visite.seen[key] || 0) + 1;
+    });
+    S.visites.sort(function (a, b) { return a.date.localeCompare(b.date); });
+    sauver();
+    PDF.toast("Journée du " + PDF.formatDateFR(dateStr) + " ajoutée au carnet de visites.");
+  }
+
+  function clearDay() {
+    var plan = planCourant(state.dateStr);
+    if (!plan.items.length) return;
+    var previousItems = plan.items;
+    plan.items = [];
+    sauver();
+    renderDay();
+    PDF.toastUndo("Journée vidée.", function () {
+      plan.items = previousItems;
       sauver();
       renderDay();
     });
@@ -678,10 +861,22 @@
         sauver();
         renderDay();
         PDF.toast(candidat.name + " ajouté à la journée.");
+        return;
+      }
+
+      var footerBtn = e.target.closest("[data-footer-action]");
+      if (footerBtn) {
+        closeAllCardMenus();
+        var footerAction = footerBtn.getAttribute("data-footer-action");
+        if (footerAction === "compose") composeAutomatically();
+        else if (footerAction === "ics") exportIcs();
+        else if (footerAction === "save-visit") saveAsVisit();
+        else if (footerAction === "print") window.print();
+        else if (footerAction === "clear") clearDay();
       }
     });
     document.addEventListener("click", function (e) {
-      if (!e.target.closest(".card-menu-toggle") && !e.target.closest(".nav-dropdown[data-menu]")) closeAllCardMenus();
+      if (!e.target.closest("[data-menu-toggle]") && !e.target.closest(".nav-dropdown[data-menu]")) closeAllCardMenus();
     });
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape") closeAllCardMenus();
