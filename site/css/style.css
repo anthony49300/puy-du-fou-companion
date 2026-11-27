@@ -706,7 +706,7 @@ main { flex: 1; }
   background: currentColor;
 }
 .pill-status.is-open { background: var(--success-bg); color: var(--success); }
-.pill-status.is-closed { background: var(--surface-2); color: var(--muted); }
+.pill-status.is-closed { background: var(--danger-bg); color: var(--danger); }
 
 /* Carte héros "Prochain spectacle" */
 .hero-card {
