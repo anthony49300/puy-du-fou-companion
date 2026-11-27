@@ -875,7 +875,22 @@
 
     renderDaySelect();
     renderFilterChips();
-    loadDay(0);
+
+    // "programme.html?date=2026-07-22" présélectionne cette date au lieu
+    // d'aujourd'hui (ex: lien "Choisir dans le programme" depuis une
+    // journée vide de Ma journée, voir site/js/journee.js) — ignoré si
+    // absent/invalide.
+    var requestedDate = new URLSearchParams(location.search).get("date");
+    if (requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate)) {
+      state.customDate = requestedDate;
+      state.dayOffset = null;
+      var dateInput = document.getElementById("custom-date-input");
+      if (dateInput) { dateInput.value = requestedDate; dateInput.hidden = false; }
+      renderDaySelect();
+      loadCustomDate(requestedDate);
+    } else {
+      loadDay(0);
+    }
 
     // Le décalage sous le header sticky (voir renderHourNav) dépend de sa
     // hauteur, qui change au franchissement du point de rupture mobile.

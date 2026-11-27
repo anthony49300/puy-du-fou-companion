@@ -266,15 +266,98 @@
     });
   }
 
-  // Placeholder minimal (remplacé par la vraie timeline en phase 3).
-  function renderDayContent(plan) {
+  /* ----------------------------------------------------------------------
+   * Journée vide (voir §2.4 de la refonte) : composer automatiquement,
+   * choisir dans le programme officiel (lien vers programme.html?date=...,
+   * dont les boutons "+" ajoutent directement à CE plan — voir
+   * PDF.addToPlan), ou ajouter un spectacle hors programme (feuille modale).
+   * -------------------------------------------------------------------- */
+  function renderEmptyState() {
     var el = $("jour-content");
-    if (!plan.items.length) {
-      el.innerHTML =
-        '<div class="empty-state"><div class="empty-icon" aria-hidden="true">🗓️</div>' +
-        "<p>Votre journée est vide.</p></div>";
+    el.innerHTML =
+      '<div class="empty-state journee-empty">' +
+      '<div class="empty-icon" aria-hidden="true">🗓️</div>' +
+      "<h2>Votre journée est vide</h2>" +
+      '<p class="text-muted">Comment voulez-vous la composer ?</p>' +
+      '<div class="card-grid">' +
+      '<button type="button" class="card nav-card nav-card--primary" id="btnComposeAuto">' +
+      "<h3>Composer automatiquement</h3>" +
+      '<p>Le plus de spectacles possible, sans conflit d\'horaire.</p>' +
+      "</button>" +
+      '<a class="card nav-card" id="linkChooseProgramme" href="programme.html">' +
+      "<h3>Choisir dans le programme</h3>" +
+      "<p>Parcourez le programme officiel et ajoutez vos spectacles au fil de l'eau.</p>" +
+      "</a>" +
+      "</div>" +
+      '<button type="button" class="link-button" id="btnAddManualLink">Ajouter un spectacle hors programme (Cinéscénie…)</button>' +
+      "</div>";
+
+    $("linkChooseProgramme").href = "programme.html?date=" + encodeURIComponent(state.dateStr);
+    $("btnComposeAuto").addEventListener("click", composeAutomatically);
+    $("btnAddManualLink").addEventListener("click", openManualAddSheet);
+  }
+
+  // Version minimale (mode "libre", sans aperçu ni annulation) : l'assistant
+  // complet (modes précis/libre, aperçu avant application, annulation) est
+  // prévu phase 5 de la refonte — remplacera cet appel direct.
+  function composeAutomatically() {
+    if (!state.currentSlots.length) {
+      PDF.toast("Programme officiel indisponible pour cette date : impossible de proposer un planning.");
       return;
     }
+    var propose = dayPlan.buildAutoPlan(state.currentSlots, S.gate, []);
+    if (!propose.length) {
+      PDF.toast("Aucune séance ne peut être proposée pour cette date.");
+      return;
+    }
+    var plan = planCourant(state.dateStr);
+    plan.items = propose.map(function (s) {
+      return {
+        slug: s.slug, name: s.name, category: s.category,
+        start: s.start, end: s.end, is_continuous: s.is_continuous, status: s.status, uid: PDF.carnetUid(),
+      };
+    });
+    sauver();
+    renderDay();
+    PDF.toast("Planning proposé : " + propose.length + " spectacle" + (propose.length > 1 ? "s" : "") + ".");
+  }
+
+  function openManualAddSheet() {
+    var dlg = PDF.openSheet(
+      "<h2>Ajouter un spectacle hors programme</h2>" +
+      '<p class="text-muted">Ex : Cinéscénie, ou tout spectacle non couvert par la collecte officielle.</p>' +
+      '<label for="jourManualName">Nom<br><input type="text" id="jourManualName" placeholder="Cinéscénie" style="width:100%"></label>' +
+      '<div class="season-select-row" style="margin-top:0.75rem">' +
+      '<label for="jourManualStart">Début<br><input type="time" id="jourManualStart" value="22:00"></label>' +
+      '<label for="jourManualEnd">Fin<br><input type="time" id="jourManualEnd" value="23:40"></label>' +
+      "</div>" +
+      '<div class="sheet-dialog-actions">' +
+      '<button type="button" class="btn btn-outline" data-act="cancel">Annuler</button>' +
+      '<button type="button" class="btn" data-act="add">Ajouter</button>' +
+      "</div>"
+    );
+    dlg.querySelector('[data-act="cancel"]').addEventListener("click", function () { dlg.close(); });
+    dlg.querySelector('[data-act="add"]').addEventListener("click", function () {
+      var name = dlg.querySelector("#jourManualName").value.trim();
+      var start = dlg.querySelector("#jourManualStart").value;
+      var end = dlg.querySelector("#jourManualEnd").value;
+      if (!name || !start) { PDF.toast("Indiquez au moins un nom et une heure de début."); return; }
+      var plan = planCourant(state.dateStr);
+      var candidat = { slug: null, name: name, category: "autre", start: start, end: end || null, is_continuous: false };
+      if (PDF.planItemExists(plan, candidat)) { PDF.toast(name + " est déjà dans cette journée à cet horaire."); return; }
+      candidat.uid = PDF.carnetUid();
+      plan.items.push(candidat);
+      sauver();
+      dlg.close();
+      renderDay();
+    });
+  }
+
+  // Placeholder minimal pour une journée déjà composée (remplacé par la
+  // vraie timeline en phase 3 : accès continu groupé, cartes une ligne,
+  // menu "...", "Ajouter ici"...).
+  function renderFilledDayPlaceholder(plan) {
+    var el = $("jour-content");
     var items = plan.items.slice().sort(function (a, b) {
       if (a.is_continuous && b.is_continuous) return 0;
       if (a.is_continuous) return -1;
@@ -284,6 +367,11 @@
     el.innerHTML = "<ul class=\"day-timeline\">" + items.map(function (it) {
       return "<li>" + (it.is_continuous ? "En continu" : PDF.formatTimeFR(it.start)) + " — " + PDF.escapeHtml(it.name) + "</li>";
     }).join("") + "</ul>";
+  }
+
+  function renderDayContent(plan) {
+    if (!plan.items.length) { renderEmptyState(); return; }
+    renderFilledDayPlaceholder(plan);
   }
 
   function renderDay() {
