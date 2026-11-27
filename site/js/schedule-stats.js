@@ -263,6 +263,27 @@
   }
 
   /* ----------------------------------------------------------------------
+   * Compact schedule-index.json -> "history" shape
+   * -------------------------------------------------------------------- */
+  // Turns one `index.spectacles[slug]` entry's compact `days` map
+  // ({date: "11:30,16:00" or "12:00-20:45"}) into the `{date, starts,
+  // ranges}` array shape every function above expects (see the module
+  // comment's "history" vocabulary) — lets UI code run the same analytics
+  // on schedule-index.json as on a per-show spectacle-history/{slug}.json,
+  // without a second request per show (see §2.2/§3 of the feature spec).
+  function indexEntryToDays(entry) {
+    const days = (entry && entry.days) || {};
+    return Object.keys(days).map((date) => {
+      const tokens = days[date].split(",");
+      return {
+        date,
+        starts: tokens.filter((t) => t.indexOf("-") === -1).sort(),
+        ranges: tokens.filter((t) => t.indexOf("-") !== -1).sort(),
+      };
+    });
+  }
+
+  /* ----------------------------------------------------------------------
    * Probable programme (schedule-index.json level, all shows at once)
    * -------------------------------------------------------------------- */
   function _indexDateBounds(index) {
@@ -444,6 +465,7 @@
     regularity,
     slotTimeline,
     unusualToday,
+    indexEntryToDays,
     probableProgramme,
   };
 

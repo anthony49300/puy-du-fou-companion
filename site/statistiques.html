@@ -58,6 +58,43 @@
         <!-- injecté par statistiques.js -->
       </div>
     </section>
+
+    <section class="section" id="schedule-density-section">
+      <div class="flex-between">
+        <h2>Densité horaire</h2>
+        <div class="segmented" id="density-daytype" role="group" aria-label="Type de jour">
+          <button type="button" class="segment active" data-daytype="all" aria-pressed="true"><span>Tous</span></button>
+          <button type="button" class="segment" data-daytype="weekday" aria-pressed="false"><span>Semaine</span></button>
+          <button type="button" class="segment" data-daytype="weekend" aria-pressed="false"><span>Week-end</span></button>
+        </div>
+      </div>
+      <p class="text-muted">Nombre de représentations démarrant à chaque heure sur la saison en cours (jours fériés comptés comme week-end), calculé à partir des horaires habituels de chaque spectacle.</p>
+      <div class="card chart-card">
+        <div class="chart-wrap"><canvas id="chart-density"></canvas></div>
+        <details class="chart-table-details">
+          <summary>Voir les données en tableau</summary>
+          <div class="table-wrap"><table class="data-table" id="chart-density-table"></table></div>
+        </details>
+      </div>
+    </section>
+
+    <section class="section" id="safest-slot-section">
+      <h2>Créneau le plus sûr par spectacle</h2>
+      <p class="text-muted">Le créneau (ou la plage en continu) le plus fréquent de chaque spectacle sur la saison en cours.</p>
+      <div class="table-wrap">
+        <table class="data-table" id="safest-slot-table">
+          <thead>
+            <tr>
+              <th data-sort="name" aria-sort="none">Spectacle</th>
+              <th data-sort="time" aria-sort="none">Meilleur créneau</th>
+              <th data-sort="share" aria-sort="descending">Part</th>
+              <th data-sort="regularity" aria-sort="none">Régularité</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="4" class="text-muted">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
   </div>
 </main>
 
@@ -66,6 +103,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha256-SERKgtTty1vsDxll+qzd4Y2cF9swY9BCq62i9wXJ9Uo=" crossorigin="anonymous"></script>
 <script src="js/icons.js"></script>
 <script src="js/app.js"></script>
+<script src="js/schedule-stats.js"></script>
 <script src="js/statistiques.js"></script>
 </body>
 </html>

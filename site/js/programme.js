@@ -607,12 +607,39 @@
     updateCustomDateBounds(payload);
     renderProgramme();
     scheduleAutoRefresh();
+    renderUnusualBanner(payload, offset);
+  }
+
+  // Voir §4.4 de la spec "schedule-distribution" : seulement pour le
+  // programme officiel d'AUJOURD'HUI (jamais sur une estimation ni sur un
+  // autre jour), et seulement si l'utilisateur ne l'a pas déjà masqué pour
+  // cette date (voir PDF.dismissUnusualToday).
+  function renderUnusualBanner(payload, offset) {
+    var slot = document.getElementById("unusual-banner-slot");
+    if (!slot) return;
+    slot.innerHTML = "";
+    if (offset !== 0 || !PDF.isDataForToday(payload.date) || PDF.isUnusualDismissedToday(payload.date)) return;
+    Promise.all([PDF.fetchScheduleIndexOnce(), PDF.fetchCalendarOnce()])
+      .then(function (results) {
+        var items = PDF.unusualTodayItems(payload, results[0], results[1]).slice(0, 3);
+        if (!items.length) return;
+        slot.innerHTML = PDF.unusualBannerHtml(items, payload.date);
+        var btn = slot.querySelector("[data-dismiss-unusual]");
+        if (btn) {
+          btn.addEventListener("click", function () {
+            PDF.dismissUnusualToday(payload.date);
+            slot.innerHTML = "";
+          });
+        }
+      })
+      .catch(function () { /* analytique secondaire : jamais bloquant pour le programme officiel */ });
   }
 
   function loadDay(offset) {
     document.getElementById("programme-content").innerHTML =
       '<div class="empty-state"><div class="skeleton" style="height:2.4rem;max-width:420px;margin:0 auto;"></div></div>';
     document.getElementById("status-banner-slot").innerHTML = "";
+    document.getElementById("unusual-banner-slot").innerHTML = "";
     document.getElementById("continuous-gantt-slot").innerHTML = "";
     var promise = offset === 0
       ? PDF.fetchJSON("today.json")
@@ -648,6 +675,7 @@
     document.getElementById("programme-content").innerHTML =
       '<div class="empty-state"><div class="skeleton" style="height:2.4rem;max-width:420px;margin:0 auto;"></div></div>';
     document.getElementById("status-banner-slot").innerHTML = "";
+    document.getElementById("unusual-banner-slot").innerHTML = "";
     document.getElementById("continuous-gantt-slot").innerHTML = "";
     // La vue desktop (grille horaire + volet "Ma journée") ne sait pas
     // encore représenter un programme probable (seule la liste l'affiche,

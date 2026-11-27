@@ -1058,6 +1058,94 @@
   }
 
   /* ----------------------------------------------------------------------
+   * 8quinquies. "Inhabituel aujourd'hui" : écarts entre le programme
+   *    officiel du jour et les horaires habituels (voir
+   *    PDF.scheduleStats.unusualToday) — partagé entre index.html et
+   *    programme.js pour n'écrire qu'une fois le calcul, le HTML de la
+   *    bannière et le "masquer pour aujourd'hui".
+   * -------------------------------------------------------------------- */
+  const UNUSUAL_DISMISS_KEY = "pdf-unusual-dismissed-date";
+
+  function isUnusualDismissedToday(dateStr) {
+    try { return localStorage.getItem(UNUSUAL_DISMISS_KEY) === dateStr; } catch (e) { return false; }
+  }
+
+  function dismissUnusualToday(dateStr) {
+    try { localStorage.setItem(UNUSUAL_DISMISS_KEY, dateStr); } catch (e) { /* stockage indisponible : tant pis */ }
+  }
+
+  // `today` = payload today.json. `index`/`calendar` = schedule-index.json/
+  // calendar.json (déjà résolus via fetchScheduleIndexOnce/fetchCalendarOnce),
+  // ou null : dans ce cas on ne devine rien, liste vide. Un spectacle avec
+  // moins de 10 jours comparables (saison tout juste commencée) est ignoré :
+  // pas assez de recul pour qualifier un horaire d'"habituel".
+  //
+  // Itère sur TOUS les spectacles connus de l'index (pas seulement ceux du
+  // programme officiel du jour) : un spectacle qui ne joue normalement pas
+  // un jour comme aujourd'hui n'a rien d'inhabituel, mais un spectacle
+  // d'ordinaire fiable et totalement ABSENT du programme d'aujourd'hui est
+  // justement le cas le plus "inhabituel" qui soit — il serait invisible
+  // si on ne parcourait que today.spectacles (qui, par définition, ne le
+  // contient pas).
+  function unusualTodayItems(today, index, calendar) {
+    if (!today || !index || !index.spectacles || !PDF.scheduleStats) return [];
+    const dayType = PDF.scheduleStats.classifyDate(today.date, calendar).dayType;
+    const todayBySlug = {};
+    (today.spectacles || []).forEach((sp) => { if (sp.slug) todayBySlug[sp.slug] = sp; });
+    const missing = [];
+    const unexpected = [];
+    const todayDate = parseISODate(today.date);
+    Object.keys(index.spectacles).forEach((slug) => {
+      const entry = index.spectacles[slug];
+      const sp = todayBySlug[slug];
+      const todayStarts = sp
+        ? (sp.representations || []).filter((r) => !r.is_continuous && r.start).map((r) => r.start)
+        : [];
+      const allDays = PDF.scheduleStats.indexEntryToDays(entry).filter((d) => d.date !== today.date);
+      // Protection spectacles éphémères (même principe que
+      // probableProgramme) : hors de sa période réelle, un spectacle n'a
+      // tout simplement aucune occurrence proche d'aujourd'hui dans
+      // l'index — ne pas le signaler "absent" dans ce cas, ce serait
+      // juste qu'il n'est pas (encore/plus) en saison.
+      const hasRecentOccurrence = allDays.some((d) => {
+        const diffDays = Math.abs((todayDate - parseISODate(d.date)) / 86400000);
+        return diffDays <= 21;
+      });
+      if (!hasRecentOccurrence) return;
+      const filtered = PDF.scheduleStats.filterDays(allDays, calendar, { dayType });
+      if (filtered.length < 10) return;
+      const result = PDF.scheduleStats.unusualToday(todayStarts, filtered);
+      const name = (sp && sp.name) || entry.name;
+      result.missing.forEach((m) => missing.push({ slug, name, kind: "missing", time: m.time, share: m.share }));
+      result.unexpected.forEach((u) => {
+        if (u.time) unexpected.push({ slug, name, kind: "unexpected", time: u.time, share: u.share });
+      });
+    });
+    // Les absences les plus attendues (part la plus haute) d'abord, puis les
+    // ajouts les plus surprenants (part la plus basse) — avant la troncature
+    // à 3 éléments faite par l'appelant.
+    missing.sort((a, b) => b.share - a.share);
+    unexpected.sort((a, b) => a.share - b.share);
+    return missing.concat(unexpected);
+  }
+
+  function unusualBannerHtml(items, dateStr) {
+    const lines = items.map((it) => {
+      return it.kind === "missing"
+        ? "pas de séance de " + formatTimeFR(it.time) + " pour " + escapeHtml(it.name) + " aujourd'hui"
+        : "séance de " + formatTimeFR(it.time) + " ajoutée pour " + escapeHtml(it.name) + " aujourd'hui";
+    });
+    return (
+      '<div class="status-banner status-warn unusual-banner">' +
+      '<span aria-hidden="true">⚠️</span>' +
+      "<span>Inhabituel : " + lines.join(" · ") + ".</span>" +
+      '<button type="button" class="icon-btn no-print" data-dismiss-unusual="' + escapeHtml(dateStr) + '" ' +
+      'aria-label="Masquer cet avertissement pour aujourd\'hui">' + PDF.icon("x") + "</button>" +
+      "</div>"
+    );
+  }
+
+  /* ----------------------------------------------------------------------
    * 9. Barre de recherche réutilisable
    *    createSearchBar(container, options) -> { getValue, setItems }
    *    options.placeholder, options.onChange(query)
@@ -1167,6 +1255,10 @@
     icsUtcStamp,
     buildAllDayIcs,
     downloadTextFile,
+    isUnusualDismissedToday,
+    dismissUnusualToday,
+    unusualTodayItems,
+    unusualBannerHtml,
   });
 
   // Injection auto du header/footer au chargement, basé sur data-page du body

@@ -370,3 +370,30 @@ test("probableProgramme: falls back to the previous season's index when the curr
   assert.strictEqual(result.basis.rule, "saison précédente (même période calendaire)");
   assert.deepStrictEqual(result.spectacles[0].starts, ["16:15"]);
 });
+
+/* -----------------------------------------------------------------------
+ * indexEntryToDays
+ * ------------------------------------------------------------------- */
+test("indexEntryToDays: splits the compact day string into sorted starts/ranges", () => {
+  const entry = {
+    name: "Les Vikings",
+    category: "spectacle",
+    days: {
+      "2026-07-22": "16:15,11:30,13:00",
+      "2026-07-23": "12:00-20:45",
+    },
+  };
+  const days = scheduleStats.indexEntryToDays(entry);
+  assert.strictEqual(days.length, 2);
+  const d22 = days.find((d) => d.date === "2026-07-22");
+  assert.deepStrictEqual(d22.starts, ["11:30", "13:00", "16:15"]);
+  assert.deepStrictEqual(d22.ranges, []);
+  const d23 = days.find((d) => d.date === "2026-07-23");
+  assert.deepStrictEqual(d23.starts, []);
+  assert.deepStrictEqual(d23.ranges, ["12:00-20:45"]);
+});
+
+test("indexEntryToDays: empty/missing days map returns an empty array", () => {
+  assert.deepStrictEqual(scheduleStats.indexEntryToDays({ name: "X", days: {} }), []);
+  assert.deepStrictEqual(scheduleStats.indexEntryToDays({ name: "X" }), []);
+});

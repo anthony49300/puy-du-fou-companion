@@ -13,6 +13,17 @@
   // "Comparaison des saisons" reste toujours toutes saisons confondues).
   var state = { periodDays: 30, years: [], year: null };
 
+  // "Densité horaire" + "Créneau le plus sûr" (voir renderDensityChart/
+  // renderSafestSlotTable ci-dessous) : calculés une seule fois à partir de
+  // schedule-index.json/calendar.json (saison en cours), indépendamment du
+  // sélecteur de saison ci-dessus qui ne porte que sur stats.json.
+  var scheduleState = {
+    index: null,
+    calendar: null,
+    daytype: "all", // "all" | "weekday" | "weekend"
+    safestSort: { key: "share", dir: "desc" },
+  };
+
   var CHART_DEFS = [
     {
       id: "chart-per-spectacle",
@@ -337,8 +348,169 @@
     });
   }
 
+  /* ------------------------------------------------------------------
+   * "Densité horaire" (saison en cours, filtrable par type de jour sans
+   * nouvelle requête — voir §4.5 de la spec "schedule-distribution") :
+   * agrège, pour tous les spectacles, les démarrages par heure sur les
+   * jours de schedule-index.json correspondant au filtre choisi.
+   * ------------------------------------------------------------------ */
+  function computeHourlyDensity() {
+    if (!scheduleState.index || !PDF.scheduleStats) return [];
+    var counts = {};
+    Object.keys(scheduleState.index.spectacles).forEach(function (slug) {
+      var entry = scheduleState.index.spectacles[slug];
+      var days = PDF.scheduleStats.indexEntryToDays(entry);
+      var filtered = PDF.scheduleStats.filterDays(days, scheduleState.calendar, { dayType: scheduleState.daytype });
+      filtered.forEach(function (d) {
+        (d.starts || []).forEach(function (t) {
+          var h = parseInt(String(t).slice(0, 2), 10);
+          if (isNaN(h)) return;
+          counts[h] = (counts[h] || 0) + 1;
+        });
+      });
+    });
+    return Object.keys(counts)
+      .map(function (h) { return +h; })
+      .sort(function (a, b) { return a - b; })
+      .map(function (h) { return { hour: (h < 10 ? "0" : "") + h + " h", count: counts[h] }; });
+  }
+
+  function renderDensityChart() {
+    var canvas = document.getElementById("chart-density");
+    var table = document.getElementById("chart-density-table");
+    if (!canvas || !table) return;
+    var rows = scheduleState.index ? computeHourlyDensity() : [];
+
+    table.innerHTML =
+      "<thead><tr><th>Heure</th><th>Représentations</th></tr></thead><tbody>" +
+      (rows.length
+        ? rows.map(function (r) { return "<tr><td>" + r.hour + "</td><td>" + r.count + "</td></tr>"; }).join("")
+        : '<tr><td colspan="2" class="text-muted">Aucune donnée disponible.</td></tr>') +
+      "</tbody>";
+
+    if (charts["chart-density"]) { charts["chart-density"].destroy(); charts["chart-density"] = null; }
+    var wrap = canvas.closest(".chart-wrap");
+    if (typeof Chart === "undefined") {
+      if (wrap) wrap.innerHTML = '<div class="empty-state"><p>Graphique indisponible (bibliothèque non chargée) — voir le tableau ci-dessous.</p></div>';
+      return;
+    }
+    if (!rows.length) {
+      if (wrap && !wrap.querySelector(".empty-state")) wrap.innerHTML = '<div class="empty-state"><p>Aucune donnée disponible.</p></div>';
+      return;
+    }
+
+    var theme = PDF.getChartTheme();
+    charts["chart-density"] = new Chart(canvas.getContext("2d"), {
+      type: "bar",
+      data: {
+        labels: rows.map(function (r) { return r.hour; }),
+        datasets: [{
+          data: rows.map(function (r) { return r.count; }),
+          backgroundColor: theme.forest, borderRadius: 4, maxBarThickness: 34,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { backgroundColor: theme.surface, titleColor: theme.text, bodyColor: theme.text, borderColor: theme.border, borderWidth: 1 },
+        },
+        scales: {
+          x: { ticks: { color: theme.textSoft }, grid: { color: theme.grid } },
+          y: { beginAtZero: true, ticks: { color: theme.textSoft, precision: 0 }, grid: { color: theme.grid } },
+        },
+      },
+    });
+  }
+
+  /* ------------------------------------------------------------------
+   * "Créneau le plus sûr par spectacle" : meilleur créneau (ou plage en
+   * continu) + régularité de chaque spectacle, saison en cours, sans
+   * filtre de type de jour (question différente de la densité ci-dessus).
+   * ------------------------------------------------------------------ */
+  function computeSafestSlots() {
+    if (!scheduleState.index || !PDF.scheduleStats) return [];
+    var rows = [];
+    Object.keys(scheduleState.index.spectacles).forEach(function (slug) {
+      var entry = scheduleState.index.spectacles[slug];
+      var days = PDF.scheduleStats.indexEntryToDays(entry);
+      var hasRanges = days.some(function (d) { return d.ranges && d.ranges.length; });
+      var hasStarts = days.some(function (d) { return d.starts && d.starts.length; });
+      var isContinuous = hasRanges && !hasStarts;
+      var freq = isContinuous ? PDF.scheduleStats.rangeFrequencies(days) : PDF.scheduleStats.startFrequencies(days);
+      var best = freq.items[0];
+      if (!best) return;
+      var reg = PDF.scheduleStats.regularity(days);
+      rows.push({
+        name: entry.name, time: best.time, isContinuous: isContinuous,
+        share: best.share, regularityLabel: reg.label, regularityShare: reg.share,
+      });
+    });
+    return rows;
+  }
+
+  function slotTimeLabel(row) {
+    if (!row.isContinuous) return PDF.formatTimeFR(row.time);
+    var parts = row.time.split("-");
+    return PDF.formatTimeFR(parts[0]) + "–" + PDF.formatTimeFR(parts[1]);
+  }
+
+  function renderSafestSlotTable() {
+    var tbody = document.querySelector("#safest-slot-table tbody");
+    if (!tbody) return;
+    var rows = computeSafestSlots();
+    var key = scheduleState.safestSort.key, dir = scheduleState.safestSort.dir;
+    rows.sort(function (a, b) {
+      var av = key === "name" ? a.name : key === "time" ? slotTimeLabel(a) : key === "regularity" ? a.regularityShare : a.share;
+      var bv = key === "name" ? b.name : key === "time" ? slotTimeLabel(b) : key === "regularity" ? b.regularityShare : b.share;
+      var cmp = typeof av === "string" ? av.localeCompare(bv, "fr") : av - bv;
+      return dir === "asc" ? cmp : -cmp;
+    });
+    tbody.innerHTML = rows.length
+      ? rows.map(function (r) {
+          return "<tr><td>" + PDF.escapeHtml(r.name) + "</td><td>" + PDF.escapeHtml(slotTimeLabel(r)) + "</td>" +
+            "<td>" + Math.round(r.share * 100) + " %</td><td>" + PDF.escapeHtml(r.regularityLabel) + "</td></tr>";
+        }).join("")
+      : '<tr><td colspan="4" class="text-muted">Aucune donnée disponible.</td></tr>';
+    document.querySelectorAll("#safest-slot-table th[data-sort]").forEach(function (th) {
+      th.setAttribute("aria-sort", th.getAttribute("data-sort") === key ? (dir === "asc" ? "ascending" : "descending") : "none");
+    });
+  }
+
+  function initScheduleSections() {
+    document.querySelectorAll("#density-daytype .segment").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll("#density-daytype .segment").forEach(function (b) {
+          b.classList.remove("active"); b.setAttribute("aria-pressed", "false");
+        });
+        btn.classList.add("active"); btn.setAttribute("aria-pressed", "true");
+        scheduleState.daytype = btn.getAttribute("data-daytype");
+        renderDensityChart();
+      });
+    });
+    document.querySelectorAll("#safest-slot-table th[data-sort]").forEach(function (th) {
+      th.addEventListener("click", function () {
+        var key = th.getAttribute("data-sort");
+        if (scheduleState.safestSort.key === key) {
+          scheduleState.safestSort.dir = scheduleState.safestSort.dir === "asc" ? "desc" : "asc";
+        } else {
+          scheduleState.safestSort = { key: key, dir: key === "name" || key === "time" ? "asc" : "desc" };
+        }
+        renderSafestSlotTable();
+      });
+    });
+    Promise.all([PDF.fetchScheduleIndexOnce(), PDF.fetchCalendarOnce()]).then(function (results) {
+      scheduleState.index = results[0];
+      scheduleState.calendar = results[1];
+      renderDensityChart();
+      renderSafestSlotTable();
+    });
+  }
+
   function init() {
     buildChartCards();
+    initScheduleSections();
 
     document.querySelectorAll("#period-filter .chip").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -381,6 +553,7 @@
 
     window.addEventListener("pdf:themechange", function () {
       if (statsData) renderAllCharts();
+      if (scheduleState.index) renderDensityChart();
     });
   }
 

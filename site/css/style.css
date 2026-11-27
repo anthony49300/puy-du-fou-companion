@@ -863,6 +863,14 @@ main { flex: 1; }
    pour les erreurs/avertissements, pour ne pas laisser croire à un souci. */
 .status-banner.status-probable { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
 
+/* "Inhabituel aujourd'hui" (voir PDF.unusualBannerHtml) : même habillage que
+   .status-warn, avec un bouton "masquer" aligné à droite — transparent pour
+   ne pas ajouter une seconde pastille de fond par-dessus la bannière. */
+.unusual-banner { align-items: center; }
+.unusual-banner > span:nth-child(2) { flex: 1 1 auto; }
+.unusual-banner .icon-btn { background: transparent; border-color: transparent; }
+.unusual-banner .icon-btn:hover { background: rgba(0, 0, 0, 0.08); }
+
 /* ---------- 9. Search bar & filters ---------- */
 .search-bar {
   display: flex;
@@ -1371,6 +1379,14 @@ table.data-table th {
 table.data-table tbody tr:hover { background: var(--accent-2-soft); }
 table.data-table tr.is-changed { background: var(--accent-2-soft); }
 table.data-table tr.is-changed td:first-child { font-weight: 600; }
+
+/* En-tête triable (voir "Créneau le plus sûr par spectacle",
+   statistiques.js) : flèche ascendant/descendant pilotée par aria-sort,
+   jamais par la couleur seule. */
+table.data-table th[data-sort] { cursor: pointer; user-select: none; }
+table.data-table th[data-sort]:hover { color: var(--text); }
+table.data-table th[data-sort][aria-sort="ascending"]::after { content: " \25B2"; }
+table.data-table th[data-sort][aria-sort="descending"]::after { content: " \25BC"; }
 
 /* ---------- 13. Calendar (historique) ---------- */
 .calendar-wrap {

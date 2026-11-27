@@ -26,6 +26,7 @@
     </section>
 
     <div id="status-banner-slot" aria-live="polite"></div>
+    <div id="unusual-banner-slot" aria-live="polite"></div>
 
     <div id="today-content" aria-live="polite">
       <div class="card"><div class="skeleton" style="height:9rem;"></div></div>
@@ -67,6 +68,7 @@
 
 <script src="js/icons.js"></script>
 <script src="js/app.js"></script>
+<script src="js/schedule-stats.js"></script>
 <script>
   (function () {
     "use strict";
@@ -294,6 +296,30 @@
     }
 
     /* ------------------------------------------------------------------
+     * "Inhabituel aujourd'hui" (voir PDF.unusualTodayItems, site/js/app.js)
+     * ---------------------------------------------------------------- */
+    function renderUnusualBanner(today) {
+      var slot = document.getElementById("unusual-banner-slot");
+      if (!slot) return;
+      slot.innerHTML = "";
+      if (PDF.isUnusualDismissedToday(today.date)) return;
+      Promise.all([PDF.fetchScheduleIndexOnce(), PDF.fetchCalendarOnce()])
+        .then(function (results) {
+          var items = PDF.unusualTodayItems(today, results[0], results[1]).slice(0, 3);
+          if (!items.length) return;
+          slot.innerHTML = PDF.unusualBannerHtml(items, today.date);
+          var btn = slot.querySelector("[data-dismiss-unusual]");
+          if (btn) {
+            btn.addEventListener("click", function () {
+              PDF.dismissUnusualToday(today.date);
+              slot.innerHTML = "";
+            });
+          }
+        })
+        .catch(function () { /* bandeau secondaire : jamais bloquant pour l'accueil */ });
+    }
+
+    /* ------------------------------------------------------------------
      * Ajout au plan du jour (clic sur un bouton "+")
      * ---------------------------------------------------------------- */
     document.getElementById("today-content").addEventListener("click", function (e) {
@@ -358,6 +384,7 @@
         if (isOpen && latestIsToday) {
           renderOpenDay(today);
           startAutoRefresh();
+          renderUnusualBanner(today);
         } else if (today.status === "closed_day" || today.status === "out_of_season") {
           renderClosedDay(today);
         } else if (!latestIsToday) {
