@@ -278,6 +278,88 @@
   }
 
   /* ----------------------------------------------------------------------
+   * "Ajouter ici" : séances officielles qui tiennent ENTIÈREMENT dans un
+   * creux de la journée (avant la première séance, entre deux séances
+   * consécutives, ou après la dernière) — voir §2.5 de la refonte
+   * "day-editor-v2". Un creux entre deux séances n'est proposé que s'il
+   * dépasse `minGapMin` (défaut 20 min) ; les creux en bord de journée
+   * (avant la première, après la dernière) sont toujours proposés, sans
+   * seuil : "Après-midi libre" reste pertinent même pour 15 minutes.
+   *
+   * `gateMin` (portes) et `marginMin` (marche à pied, distinct du délai de
+   * portes) s'additionnent : une séance candidate doit laisser au moins
+   * gateMin + marginMin de battement de CHAQUE côté — exactement la même
+   * marge que seancesCompatibles quand marginMin vaut 0 (rétro-compatible
+   * avec le seul réglage "Portes ouvertes" déjà existant).
+   * -------------------------------------------------------------------- */
+  function findFittingShowings(planItems, daySlots, options) {
+    options = options || {};
+    var gateMin = options.gateMin || 0;
+    var marginMin = options.marginMin || 0;
+    var minGapMin = options.minGapMin != null ? options.minGapMin : 20;
+    var buffer = gateMin + marginMin;
+
+    var fixed = itemsFixesTries(planItems || []);
+    var candidates = (daySlots || []).filter(function (s) {
+      return !s.is_continuous && s.start && s.end && s.status !== "complet";
+    });
+    var plannedStartBySlug = {};
+    (planItems || []).forEach(function (it) { if (it.slug && it.start) plannedStartBySlug[it.slug] = it.start; });
+
+    function fits(c, lowerAnchor, upperAnchor) {
+      if (lowerAnchor != null && PDF.timeToMinutes(c.start) - buffer < PDF.timeToMinutes(lowerAnchor)) return false;
+      if (upperAnchor != null && PDF.timeToMinutes(c.end) + buffer > PDF.timeToMinutes(upperAnchor)) return false;
+      return true;
+    }
+
+    function candidatesFitting(lowerAnchor, upperAnchor) {
+      return candidates
+        .filter(function (c) { return fits(c, lowerAnchor, upperAnchor); })
+        .map(function (c) {
+          var duration = PDF.timeToMinutes(c.end) - PDF.timeToMinutes(c.start);
+          if (duration < 0) duration += 24 * 60;
+          var plannedAt = plannedStartBySlug[c.slug];
+          return {
+            slug: c.slug, name: c.name, category: c.category, start: c.start, end: c.end,
+            durationMinutes: duration,
+            alreadyPlannedAt: plannedAt && plannedAt !== c.start ? plannedAt : null,
+          };
+        })
+        .sort(function (a, b) { return a.start.localeCompare(b.start); });
+    }
+
+    var gaps = [];
+    if (!fixed.length) return gaps;
+
+    gaps.push({
+      afterUid: null, beforeUid: fixed[0].uid,
+      start: null, end: fixed[0].start, gapMinutes: null,
+      candidates: candidatesFitting(null, fixed[0].start),
+    });
+
+    for (var i = 0; i < fixed.length - 1; i++) {
+      var a = fixed[i], b = fixed[i + 1];
+      var gapMinutes = PDF.timeToMinutes(b.start) - PDF.timeToMinutes(a.end);
+      if (gapMinutes >= minGapMin) {
+        gaps.push({
+          afterUid: a.uid, beforeUid: b.uid,
+          start: a.end, end: b.start, gapMinutes: gapMinutes,
+          candidates: candidatesFitting(a.end, b.start),
+        });
+      }
+    }
+
+    var last = fixed[fixed.length - 1];
+    gaps.push({
+      afterUid: last.uid, beforeUid: null,
+      start: last.end, end: null, gapMinutes: null,
+      candidates: candidatesFitting(last.end, null),
+    });
+
+    return gaps;
+  }
+
+  /* ----------------------------------------------------------------------
    * Calendrier de sélection de date
    * -------------------------------------------------------------------- */
 
@@ -391,6 +473,7 @@
     buildAutoPlan: buildAutoPlan,
     optionsPourManquant: optionsPourManquant,
     analyserManques: analyserManques,
+    findFittingShowings: findFittingShowings,
     planDayCellInfo: planDayCellInfo,
     minutesToHHMM: minutesToHHMM,
     dureeTotaleMinutes: dureeTotaleMinutes,

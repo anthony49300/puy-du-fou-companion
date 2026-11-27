@@ -310,3 +310,90 @@ test("buildIcs skips items without a start time", () => {
   const ics = dayPlan.buildIcs("2026-09-05", items, 30, new Date());
   assert.ok(!ics.includes("BEGIN:VEVENT"));
 });
+
+/* -----------------------------------------------------------------------
+ * findFittingShowings
+ * ------------------------------------------------------------------- */
+test("findFittingShowings: empty plan yields no gaps (handled by the empty state, not this function)", () => {
+  const dayPlan = loadModule("day-plan.js");
+  const gaps = dayPlan.findFittingShowings([], [slot("A", "10:00", "10:30")], { gateMin: 30 });
+  assert.deepStrictEqual(gaps, []);
+});
+
+test("findFittingShowings: always offers the edge gaps (before first, after last), no minGapMin threshold", () => {
+  const dayPlan = loadModule("day-plan.js");
+  const planItems = [planItem("A", "11:00", "11:30", { slug: "a" })];
+  const gaps = dayPlan.findFittingShowings(planItems, [], { gateMin: 0, minGapMin: 20 });
+  assert.strictEqual(gaps.length, 2);
+  assert.deepStrictEqual(gaps[0], { afterUid: null, beforeUid: "A", start: null, end: "11:00", gapMinutes: null, candidates: [] });
+  assert.deepStrictEqual(gaps[1], { afterUid: "A", beforeUid: null, start: "11:30", end: null, gapMinutes: null, candidates: [] });
+});
+
+test("findFittingShowings: a gap under minGapMin between two shows is skipped entirely", () => {
+  const dayPlan = loadModule("day-plan.js");
+  const planItems = [planItem("A", "10:00", "10:30", { slug: "a" }), planItem("B", "10:45", "11:15", { slug: "b" })];
+  const gaps = dayPlan.findFittingShowings(planItems, [], { gateMin: 0, minGapMin: 20 });
+  // Seulement les 2 bords (avant A, après B) : le creux A->B (15 min) est sous le seuil.
+  assert.strictEqual(gaps.length, 2);
+  assert.strictEqual(gaps.some((g) => g.afterUid === "A" && g.beforeUid === "B"), false);
+});
+
+test("findFittingShowings: a gap at/over minGapMin between two shows is included with its candidates", () => {
+  const dayPlan = loadModule("day-plan.js");
+  const planItems = [planItem("A", "10:00", "10:30", { slug: "a" }), planItem("B", "11:00", "11:30", { slug: "b" })];
+  const daySlots = [slot("Manquant", "10:35", "10:50", { slug: "manquant" })];
+  const gaps = dayPlan.findFittingShowings(planItems, daySlots, { gateMin: 0, minGapMin: 20 });
+  const middle = gaps.find((g) => g.afterUid === "A" && g.beforeUid === "B");
+  assert.ok(middle);
+  assert.strictEqual(middle.gapMinutes, 30);
+  assert.strictEqual(middle.candidates.length, 1);
+  assert.strictEqual(middle.candidates[0].slug, "manquant");
+  assert.strictEqual(middle.candidates[0].durationMinutes, 15);
+});
+
+test("findFittingShowings: a candidate that does not fit entirely (finishes after the gap ends) is excluded", () => {
+  const dayPlan = loadModule("day-plan.js");
+  const planItems = [planItem("A", "10:00", "10:30", { slug: "a" }), planItem("B", "11:00", "11:30", { slug: "b" })];
+  // 10:35 -> 11:05 déborde après le début de B (11:00) : ne tient pas entièrement dans le creux.
+  const daySlots = [slot("Trop long", "10:35", "11:05", { slug: "trop-long" })];
+  const gaps = dayPlan.findFittingShowings(planItems, daySlots, { gateMin: 0, minGapMin: 20 });
+  const middle = gaps.find((g) => g.afterUid === "A" && g.beforeUid === "B");
+  assert.deepStrictEqual(middle.candidates, []);
+});
+
+test("findFittingShowings: gateMin + marginMin combine as a single buffer on each side", () => {
+  const dayPlan = loadModule("day-plan.js");
+  const planItems = [planItem("A", "10:00", "10:30", { slug: "a" }), planItem("B", "11:30", "12:00", { slug: "b" })];
+  // Creux 10:30 -> 11:30 (60 min). Candidat 10:40 -> 11:10 : il faut 20 min
+  // de battement de chaque côté (gateMin 10 + marginMin 10) ; 10:40-10:30=10
+  // < 20 -> ne tient pas.
+  const daySlots = [slot("Juste", "10:40", "11:10", { slug: "juste" })];
+  const gaps = dayPlan.findFittingShowings(planItems, daySlots, { gateMin: 10, marginMin: 10, minGapMin: 20 });
+  const middle = gaps.find((g) => g.afterUid === "A" && g.beforeUid === "B");
+  assert.deepStrictEqual(middle.candidates, []);
+});
+
+test("findFittingShowings: flags a candidate already planned at a different time", () => {
+  const dayPlan = loadModule("day-plan.js");
+  const planItems = [
+    planItem("A", "10:00", "10:30", { slug: "a" }),
+    planItem("B", "14:00", "14:30", { slug: "b" }),
+    planItem("B (matin)", "09:00", "09:20", { slug: "b" }),
+  ];
+  const daySlots = [slot("B", "10:40", "11:00", { slug: "b" })];
+  const gaps = dayPlan.findFittingShowings(planItems, daySlots, { gateMin: 0, minGapMin: 20 });
+  const middle = gaps.find((g) => g.afterUid === "A" && g.beforeUid === "B");
+  assert.strictEqual(middle.candidates[0].alreadyPlannedAt, "09:00");
+});
+
+test("findFittingShowings: excludes continuous attractions and sold-out ('complet') showings", () => {
+  const dayPlan = loadModule("day-plan.js");
+  const planItems = [planItem("A", "10:00", "10:30", { slug: "a" }), planItem("B", "12:00", "12:30", { slug: "b" })];
+  const daySlots = [
+    slot("Continu", "10:00", "20:00", { slug: "continu", is_continuous: true }),
+    slot("Complet", "10:40", "11:00", { slug: "complet", status: "complet" }),
+  ];
+  const gaps = dayPlan.findFittingShowings(planItems, daySlots, { gateMin: 0, minGapMin: 20 });
+  const middle = gaps.find((g) => g.afterUid === "A" && g.beforeUid === "B");
+  assert.deepStrictEqual(middle.candidates, []);
+});

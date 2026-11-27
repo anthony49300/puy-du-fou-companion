@@ -11,6 +11,12 @@
   var PDF = window.PDF;
   var dayPlan = PDF.dayPlan;
 
+  // Seuil à partir duquel un creux ENTRE deux séances propose "+ Ajouter
+  // ici" (voir dayPlan.findFittingShowings) — les creux en bord de journée
+  // (avant la première séance, après la dernière) sont toujours proposés,
+  // sans ce seuil.
+  var ADD_HERE_MIN_GAP_MIN = 20;
+
   function $(id) { return document.getElementById(id); }
 
   /* ----------------------------------------------------------------------
@@ -491,6 +497,44 @@
     );
   }
 
+  // Libellé contextuel du panneau "+ Ajouter ici" une fois déplié — un creux
+  // en bord de journée (avant la première séance / après la dernière) n'a
+  // qu'une seule borne connue, l'autre reste ouverte.
+  function gapLabel(gap) {
+    if (gap.start && gap.end) return "Libre de " + PDF.formatTimeFR(gap.start) + " à " + PDF.formatTimeFR(gap.end);
+    if (gap.end) return "Libre jusqu’à " + PDF.formatTimeFR(gap.end);
+    if (gap.start) return "Libre à partir de " + PDF.formatTimeFR(gap.start);
+    return "Libre";
+  }
+
+  function fittingCandidateRowHtml(c) {
+    var note = c.alreadyPlannedAt
+      ? '<div class="text-muted" style="font-size:0.78rem;flex-basis:100%">Déjà dans le plan à ' + PDF.escapeHtml(PDF.formatTimeFR(c.alreadyPlannedAt)) + "</div>"
+      : "";
+    return (
+      '<button type="button" class="fitting-candidate" data-add-fitting ' +
+      'data-slug="' + PDF.escapeHtml(c.slug) + '" data-name="' + PDF.escapeHtml(c.name) + '" data-category="' + PDF.escapeHtml(c.category || "") + '" ' +
+      'data-start="' + c.start + '" data-end="' + c.end + '">' +
+      '<span class="fitting-candidate-time tnum">' + PDF.escapeHtml(PDF.formatTimeFR(c.start)) + "–" + PDF.escapeHtml(PDF.formatTimeFR(c.end)) + "</span>" +
+      '<span class="fitting-candidate-name">' + PDF.escapeHtml(c.name) + "</span>" +
+      '<span class="text-muted">' + PDF.escapeHtml(dayPlan.formatDureeHeuresMinutes(c.durationMinutes)) + "</span>" +
+      note +
+      "</button>"
+    );
+  }
+
+  function gapRowWithAddHereHtml(gap, gapKey) {
+    var toggleHtml = '<button type="button" class="add-here-toggle" data-add-here-toggle="' + gapKey + '" aria-expanded="false">+ Ajouter ici</button>';
+    var panelHtml =
+      '<div class="add-here-panel" data-add-here-panel="' + gapKey + '" hidden>' +
+      '<div class="text-muted">' + PDF.escapeHtml(gapLabel(gap)) + "</div>" +
+      (gap.candidates.length
+        ? gap.candidates.map(fittingCandidateRowHtml).join("")
+        : '<p class="text-muted" style="margin:0">Aucune séance ne tient entièrement dans ce créneau.</p>') +
+      "</div>";
+    return '<li class="day-gap-row day-gap-row--addhere"><div></div><div></div><div class="day-gap-addhere">' + toggleHtml + panelHtml + "</div></li>";
+  }
+
   function renderFilledDay(plan) {
     var el = $("jour-content");
     var continuous = plan.items.filter(function (it) { return it.is_continuous; });
@@ -499,13 +543,31 @@
       .sort(function (a, b) { return (a.start || "").localeCompare(b.start || ""); });
     var fixes = dayPlan.itemsFixesTries(plan.items);
     var conflits = dayPlan.detecterConflits(fixes, S.gate);
+    var fittingGaps = dayPlan.findFittingShowings(plan.items, state.currentSlots, { gateMin: S.gate, minGapMin: ADD_HERE_MIN_GAP_MIN });
+    var gapsByKey = {};
+    fittingGaps.forEach(function (g, i) { gapsByKey[(g.afterUid || "") + "|" + (g.beforeUid || "")] = { gap: g, key: "gap-" + i }; });
 
     var html = continuousRowHtml(continuous);
     html += '<ol class="day-timeline">';
+
+    if (allFixed.length) {
+      var edgeBefore = gapsByKey["|" + allFixed[0].uid];
+      if (edgeBefore) html += gapRowWithAddHereHtml(edgeBefore.gap, edgeBefore.key);
+    }
+
     allFixed.forEach(function (it, idx) {
       html += fixedCardHtml(it, conflits);
-      html += gapRowHtml(it, allFixed[idx + 1]);
+      var next = allFixed[idx + 1];
+      if (next) {
+        html += gapRowHtml(it, next);
+        var mid = gapsByKey[it.uid + "|" + next.uid];
+        if (mid) html += gapRowWithAddHereHtml(mid.gap, mid.key);
+      } else {
+        var edgeAfter = gapsByKey[it.uid + "|"];
+        if (edgeAfter) html += gapRowWithAddHereHtml(edgeAfter.gap, edgeAfter.key);
+      }
     });
+
     html += "</ol>";
     el.innerHTML = html;
   }
@@ -587,6 +649,35 @@
         delete cible.confidence;
         sauver();
         renderDay();
+        return;
+      }
+
+      var addHereToggle = e.target.closest("[data-add-here-toggle]");
+      if (addHereToggle) {
+        var gapKey = addHereToggle.getAttribute("data-add-here-toggle");
+        var panel = el.querySelector('[data-add-here-panel="' + gapKey + '"]');
+        if (!panel) return;
+        var willOpenPanel = panel.hidden;
+        panel.hidden = !willOpenPanel;
+        addHereToggle.setAttribute("aria-expanded", String(willOpenPanel));
+        return;
+      }
+
+      var fittingBtn = e.target.closest("[data-add-fitting]");
+      if (fittingBtn) {
+        var planNow = planCourant(state.dateStr);
+        var candidat = {
+          slug: fittingBtn.getAttribute("data-slug"), name: fittingBtn.getAttribute("data-name"),
+          category: fittingBtn.getAttribute("data-category") || null,
+          start: fittingBtn.getAttribute("data-start"), end: fittingBtn.getAttribute("data-end"),
+          is_continuous: false, status: "scheduled",
+        };
+        if (PDF.planItemExists(planNow, candidat)) { PDF.toast(candidat.name + " est déjà dans cette journée."); return; }
+        candidat.uid = PDF.carnetUid();
+        planNow.items.push(candidat);
+        sauver();
+        renderDay();
+        PDF.toast(candidat.name + " ajouté à la journée.");
       }
     });
     document.addEventListener("click", function (e) {

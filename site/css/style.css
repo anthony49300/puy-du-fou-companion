@@ -1803,6 +1803,43 @@ table.data-table th[data-sort][aria-sort="descending"]::after { content: " \25BC
 }
 .continuous-row-item > div:first-child { flex: 1 1 auto; }
 
+/* "+ Ajouter ici" (voir dayPlan.findFittingShowings) : affordance en
+   pointillés dans un creux assez grand, qui déplie la liste des séances
+   officielles tenant entièrement dedans. */
+.day-gap-addhere { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.3rem 0 0.6rem; }
+.add-here-toggle {
+  align-self: flex-start;
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--text-soft);
+  border-radius: var(--r-md);
+  padding: 0.5rem 0.9rem;
+  font-size: 0.82rem;
+  min-height: 36px;
+  cursor: pointer;
+}
+.add-here-toggle:hover { background: var(--surface-2); }
+.add-here-panel { display: flex; flex-direction: column; gap: 0.5rem; }
+.add-here-panel[hidden] { display: none; }
+.fitting-candidate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  padding: 0.6rem 0.9rem;
+  font: inherit;
+  cursor: pointer;
+  min-height: 44px;
+}
+.fitting-candidate:hover { background: var(--surface-2); }
+.fitting-candidate-time { font-weight: 600; color: var(--accent-text); flex-shrink: 0; }
+.fitting-candidate-name { flex: 1 1 auto; }
+
 /* Tuile KPI qui bascule en alerte (ex: conflits > 0) */
 .stat-tile--danger { background: var(--danger-bg); border-color: var(--danger-line); }
 .stat-tile--danger .stat-value, .stat-tile--danger .stat-label { color: var(--danger); }
