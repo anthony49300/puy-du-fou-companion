@@ -1075,6 +1075,12 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
 .heatmap-wrap { margin-bottom: 1.25rem; }
 .heatmap-grid {
   display: grid;
+  /* "start" : empêche la colonne des libellés de jour ("auto") d'absorber
+     tout l'espace libre quand peu d'heures sont représentées (sinon elle
+     pousse toute la grille à droite, voir la note de l'algorithme de
+     dimensionnement des grilles CSS sur le "stretch" des pistes "auto"
+     avec justify-content: normal, le comportement par défaut). */
+  justify-content: start;
   gap: 2px;
   align-items: center;
   overflow-x: auto;

@@ -300,7 +300,7 @@
       }).join("") + "</tbody></table>";
     return (
       '<div class="heatmap-wrap">' +
-      '<div class="heatmap-grid" style="grid-template-columns:auto repeat(' + cols + ',1fr)">' + header + rows + "</div>" +
+      '<div class="heatmap-grid" style="grid-template-columns:auto repeat(' + cols + ',minmax(1.8rem,3rem))">' + header + rows + "</div>" +
       '<div class="heatmap-legend"><span class="heatmap-legend-swatch"></span> Part des jours avec une séance à cette heure</div>' +
       '<details class="chart-table-details"><summary>Voir en tableau</summary><div class="table-wrap">' + table + "</div></details>" +
       "</div>"
