@@ -862,6 +862,8 @@ main { flex: 1; }
 .list-row .list-row-name { font-weight: 600; }
 .list-row .list-row-meta { font-size: 0.8rem; color: var(--muted); }
 .list-row .list-row-meta.is-warn { color: var(--warn); font-weight: 600; }
+.list-row .list-row-meta.is-conflict { color: var(--danger); font-weight: 600; }
+.list-row .list-row-meta.is-night { color: var(--night); }
 
 /* Bouton "+" (ajouter à ma journée) / "✓" une fois ajouté */
 .add-to-day-btn {
@@ -1090,6 +1092,11 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
 .hgrid-show-cat.is-night { color: var(--night); }
 .hgrid-track { position: relative; height: 1.6rem; }
 .hgrid-axis .hgrid-track { height: 1.4rem; }
+.hgrid-legend { display: flex; gap: 0.9rem; flex-wrap: wrap; font-size: 0.72rem; color: var(--text-soft); }
+.hgrid-legend-item { display: flex; align-items: center; gap: 0.35rem; }
+.hgrid-legend-swatch { width: 0.6rem; height: 0.6rem; border-radius: 3px; flex: none; }
+.hgrid-legend-swatch--myday { background: var(--accent-fill); }
+.hgrid-legend-swatch--conflict { background: var(--danger); }
 .hgrid-tick {
   position: absolute;
   top: 0;
