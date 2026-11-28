@@ -1177,8 +1177,13 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
 /* "Résoudre le conflit" : rempli --accent-fill (ambre), pas la teinte
    bordeaux par défaut de .btn — distinct visuellement de "Ouvrir Ma
    journée" (contour) juste en dessous. */
-#btn-resolve-conflict { background: var(--accent-fill); color: var(--on-accent); }
+#btn-resolve-conflict { background: var(--accent-fill); color: var(--on-accent); margin-top: 0.75rem; width: 100%; }
 #btn-resolve-conflict:hover { background: var(--accent-text); color: var(--on-primary); }
+#btn-open-journee { margin-top: 0.6rem; width: 100%; justify-content: center; }
+#aside-next-slot p.text-muted { margin: 0; }
+#aside-myday-slot .flex-between .text-muted { font-size: 0.8rem; }
+#aside-myday-slot .card > p.text-muted:first-of-type { margin: 0 0 0.75rem; }
+#aside-myday-slot .card > p.text-muted:last-child { margin: 0.6rem 0 0; font-size: 0.82rem; }
 
 /* ---------- "Horaires habituels" (détail d'un spectacle) ---------- */
 .schedule-section { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line-soft); }
@@ -1301,19 +1306,6 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
   flex-direction: column;
   gap: 0.75rem;
   margin: 1.5rem 0;
-}
-.timeline-hour-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-.timeline-hour-label {
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 0.95rem;
-  color: var(--accent);
-  margin: 1rem 0 0.25rem;
-  padding-bottom: 0.25rem;
-  border-bottom: 2px dotted var(--border);
 }
 .rep-card {
   display: flex;

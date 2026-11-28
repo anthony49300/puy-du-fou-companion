@@ -533,15 +533,15 @@
           });
         }
       } else {
-        nextSlot.innerHTML = '<div class="card"><p class="text-muted" style="margin:0">Rien de prévu dans votre journée pour l\'instant.</p></div>';
+        nextSlot.innerHTML = '<div class="card"><p class="text-muted">Rien de prévu dans votre journée pour l\'instant.</p></div>';
       }
     }
 
     if (!items.length) {
       dayListSlot.innerHTML =
-        '<div class="card"><h3 class="mt-0">Ma journée</h3><p class="text-muted" style="margin:0 0 0.75rem">Aucun spectacle pour l\'instant.</p>' +
+        '<div class="card"><h3 class="mt-0">Ma journée</h3><p class="text-muted">Aucun spectacle pour l\'instant.</p>' +
         '<a class="link-button" href="journee.html?date=' + encodeURIComponent(dateStr) + '&assistant=1">' + PDF.icon("wand") + "Composer automatiquement</a>" +
-        '<p class="text-muted" style="margin:0.6rem 0 0;font-size:0.82rem">Cliquez un créneau dans la grille pour l\'ajouter.</p></div>';
+        '<p class="text-muted">Cliquez un créneau dans la grille pour l\'ajouter.</p></div>';
       return;
     }
 
@@ -555,7 +555,7 @@
 
     dayListSlot.innerHTML =
       '<div class="card"><div class="flex-between"><h3 class="mt-0">Ma journée</h3>' +
-      '<span class="text-muted" style="font-size:0.8rem">' + items.length + " spectacle" + (items.length > 1 ? "s" : "") +
+      '<span class="text-muted">' + items.length + " spectacle" + (items.length > 1 ? "s" : "") +
       (fixes.length ? " · " + dayPlan.formatDureeHeuresMinutes(dayPlan.dureeTotaleMinutes(fixes)) : "") + "</span></div>" +
       '<ol class="list-card">' +
       items.map(function (it) {
@@ -570,8 +570,8 @@
         );
       }).join("") +
       "</ol>" +
-      (hasOverlap ? '<button type="button" class="btn" id="btn-resolve-conflict" style="margin-top:0.75rem;width:100%">Résoudre le conflit</button>' : "") +
-      '<a class="btn btn-outline" id="btn-open-journee" href="journee.html?date=' + encodeURIComponent(dateStr) + '" style="margin-top:0.6rem;width:100%;justify-content:center">Ouvrir Ma journée</a>' +
+      (hasOverlap ? '<button type="button" class="btn" id="btn-resolve-conflict">Résoudre le conflit</button>' : "") +
+      '<a class="btn btn-outline" id="btn-open-journee" href="journee.html?date=' + encodeURIComponent(dateStr) + '">Ouvrir Ma journée</a>' +
       "</div>";
 
     var resolveBtn = document.getElementById("btn-resolve-conflict");
