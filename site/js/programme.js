@@ -127,43 +127,74 @@
       'data-slug="' + PDF.escapeHtml(slot.spectacle.slug || "") + '" data-name="' + PDF.escapeHtml(slot.spectacle.name) + '" ' +
       'data-category="' + PDF.escapeHtml(slot.spectacle.category || "") + '" data-start="' + slot.rep.start + '" data-end="' + (slot.rep.end || "") + '" ' +
       'aria-label="' + (already ? "Déjà dans ma journée" : "Ajouter à ma journée") + '" aria-pressed="' + already + '">' +
-      (already ? "✓" : "+") +
+      PDF.icon(already ? "check" : "plus") +
       "</button>"
     );
   }
 
-  function renderSlot(slot, opts) {
+  // Un seul horaire affiché par groupe de lignes consécutives qui partagent
+  // le même horaire (plutôt qu'un en-tête "14h00" par heure) : `starts` est
+  // déjà trié par heure croissante. Pure et testée indépendamment du DOM
+  // (voir tests/frontend/programme.test.js).
+  function groupConsecutiveByStart(starts) {
+    return starts.map(function (s, i) { return i === 0 || s !== starts[i - 1]; });
+  }
+
+  // Un spectacle "en continu" avec plusieurs plages (ex: deux créneaux
+  // d'ouverture) ne doit apparaître qu'UNE fois dans le mini-Gantt "Accès
+  // continu", avec toutes ses plages sur la même piste — pas une ligne par
+  // plage (voir maquette "Programme", section Mobile, point 2).
+  function mergeContinuousByShow(continuousSlots) {
+    var groups = [];
+    var bySlug = {};
+    continuousSlots.forEach(function (s) {
+      var key = s.spectacle.slug || s.spectacle.name;
+      if (!bySlug[key]) { bySlug[key] = { spectacle: s.spectacle, ranges: [] }; groups.push(bySlug[key]); }
+      if (s.rep.start && s.rep.end) bySlug[key].ranges.push({ start: s.rep.start, end: s.rep.end });
+    });
+    return groups;
+  }
+
+  // Une ligne par séance (pas une carte, voir maquette "Programme") : l'heure
+  // n'est répétée que sur la première ligne d'un groupe de même horaire
+  // (opts.showTime, voir groupConsecutiveByStart) ; une seule ligne de méta
+  // (délai/durée/dernière séance, puis badges de statut éventuels).
+  function renderProgRow(slot, opts) {
     opts = opts || {};
     var rep = slot.rep;
     var spectacle = slot.spectacle;
-    var timeLabel = rep.is_continuous
-      ? (rep.end ? PDF.formatTimeFR(rep.start) + "–" + PDF.formatTimeFR(rep.end) : "En continu")
-      : PDF.formatTimeFR(rep.start);
-    var duration = !rep.is_continuous ? durationMinutes(rep.start, rep.end) : null;
-    var classes = "rep-card";
-    if (spectacle.category === "spectacle_nocturne" || PDF.isLateHour(rep.start)) classes += " is-nocturne";
-    if (opts.isPast) classes += " is-past";
+    var isNight = spectacle.category === "spectacle_nocturne" || PDF.isLateHour(rep.start);
+    var duration = durationMinutes(rep.start, rep.end);
 
     var metaParts = [];
-    if (opts.isLastShowing) metaParts.push("Dernière séance");
-    else if (duration != null) metaParts.push(duration + " min");
-    if (opts.isNextUpcoming) metaParts.push(opts.minutesUntil <= 0 ? "maintenant" : "dans " + opts.minutesUntil + " min");
-    var metaHtml = metaParts.length
-      ? '<div class="rep-duration' + (opts.isLastShowing ? " is-warn" : "") + '">' + PDF.escapeHtml(metaParts.join(" · ")) + "</div>"
+    var metaCls = "";
+    if (opts.isLastShowing) {
+      metaParts.push("Dernière séance" + (duration != null ? " · " + duration + " min" : ""));
+      metaCls = "is-last";
+    } else if (opts.isNextUpcoming) {
+      metaParts.push((opts.minutesUntil <= 0 ? "maintenant" : "dans " + opts.minutesUntil + " min") + (duration != null ? " · " + duration + " min" : ""));
+      metaCls = "is-next";
+    } else if (duration != null) {
+      metaParts.push(duration + " min");
+    }
+    var badgesHtml = PDF.representationBadges(rep, spectacle.category);
+    var metaRowHtml = metaParts.length || badgesHtml
+      ? '<div class="prog-row-meta-row">' +
+        (metaParts.length ? '<span class="prog-row-meta' + (metaCls ? " " + metaCls : "") + '">' + PDF.escapeHtml(metaParts.join("")) + "</span>" : "") +
+        badgesHtml +
+        "</div>"
       : "";
+
+    var classes = "prog-row";
+    if (isNight) classes += " is-night";
+    if (opts.isPast) classes += " is-past";
+    if (opts.isNewTime) classes += " is-new-time";
 
     return (
       '<div class="' + classes + '">' +
-      '<div class="rep-time-wrap">' +
-      '<div class="rep-time tnum">' + PDF.escapeHtml(timeLabel) + "</div>" +
-      metaHtml +
-      "</div>" +
-      '<div class="rep-name">' + PDF.escapeHtml(spectacle.name) + "</div>" +
-      '<div class="rep-badges">' +
-      PDF.representationBadges(rep, spectacle.category) +
-      "</div>" +
-      starButtonHtml(spectacle.slug) +
-      addButtonHtml(slot) +
+      '<span class="prog-row-time tnum">' + (opts.showTime ? PDF.escapeHtml(PDF.formatTimeFR(rep.start)) : "") + "</span>" +
+      '<span class="prog-row-main"><span class="prog-row-name">' + PDF.escapeHtml(spectacle.name) + "</span>" + metaRowHtml + "</span>" +
+      '<span class="prog-row-actions">' + starButtonHtml(spectacle.slug) + (opts.isPast ? "" : addButtonHtml(slot)) + "</span>" +
       "</div>"
     );
   }
@@ -207,22 +238,29 @@
     var span = bounds.max != null && bounds.min != null ? bounds.max - bounds.min : 0;
     if (!continuousSlots.length || span <= 0) { slot.innerHTML = ""; return; }
     var nowPct = isToday && nowMinutes != null ? Math.min(100, Math.max(0, ((nowMinutes - bounds.min) / span) * 100)) : null;
-    var rows = continuousSlots.map(function (s) {
-      var a = PDF.timeToMinutes(s.rep.start), b = PDF.timeToMinutes(s.rep.end);
-      if (a == null || b == null) return "";
-      var left = ((a - bounds.min) / span) * 100;
-      var width = Math.max(1, ((b - a) / span) * 100);
-      var isPast = isToday && nowMinutes != null && b <= nowMinutes;
+    var groups = mergeContinuousByShow(continuousSlots);
+    var rows = groups.map(function (group) {
+      var bars = group.ranges.map(function (r) {
+        var a = PDF.timeToMinutes(r.start), b = PDF.timeToMinutes(r.end);
+        if (a == null || b == null) return "";
+        var left = ((a - bounds.min) / span) * 100;
+        var width = Math.max(1, ((b - a) / span) * 100);
+        var isPast = isToday && nowMinutes != null && b <= nowMinutes;
+        return '<div class="mini-gantt-bar' + (isPast ? " is-past" : "") + '" style="left:' + left + "%;width:" + width + '%"></div>';
+      }).join("");
       return (
         '<div class="mini-gantt-row">' +
-        '<div class="mini-gantt-label">' + PDF.escapeHtml(s.spectacle.name) + "</div>" +
-        '<div class="mini-gantt-track">' +
-        '<div class="mini-gantt-bar' + (isPast ? " is-past" : "") + '" style="left:' + left + "%;width:" + width + '%"></div>' +
+        '<div class="mini-gantt-label">' + PDF.escapeHtml(group.spectacle.name) + "</div>" +
+        '<div class="mini-gantt-track">' + bars +
         (nowPct != null ? '<div class="mini-gantt-now" style="left:' + nowPct + '%"></div>' : "") +
         "</div></div>"
       );
     }).join("");
-    slot.innerHTML = '<div class="card"><div class="section-label">Accès continu</div><div class="mini-gantt">' + rows + "</div></div>";
+    var boundsLabel = String(Math.floor(bounds.min / 60)).padStart(2, "0") + "h — " + String(Math.floor(bounds.max / 60)).padStart(2, "0") + "h";
+    slot.innerHTML =
+      '<div class="card"><div class="mini-gantt-card-head"><div class="section-label">Accès continu</div>' +
+      '<span class="mini-gantt-bounds tnum">' + boundsLabel + "</span></div>" +
+      '<div class="mini-gantt">' + rows + "</div></div>";
   }
 
   /* ------------------------------------------------------------------
@@ -571,51 +609,59 @@
       ? cat.upcoming.slice().sort(function (a, b) { return sortKeyMinutes(a.rep.start) - sortKeyMinutes(b.rep.start); })[0]
       : null;
 
+    // Spectacles "en continu" : uniquement dans le mini-Gantt "Accès continu"
+    // ci-dessus, jamais aussi dans cette liste (voir maquette "Programme").
     var html = "";
-
-    if (continuousSlots.length) {
-      html += '<div class="timeline-hour-group"><div class="timeline-hour-label">En continu</div>';
-      continuousSlots.forEach(function (s) { html += renderSlot(s); });
-      html += "</div>";
-    }
 
     if (cat.past.length) {
       var n = cat.past.length;
+      var pastStarts = cat.past.map(function (s) { return s.rep.start; });
+      var pastShowTime = groupConsecutiveByStart(pastStarts);
       html +=
-        '<details class="past-sessions"><summary>Afficher ' + (n > 1 ? "les " + n + " séances passées" : "la séance passée") + "</summary>" +
-        '<div class="timeline-hour-group">';
-      cat.past.forEach(function (s) { html += renderSlot(s, { isPast: true }); });
+        '<details class="past-sessions"><summary>' + PDF.icon("chevron-down") +
+        "Afficher " + (n > 1 ? "les " + n + " séances passées" : "la séance passée") + "</summary>" +
+        '<div class="prog-list">';
+      cat.past.forEach(function (s, i) {
+        html += renderProgRow(s, { isPast: true, showTime: pastShowTime[i], isNewTime: pastShowTime[i] });
+      });
       html += "</div></details>";
     }
 
     if (isToday) {
-      html += '<div class="now-divider">Maintenant · ' + PDF.escapeHtml(PDF.formatTimeFR(
+      html += '<div class="now-divider"><span class="now-divider-dot" aria-hidden="true"></span>Maintenant · ' + PDF.escapeHtml(PDF.formatTimeFR(
         (String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0"))
       )) + "</div>";
     }
 
+    var upcomingSorted = cat.upcoming.slice().sort(function (a, b) { return sortKeyMinutes(a.rep.start) - sortKeyMinutes(b.rep.start); });
+    var upcomingShowTime = groupConsecutiveByStart(upcomingSorted.map(function (s) { return s.rep.start; }));
     var navEntries = [];
-    var lastGroupLabel = null;
-    cat.upcoming
-      .slice()
-      .sort(function (a, b) { return sortKeyMinutes(a.rep.start) - sortKeyMinutes(b.rep.start); })
-      .forEach(function (slot) {
-        var groupLabel = slot.rep.start ? PDF.formatTimeFR(slot.rep.start).replace(/h\d+$/, "h00") : "Horaire inconnu";
-        if (groupLabel !== lastGroupLabel) {
-          if (lastGroupLabel !== null) html += "</div>";
-          var anchorId = "hour-group-" + groupLabel.replace(/[^0-9]/g, "");
-          html += '<div class="timeline-hour-group" id="' + anchorId + '"><div class="timeline-hour-label">' + PDF.escapeHtml(groupLabel) + "</div>";
-          lastGroupLabel = groupLabel;
-          if (groupLabel !== "Horaire inconnu") navEntries.push({ label: groupLabel, id: anchorId });
+    var lastHourLabel = null;
+    html += '<div class="prog-list">';
+    upcomingSorted.forEach(function (slot, i) {
+      var hourLabel = slot.rep.start ? PDF.formatTimeFR(slot.rep.start).replace(/h\d+$/, "h00") : "Horaire inconnu";
+      if (hourLabel !== lastHourLabel) {
+        lastHourLabel = hourLabel;
+        if (hourLabel !== "Horaire inconnu") {
+          var anchorId = "hour-group-" + hourLabel.replace(/[^0-9]/g, "");
+          html += '<span class="hour-anchor" id="' + anchorId + '" aria-hidden="true"></span>';
+          navEntries.push({ label: hourLabel, id: anchorId });
         }
-        var isNextUpcoming = slot === nextUpcomingSlot;
-        var minutesUntil = isNextUpcoming && nowMinutes != null ? PDF.timeToMinutes(slot.rep.start) - nowMinutes : null;
-        var isLastShowing = lastShowingSlugs.indexOf(slot.spectacle.slug) !== -1;
-        html += renderSlot(slot, { isNextUpcoming: isNextUpcoming, minutesUntil: minutesUntil, isLastShowing: isLastShowing });
+      }
+      var isNextUpcoming = slot === nextUpcomingSlot;
+      var minutesUntil = isNextUpcoming && nowMinutes != null ? PDF.timeToMinutes(slot.rep.start) - nowMinutes : null;
+      var isLastShowing = lastShowingSlugs.indexOf(slot.spectacle.slug) !== -1;
+      html += renderProgRow(slot, {
+        isNextUpcoming: isNextUpcoming,
+        minutesUntil: minutesUntil,
+        isLastShowing: isLastShowing,
+        showTime: upcomingShowTime[i],
+        isNewTime: upcomingShowTime[i],
       });
-    if (lastGroupLabel !== null) html += "</div>";
+    });
+    html += "</div>";
 
-    container.innerHTML = '<div class="timeline">' + html + "</div>";
+    container.innerHTML = html;
     renderHourNav(navEntries);
   }
 
@@ -672,6 +718,24 @@
         loadDay(offset);
       });
     });
+    renderCustomDateChip();
+  }
+
+  // "Sam. 18 déc." — étiquette courte de la puce de date libre (voir
+  // #custom-date-chip, remplace le vieux bouton "Choisir une date").
+  function customDateChipLabel(dateStr) {
+    var d = PDF.parseISODate(dateStr);
+    if (!d) return "";
+    var s = d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  function renderCustomDateChip() {
+    var chip = document.getElementById("custom-date-chip");
+    if (!chip) return;
+    if (!state.customDate) { chip.hidden = true; chip.innerHTML = ""; return; }
+    chip.hidden = false;
+    chip.innerHTML = "<span>" + PDF.escapeHtml(customDateChipLabel(state.customDate)) + "</span>" + PDF.icon("x");
   }
 
   // Quitte le mode "date libre" (ré-affiche/réactive les 3 onglets Aujourd'hui/
@@ -680,6 +744,28 @@
     state.customDate = null;
     var input = document.getElementById("custom-date-input");
     if (input) { input.value = ""; input.hidden = true; }
+  }
+
+  // Clic sur la puce de date libre (voir renderCustomDateChip) : revient à
+  // "Aujourd'hui" plutôt que de simplement fermer la puce sans rien montrer.
+  function clearCustomDate() {
+    exitCustomDateMode();
+    state.dayOffset = 0;
+    renderDaySelect();
+    loadDay(0);
+  }
+
+  // "26/08/2026T08:15:00" -> "26/08 à 08:15" (pas d'année, voir maquette
+  // "Programme" : note de fraîcheur courte sous le titre).
+  function shortDateTimeFR(isoStr) {
+    if (!isoStr) return "";
+    var d = new Date(isoStr);
+    if (isNaN(d.getTime())) return "";
+    var dd = String(d.getDate()).padStart(2, "0");
+    var mm = String(d.getMonth() + 1).padStart(2, "0");
+    var hh = String(d.getHours()).padStart(2, "0");
+    var min = String(d.getMinutes()).padStart(2, "0");
+    return dd + "/" + mm + " à " + hh + ":" + min;
   }
 
   function updateCustomDateBounds(payload) {
@@ -698,9 +784,18 @@
     document.getElementById("programme-meta").textContent =
       (payload.representation_count != null ? payload.representation_count : "?") + " représentations · " +
       (payload.spectacle_count != null ? payload.spectacle_count : "?") + " spectacles";
-    document.getElementById("status-banner-slot").innerHTML =
-      PDF.seasonClosedBannerHtml(payload) ||
-      PDF.statusBannerHtml(payload.status, payload.date, (payload.representation_count || 0) > 0, offset === 0);
+    // Pas de grand encart vert "Collecte à jour" tant que tout va bien (voir
+    // maquette "Programme") : une simple ligne discrète sous le titre.
+    // Les bannières existantes (erreur, périmé, fermé…) restent inchangées —
+    // seul le cas "ok"/"partial" ET réellement à jour est remplacé ici.
+    var seasonBanner = PDF.seasonClosedBannerHtml(payload);
+    var isStaleToday = offset === 0 && (payload.status === "ok" || payload.status === "partial") && !PDF.isDataForToday(payload.date);
+    var showBigBanner = !!seasonBanner || !(payload.status === "ok" || payload.status === "partial") || isStaleToday;
+    document.getElementById("status-banner-slot").innerHTML = showBigBanner
+      ? (seasonBanner || PDF.statusBannerHtml(payload.status, payload.date, (payload.representation_count || 0) > 0, offset === 0))
+      : "";
+    var freshnessEl = document.getElementById("programme-freshness");
+    if (freshnessEl) freshnessEl.textContent = showBigBanner ? "" : "Données du " + shortDateTimeFR(payload.updated_at) + ".";
     var hasSlots = (payload.spectacles || []).length > 0;
     var filterChips = document.getElementById("category-filter-chips");
     if (filterChips) filterChips.hidden = !hasSlots;
@@ -741,6 +836,7 @@
     document.getElementById("status-banner-slot").innerHTML = "";
     document.getElementById("unusual-banner-slot").innerHTML = "";
     document.getElementById("continuous-gantt-slot").innerHTML = "";
+    document.getElementById("programme-freshness").textContent = "";
     var promise = offset === 0
       ? PDF.fetchJSON("today.json")
       : PDF.fetchJSON(PDF.historyJsonPath(dateForOffset(offset)));
@@ -777,6 +873,7 @@
     document.getElementById("status-banner-slot").innerHTML = "";
     document.getElementById("unusual-banner-slot").innerHTML = "";
     document.getElementById("continuous-gantt-slot").innerHTML = "";
+    document.getElementById("programme-freshness").textContent = "";
     // La vue desktop (grille horaire + volet "Ma journée") ne sait pas
     // encore représenter un programme probable (seule la liste l'affiche,
     // voir renderProbableProgramme) : on la vide plutôt que de laisser un
@@ -848,21 +945,23 @@
     var start = item.starts[0] || null;
     var already = false;
     if (start) { try { already = PDF.isInPlan(dateStr, item.slug, start); } catch (e) { /* ignore */ } }
+    var metaRowHtml =
+      '<div class="prog-row-meta-row"><span class="prog-row-meta' + (low ? " is-last" : "") + '">' +
+      (low ? PDF.icon("alert-triangle") + " " : "") + "probable " + pct + "%</span>" +
+      PDF.categoryBadgeHtml(item.category) + "</div>";
     return (
-      '<div class="rep-card">' +
-      '<div class="rep-time-wrap"><div class="rep-time tnum">' + PDF.escapeHtml(probableRowTimeLabel(item)) + "</div>" +
-      '<div class="rep-duration' + (low ? " is-warn" : "") + '">' + (low ? PDF.icon("alert-triangle") + " " : "") +
-      "probable " + pct + "%</div></div>" +
-      '<div class="rep-name">' + PDF.escapeHtml(item.name) + "</div>" +
-      '<div class="rep-badges">' + PDF.categoryBadgeHtml(item.category) + "</div>" +
+      '<div class="prog-row is-probable">' +
+      '<span class="prog-row-time tnum">' + PDF.escapeHtml(probableRowTimeLabel(item)) + "</span>" +
+      '<span class="prog-row-main"><span class="prog-row-name">' + PDF.escapeHtml(item.name) + "</span>" + metaRowHtml + "</span>" +
+      '<span class="prog-row-actions">' +
       (start
         ? '<button type="button" class="add-to-day-btn add-to-day-trigger' + (already ? " is-added" : "") + '" ' +
           'data-slug="' + PDF.escapeHtml(item.slug) + '" data-name="' + PDF.escapeHtml(item.name) + '" ' +
           'data-category="' + PDF.escapeHtml(item.category || "") + '" data-start="' + start + '" data-end="" data-estimated="true" ' +
           'aria-label="' + (already ? "Déjà dans ma journée" : "Ajouter à ma journée (estimation)") + '" aria-pressed="' + already + '">' +
-          (already ? "✓" : "+") + "</button>"
+          PDF.icon(already ? "check" : "plus") + "</button>"
         : "") +
-      "</div>"
+      "</span></div>"
     );
   }
 
@@ -891,16 +990,20 @@
       return;
     }
     document.getElementById("programme-content").innerHTML =
-      '<div class="timeline">' + probable.spectacles.map(function (item) { return renderProbableRow(dateStr, item); }).join("") + "</div>";
+      '<div class="prog-list">' + probable.spectacles.map(function (item) { return renderProbableRow(dateStr, item); }).join("") + "</div>";
   }
 
   function initCustomDatePicker() {
     var toggle = document.getElementById("custom-date-toggle");
     var input = document.getElementById("custom-date-input");
+    var chip = document.getElementById("custom-date-chip");
     if (!toggle || !input) return;
+    toggle.innerHTML = PDF.icon("calendar");
     toggle.addEventListener("click", function () {
-      input.hidden = !input.hidden;
-      if (!input.hidden) input.focus();
+      var willOpen = input.hidden;
+      input.hidden = !willOpen;
+      toggle.setAttribute("aria-expanded", String(willOpen));
+      if (willOpen) input.focus();
     });
     input.addEventListener("change", function () {
       if (!input.value) return;
@@ -909,6 +1012,7 @@
       renderDaySelect();
       loadCustomDate(input.value);
     });
+    if (chip) chip.addEventListener("click", clearCustomDate);
   }
 
   function initSearchToggle() {
@@ -1005,6 +1109,13 @@
 
   // Exposé pour les tests (tests/frontend/) — no-op dans un navigateur.
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = { buildSlots: buildSlots, durationMinutes: durationMinutes, sortKeyMinutes: sortKeyMinutes, categorizeSlots: categorizeSlots };
+    module.exports = {
+      buildSlots: buildSlots,
+      durationMinutes: durationMinutes,
+      sortKeyMinutes: sortKeyMinutes,
+      categorizeSlots: categorizeSlots,
+      groupConsecutiveByStart: groupConsecutiveByStart,
+      mergeContinuousByShow: mergeContinuousByShow,
+    };
   }
 })();

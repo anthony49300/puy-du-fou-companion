@@ -1306,22 +1306,28 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
 }
 .past-sessions summary {
   cursor: pointer;
-  color: var(--text-2);
+  color: var(--muted);
   font-weight: 600;
   font-size: 0.85rem;
+  min-height: 44px;
   padding: 0.6rem 1rem;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
   list-style: none;
 }
+.past-sessions summary .icon { width: 1.05rem; height: 1.05rem; }
 .past-sessions summary::-webkit-details-marker { display: none; }
 .past-sessions[open] { border-radius: var(--r-md); }
 .past-sessions[open] summary { border-bottom: 1px dashed var(--line); }
-.past-sessions .timeline-hour-group { gap: 0.6rem; padding: 0.75rem 1rem 0.25rem; }
+.past-sessions[open] summary .icon { transform: rotate(180deg); }
+.past-sessions .prog-list { padding: 0 1rem 0.25rem; }
 
 /* Séparateur "Maintenant · HH:MM" entre les séances passées (repliées) et
    à venir — remplace l'ancien encart "dans l'heure" mis en avant : chaque
    séance à venir porte déjà son propre délai ("dans 25 min"), voir
-   .rep-duration ci-dessous. */
+   .prog-row-meta ci-dessous. */
 .now-divider {
   display: flex;
   align-items: center;
@@ -1331,14 +1337,95 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
   font-size: 0.85rem;
   margin: 1rem 0;
 }
-.now-divider::before, .now-divider::after {
+.now-divider-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-fill); flex: none; }
+.now-divider::after {
   content: "";
   flex: 1 1 auto;
   height: 1px;
   background: var(--accent-text);
-  opacity: 0.35;
+  opacity: 0.5;
 }
 .rep-duration.is-warn { color: var(--warn); font-weight: 600; }
+
+/* ---------- Programme — liste des séances (lignes, pas des cartes) ----------
+   Classes propres à cette page (pas .rep-card, réutilisé par Historique,
+   voir site/js/historique.js) : une ligne compacte par séance plutôt
+   qu'une carte à bordure gauche. */
+#programme-content { margin-top: 1.25rem; }
+.prog-list { display: flex; flex-direction: column; }
+.prog-list:last-child { margin-bottom: 1.25rem; }
+.past-sessions { margin-bottom: 0.75rem; }
+.hour-anchor { display: block; height: 0; }
+.prog-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 52px;
+  padding: 0.3rem 0;
+  border-top: 1px solid var(--line-soft);
+}
+.prog-row:first-child { border-top: none; }
+.prog-row.is-new-time { border-top-color: var(--line); }
+.prog-row-time {
+  flex: 0 0 2.9rem;
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: var(--accent-text);
+  font-variant-numeric: tabular-nums;
+}
+.prog-row.is-night .prog-row-time { color: var(--night); }
+.prog-row-main { flex: 1; min-width: 0; }
+.prog-row-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.prog-row-meta-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.15rem; }
+.prog-row-meta { font-size: 0.75rem; color: var(--muted); }
+.prog-row-meta.is-next { color: var(--accent-text); }
+.prog-row-meta.is-last { color: var(--warn); font-weight: 600; }
+.prog-row-actions { display: flex; align-items: center; gap: 0; flex-shrink: 0; }
+.prog-row.is-past { color: var(--muted); }
+.prog-row.is-past .prog-row-name { color: var(--muted); }
+.prog-row.is-probable .prog-row-time { flex: 0 0 auto; max-width: 6.5rem; white-space: normal; }
+
+/* Étoile/bouton "+" : propres à cette liste (le reste de .star-btn /
+   .add-to-day-btn, partagé avec l'accueil, ne change pas). */
+#programme-content .star-btn { color: var(--muted); }
+#programme-content .star-btn.is-fav { color: var(--accent-text); }
+#programme-content .add-to-day-btn {
+  border-radius: var(--r-md);
+  background: transparent;
+}
+#programme-content .add-to-day-btn.is-added {
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  border-color: var(--accent-fill);
+}
+
+/* ---------- Programme — "Accès continu" (mini-Gantt) ---------- */
+.mini-gantt-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+.mini-gantt-card-head .section-label { margin-bottom: 0; }
+.mini-gantt-bounds { font-size: 0.75rem; color: var(--muted); }
+.mini-gantt-row { flex-direction: column; align-items: stretch; gap: 0.3rem; padding: 0.5rem 0; }
+.mini-gantt-row + .mini-gantt-row { border-top: 1px solid var(--line-soft); }
+.mini-gantt-label {
+  flex: none;
+  font-size: 0.8rem;
+  color: var(--text-2);
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+.mini-gantt-track { flex: none; height: 8px; }
+.mini-gantt-now { top: -3px; bottom: -3px; }
 
 /* Barre d'heures collante : navigation rapide sur une page potentiellement
    très longue (nombreuses séances/jour) — surtout utile sur mobile. */
@@ -1357,18 +1444,19 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
 .hour-nav::-webkit-scrollbar { display: none; }
 .hour-nav-btn {
   flex: 0 0 auto;
-  border: 1px solid var(--border);
-  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  background: var(--surface);
   color: var(--text-soft);
   border-radius: 999px;
-  padding: 0.3rem 0.7rem;
-  font-size: 0.78rem;
+  min-height: 36px;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.83rem;
   white-space: nowrap;
 }
 .hour-nav-btn.active {
-  background: var(--accent);
-  color: var(--text-on-accent);
-  border-color: var(--accent);
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
 }
 
 /* ---------- 11. Spectacle cards ---------- */
@@ -2108,6 +2196,69 @@ table.visit-grid tfoot td { font-weight: 700; background: var(--bg-elevated); }
     background: var(--line);
     margin-bottom: 0.5rem;
   }
+}
+
+/* ---------- Programme — en-tête (titre, recherche, date) ----------
+   Une seule grille partagée par les deux largeurs plutôt que deux DOM
+   séparés : seules les zones nommées (grid-template-areas) bougent d'une
+   largeur à l'autre (voir media query >= 1100px plus bas), jamais le
+   balisage (voir programme.html). */
+.prog-hero { padding-bottom: 0.5rem; }
+.prog-hero-top {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  grid-template-areas:
+    "title  stoggle cal"
+    "search search  search"
+    "days   days    days"
+    "chip   chip    chip";
+  gap: 0.75rem 0.6rem;
+  align-items: start;
+}
+.prog-hero-titles { grid-area: title; min-width: 0; }
+.prog-hero-titles h1 { margin-bottom: 0; }
+.prog-freshness { margin: 0.2rem 0 0; font-size: 0.75rem; color: var(--muted); }
+#search-toggle { grid-area: stoggle; }
+#custom-date-toggle { grid-area: cal; }
+#day-select { grid-area: days; margin: 0; }
+#search-bar-wrap { grid-area: search; margin: 0; }
+#search-bar-wrap[hidden] { display: none; }
+#custom-date-chip {
+  grid-area: chip;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text-2);
+  border-radius: var(--r-pill);
+  padding: 0.4rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  min-height: 36px;
+}
+#custom-date-chip .icon { width: 1rem; height: 1rem; }
+#custom-date-chip[hidden] { display: none; }
+
+/* Sélecteur de jour (Programme) : fond/bordure propres à cette page, voir
+   #day-select ci-dessus — le reste de .segmented/.segment (partagé avec
+   Statistiques et Spectacles) ne change pas. */
+#day-select.segmented { background: var(--surface); border: 1px solid var(--line); padding: 4px; }
+
+/* Chip actif = encre, pas la teinte primaire bordeaux des autres filtres
+   du site (voir maquette "Programme") — propre à cette page seulement. */
+#category-filter-chips .chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+@media (min-width: 1100px) {
+  .prog-hero-top {
+    grid-template-columns: 1fr auto auto auto auto;
+    grid-template-areas: "title days chip search cal";
+    align-items: center;
+  }
+  #search-toggle { display: none; }
+  #search-bar-wrap[hidden] { display: flex; }
+  #search-bar-wrap .search-input-wrap { flex: 0 0 180px; }
 }
 
 /* Impression (ex: le programme de la journée depuis le carnet) */
