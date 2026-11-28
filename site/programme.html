@@ -15,30 +15,26 @@
 
 <main>
   <div class="container">
-    <section class="page-hero">
-      <div class="flex-between">
-        <div>
+    <section class="page-hero prog-hero">
+      <div class="prog-hero-top">
+        <div class="prog-hero-titles">
           <p class="label-upper" id="programme-meta">&nbsp;</p>
           <h1>Programme</h1>
+          <p class="prog-freshness" id="programme-freshness"></p>
         </div>
         <button type="button" class="icon-btn" id="search-toggle" aria-label="Rechercher" aria-expanded="false" aria-controls="search-bar-wrap"></button>
+        <button type="button" class="icon-btn" id="custom-date-toggle" aria-label="Choisir une date" aria-haspopup="true" aria-expanded="false"></button>
+        <div class="segmented" id="day-select" role="group" aria-label="Jour affiché"></div>
+        <button type="button" class="prog-date-chip" id="custom-date-chip" hidden></button>
+        <div class="search-bar" id="search-bar-wrap" hidden>
+          <div id="search-slot"></div>
+        </div>
       </div>
+      <input type="date" id="custom-date-input" hidden>
     </section>
-
-    <div class="flex-between" style="gap:0.6rem;flex-wrap:wrap">
-      <div class="segmented" id="day-select" role="group" aria-label="Jour affiché" style="flex:1 1 260px"></div>
-      <div>
-        <button type="button" class="btn btn-outline" id="custom-date-toggle">Choisir une date</button>
-        <input type="date" id="custom-date-input" class="filter-select" hidden>
-      </div>
-    </div>
 
     <div id="status-banner-slot" aria-live="polite"></div>
     <div id="unusual-banner-slot" aria-live="polite"></div>
-
-    <div class="search-bar" id="search-bar-wrap" hidden>
-      <div id="search-slot"></div>
-    </div>
 
     <div class="chip-row chip-row--scroll" id="category-filter-chips" role="group" aria-label="Filtrer par catégorie"></div>
 

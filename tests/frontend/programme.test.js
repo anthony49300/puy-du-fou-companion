@@ -67,3 +67,31 @@ test("buildSlots sorts continuous shows first, then by start time", () => {
   const slots = programme.buildSlots(today);
   assert.deepStrictEqual(slots.map((s) => s.spectacle.name), ["A", "C", "B"]);
 });
+
+test("groupConsecutiveByStart shows the time only on the first row of a group", () => {
+  const programme = loadModule("programme.js");
+  const flags = programme.groupConsecutiveByStart(["14:30", "14:30", "14:30", "15:00", "15:00"]);
+  assert.deepStrictEqual(flags, [true, false, false, true, false]);
+});
+
+test("groupConsecutiveByStart treats an empty list as an empty result", () => {
+  const programme = loadModule("programme.js");
+  assert.deepStrictEqual(programme.groupConsecutiveByStart([]), []);
+});
+
+test("mergeContinuousByShow merges several ranges of the same show into one row", () => {
+  const programme = loadModule("programme.js");
+  const slots = [
+    slot("La Renaissance du Château", "09:30", "11:00", { is_continuous: true }),
+    slot("Le Mystère de la Pérouse", "10:00", "19:00", { is_continuous: true }),
+    slot("La Renaissance du Château", "14:00", "16:00", { is_continuous: true }),
+  ];
+  const groups = programme.mergeContinuousByShow(slots);
+  assert.strictEqual(groups.length, 2);
+  assert.strictEqual(groups[0].spectacle.name, "La Renaissance du Château");
+  assert.deepStrictEqual(groups[0].ranges, [
+    { start: "09:30", end: "11:00" },
+    { start: "14:00", end: "16:00" },
+  ]);
+  assert.strictEqual(groups[1].ranges.length, 1);
+});

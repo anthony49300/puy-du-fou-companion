@@ -78,6 +78,15 @@
   --immersive: #2F6B45;
   --immersive-bg: #E3F0E6;
   --past: #E4DACB;
+  /* Blocs de la grille horaire desktop (Programme) : un couple fond/bordure
+     par catégorie, assez distinct de --past et de la piste (--surface-2)
+     dans les deux thèmes — voir .hgrid-block. */
+  --block: #E9DFCF;
+  --block-line: #C9B89C;
+  --block-immersive: #D8EBDD;
+  --block-immersive-line: #8DB89A;
+  --block-night: #DDE3F3;
+  --block-night-line: #9AA9D6;
   --focus-ring: 0 0 0 3px rgba(143, 38, 57, .45);
   /* Tokens annexes, pas dans la palette principale mais nécessaires à des
      composants existants (badge "exceptionnel", teinte douce de --primary). */
@@ -174,6 +183,12 @@
     --night-line: #2C3550;
     --immersive: #A9D8B8;
     --immersive-bg: #24342A;
+    --block: #3A3128;
+    --block-line: #5A4C3E;
+    --block-immersive: #24342A;
+    --block-immersive-line: #4E7A5E;
+    --block-night: #24304D;
+    --block-night-line: #5068A8;
     --past: #241E19;
     --focus-ring: 0 0 0 3px rgba(227, 176, 85, .55);
     --primary-soft: #2E1A20;
@@ -216,6 +231,12 @@
   --night-line: #2C3550;
   --immersive: #A9D8B8;
   --immersive-bg: #24342A;
+  --block: #3A3128;
+  --block-line: #5A4C3E;
+  --block-immersive: #24342A;
+  --block-immersive-line: #4E7A5E;
+  --block-night: #24304D;
+  --block-night-line: #5068A8;
   --past: #241E19;
   --focus-ring: 0 0 0 3px rgba(227, 176, 85, .55);
   --primary-soft: #2E1A20;
@@ -1080,10 +1101,16 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
   #programme-content, #hour-nav, #continuous-gantt-slot { display: none !important; }
 }
 
-.hgrid-wrap { overflow-x: auto; }
-.hgrid { min-width: 760px; }
-.hgrid-row { display: grid; grid-template-columns: 11rem 1fr; align-items: center; gap: 0.75rem; min-height: 2.5rem; border-bottom: 1px solid var(--line-soft); }
+/* Carte de la grille horaire desktop (voir maquette "Programme — Desktop") :
+   avant, un <div> nu sans fond/bordure propres — maintenant une vraie carte,
+   avec l'axe horaire en haut (voir renderDesktopGrid, axisRow + rows plutôt
+   que rows + axisRow) et assez de marge basse pour l'étiquette "maintenant"
+   sous la dernière ligne (voir .hgrid-now-label). */
+.hgrid-wrap { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); overflow-x: auto; }
+.hgrid { min-width: 760px; padding: 1rem 1.125rem 1.75rem; }
+.hgrid-row { display: grid; grid-template-columns: 210px 1fr; align-items: center; gap: 0.75rem; min-height: 2.5rem; border-bottom: 1px solid var(--line-soft); }
 .hgrid-row:last-child { border-bottom: none; }
+.hgrid-axis { border-bottom-color: var(--line); }
 .hgrid-label { display: flex; flex-direction: column; gap: 0.1rem; padding: 0.4rem 0; }
 .hgrid-show-name { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hgrid-show-cat { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -1105,34 +1132,58 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+/* Clampe les deux libellés d'extrémité pour qu'ils restent entièrement
+   visibles (pas juste centrés sur leur tick comme les labels du milieu,
+   ce qui les couperait à moitié hors de la piste). */
+.hgrid-tick--first { transform: translateX(0); }
+.hgrid-tick--last { transform: translateX(-100%); }
 .hgrid-block {
   position: absolute;
-  top: 2px;
+  top: 3px;
   height: 16px;
-  border-radius: var(--r-sm);
+  border-radius: 4px;
   border: 1px solid var(--line);
   background: var(--surface-2);
   padding: 0;
   cursor: pointer;
 }
-.hgrid-block--neutral { background: var(--surface-2); border-color: var(--line); }
-.hgrid-block--past { background: var(--past); border-color: var(--past); }
+.hgrid-block--neutral { background: var(--block); border-color: var(--block-line); }
+.hgrid-block--immersive { background: var(--block-immersive); border-color: var(--block-immersive-line); }
+.hgrid-block--night { background: var(--block-night); border-color: var(--block-night-line); }
+.hgrid-block--past { background: var(--past); border-color: var(--line); }
 .hgrid-block--myday { background: var(--accent-fill); border-color: var(--accent-fill); }
 .hgrid-block--conflict { background: var(--danger); border-color: var(--danger); }
 .hgrid-block:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.hgrid-now-line { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--text); opacity: 0.6; }
+.hgrid-now-line { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--text); opacity: 0.85; }
+/* Étiquette "14h20" : seule la ligne marquée --labeled (la dernière ligne de
+   spectacles, voir renderDesktopGrid) la porte — jamais l'axe. */
 .hgrid-now-label {
   position: absolute;
-  bottom: -1.4rem;
+  top: 100%;
+  margin-top: 0.3rem;
   transform: translateX(-50%);
-  font-size: 0.72rem;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.7rem;
   font-weight: 600;
-  color: var(--text);
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--r-pill);
   white-space: nowrap;
 }
 
 .programme-aside .card { margin-bottom: 1rem; }
+.programme-aside ol.list-card { list-style: none; margin: 0; padding: 0; }
 .list-row.is-conflict-row { background: var(--danger-bg); margin: 0 -0.5rem; padding-left: 0.5rem; padding-right: 0.5rem; border-radius: var(--r-sm); }
+/* "Résoudre le conflit" : rempli --accent-fill (ambre), pas la teinte
+   bordeaux par défaut de .btn — distinct visuellement de "Ouvrir Ma
+   journée" (contour) juste en dessous. */
+#btn-resolve-conflict { background: var(--accent-fill); color: var(--on-accent); margin-top: 0.75rem; width: 100%; }
+#btn-resolve-conflict:hover { background: var(--accent-text); color: var(--on-primary); }
+#btn-open-journee { margin-top: 0.6rem; width: 100%; justify-content: center; }
+#aside-next-slot p.text-muted { margin: 0; }
+#aside-myday-slot .flex-between .text-muted { font-size: 0.8rem; }
+#aside-myday-slot .card > p.text-muted:first-of-type { margin: 0 0 0.75rem; }
+#aside-myday-slot .card > p.text-muted:last-child { margin: 0.6rem 0 0; font-size: 0.82rem; }
 
 /* ---------- "Horaires habituels" (détail d'un spectacle) ---------- */
 .schedule-section { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line-soft); }
@@ -1256,19 +1307,6 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
   gap: 0.75rem;
   margin: 1.5rem 0;
 }
-.timeline-hour-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-.timeline-hour-label {
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 0.95rem;
-  color: var(--accent);
-  margin: 1rem 0 0.25rem;
-  padding-bottom: 0.25rem;
-  border-bottom: 2px dotted var(--border);
-}
 .rep-card {
   display: flex;
   align-items: center;
@@ -1306,22 +1344,28 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
 }
 .past-sessions summary {
   cursor: pointer;
-  color: var(--text-2);
+  color: var(--muted);
   font-weight: 600;
   font-size: 0.85rem;
+  min-height: 44px;
   padding: 0.6rem 1rem;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
   list-style: none;
 }
+.past-sessions summary .icon { width: 1.05rem; height: 1.05rem; }
 .past-sessions summary::-webkit-details-marker { display: none; }
 .past-sessions[open] { border-radius: var(--r-md); }
 .past-sessions[open] summary { border-bottom: 1px dashed var(--line); }
-.past-sessions .timeline-hour-group { gap: 0.6rem; padding: 0.75rem 1rem 0.25rem; }
+.past-sessions[open] summary .icon { transform: rotate(180deg); }
+.past-sessions .prog-list { padding: 0 1rem 0.25rem; }
 
 /* Séparateur "Maintenant · HH:MM" entre les séances passées (repliées) et
    à venir — remplace l'ancien encart "dans l'heure" mis en avant : chaque
    séance à venir porte déjà son propre délai ("dans 25 min"), voir
-   .rep-duration ci-dessous. */
+   .prog-row-meta ci-dessous. */
 .now-divider {
   display: flex;
   align-items: center;
@@ -1331,14 +1375,95 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
   font-size: 0.85rem;
   margin: 1rem 0;
 }
-.now-divider::before, .now-divider::after {
+.now-divider-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-fill); flex: none; }
+.now-divider::after {
   content: "";
   flex: 1 1 auto;
   height: 1px;
   background: var(--accent-text);
-  opacity: 0.35;
+  opacity: 0.5;
 }
 .rep-duration.is-warn { color: var(--warn); font-weight: 600; }
+
+/* ---------- Programme — liste des séances (lignes, pas des cartes) ----------
+   Classes propres à cette page (pas .rep-card, réutilisé par Historique,
+   voir site/js/historique.js) : une ligne compacte par séance plutôt
+   qu'une carte à bordure gauche. */
+#programme-content { margin-top: 1.25rem; }
+.prog-list { display: flex; flex-direction: column; }
+.prog-list:last-child { margin-bottom: 1.25rem; }
+.past-sessions { margin-bottom: 0.75rem; }
+.hour-anchor { display: block; height: 0; }
+.prog-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 52px;
+  padding: 0.3rem 0;
+  border-top: 1px solid var(--line-soft);
+}
+.prog-row:first-child { border-top: none; }
+.prog-row.is-new-time { border-top-color: var(--line); }
+.prog-row-time {
+  flex: 0 0 2.9rem;
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: var(--accent-text);
+  font-variant-numeric: tabular-nums;
+}
+.prog-row.is-night .prog-row-time { color: var(--night); }
+.prog-row-main { flex: 1; min-width: 0; }
+.prog-row-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.prog-row-meta-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.15rem; }
+.prog-row-meta { font-size: 0.75rem; color: var(--muted); }
+.prog-row-meta.is-next { color: var(--accent-text); }
+.prog-row-meta.is-last { color: var(--warn); font-weight: 600; }
+.prog-row-actions { display: flex; align-items: center; gap: 0; flex-shrink: 0; }
+.prog-row.is-past { color: var(--muted); }
+.prog-row.is-past .prog-row-name { color: var(--muted); }
+.prog-row.is-probable .prog-row-time { flex: 0 0 auto; max-width: 6.5rem; white-space: normal; }
+
+/* Étoile/bouton "+" : propres à cette liste (le reste de .star-btn /
+   .add-to-day-btn, partagé avec l'accueil, ne change pas). */
+#programme-content .star-btn { color: var(--muted); }
+#programme-content .star-btn.is-fav { color: var(--accent-text); }
+#programme-content .add-to-day-btn {
+  border-radius: var(--r-md);
+  background: transparent;
+}
+#programme-content .add-to-day-btn.is-added {
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  border-color: var(--accent-fill);
+}
+
+/* ---------- Programme — "Accès continu" (mini-Gantt) ---------- */
+.mini-gantt-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+.mini-gantt-card-head .section-label { margin-bottom: 0; }
+.mini-gantt-bounds { font-size: 0.75rem; color: var(--muted); }
+.mini-gantt-row { flex-direction: column; align-items: stretch; gap: 0.3rem; padding: 0.5rem 0; }
+.mini-gantt-row + .mini-gantt-row { border-top: 1px solid var(--line-soft); }
+.mini-gantt-label {
+  flex: none;
+  font-size: 0.8rem;
+  color: var(--text-2);
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+.mini-gantt-track { flex: none; height: 8px; }
+.mini-gantt-now { top: -3px; bottom: -3px; }
 
 /* Barre d'heures collante : navigation rapide sur une page potentiellement
    très longue (nombreuses séances/jour) — surtout utile sur mobile. */
@@ -1357,18 +1482,19 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
 .hour-nav::-webkit-scrollbar { display: none; }
 .hour-nav-btn {
   flex: 0 0 auto;
-  border: 1px solid var(--border);
-  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  background: var(--surface);
   color: var(--text-soft);
   border-radius: 999px;
-  padding: 0.3rem 0.7rem;
-  font-size: 0.78rem;
+  min-height: 36px;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.83rem;
   white-space: nowrap;
 }
 .hour-nav-btn.active {
-  background: var(--accent);
-  color: var(--text-on-accent);
-  border-color: var(--accent);
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
 }
 
 /* ---------- 11. Spectacle cards ---------- */
@@ -2108,6 +2234,76 @@ table.visit-grid tfoot td { font-weight: 700; background: var(--bg-elevated); }
     background: var(--line);
     margin-bottom: 0.5rem;
   }
+}
+
+/* ---------- Programme — en-tête (titre, recherche, date) ----------
+   Une seule grille partagée par les deux largeurs plutôt que deux DOM
+   séparés : seules les zones nommées (grid-template-areas) bougent d'une
+   largeur à l'autre (voir media query >= 1100px plus bas), jamais le
+   balisage (voir programme.html). */
+.prog-hero { padding-bottom: 0.5rem; }
+.prog-hero-top {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  grid-template-areas:
+    "title  stoggle cal"
+    "search search  search"
+    "days   days    days"
+    "chip   chip    chip";
+  gap: 0.75rem 0.6rem;
+  align-items: start;
+}
+.prog-hero-titles { grid-area: title; min-width: 0; }
+.prog-hero-titles h1 { margin-bottom: 0; }
+.prog-freshness { margin: 0.2rem 0 0; font-size: 0.75rem; color: var(--muted); }
+#search-toggle { grid-area: stoggle; }
+#custom-date-toggle { grid-area: cal; }
+#day-select { grid-area: days; margin: 0; }
+#search-bar-wrap { grid-area: search; margin: 0; }
+#search-bar-wrap[hidden] { display: none; }
+#custom-date-chip {
+  grid-area: chip;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text-2);
+  border-radius: var(--r-pill);
+  padding: 0.4rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  min-height: 36px;
+}
+#custom-date-chip .icon { width: 1rem; height: 1rem; }
+#custom-date-chip[hidden] { display: none; }
+
+/* Sélecteur de jour (Programme) : fond/bordure propres à cette page, voir
+   #day-select ci-dessus — le reste de .segmented/.segment (partagé avec
+   Statistiques et Spectacles) ne change pas. */
+#day-select.segmented { background: var(--surface); border: 1px solid var(--line); padding: 4px; }
+
+/* Chip actif = encre, pas la teinte primaire bordeaux des autres filtres
+   du site (voir maquette "Programme") — propre à cette page seulement. */
+#category-filter-chips .chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+@media (min-width: 1100px) {
+  .prog-hero-top {
+    grid-template-columns: 1fr auto auto auto auto;
+    grid-template-areas: "title days chip search cal";
+    align-items: center;
+  }
+  #search-toggle { display: none; }
+  #search-bar-wrap[hidden] { display: flex; }
+  #search-bar-wrap .search-input-wrap { flex: 0 0 180px; }
+
+  /* Programme desktop : conteneur plus large que le reste du site (grille
+     horaire + aside côte à côte, voir .programme-layout) et sélecteur de
+     jour compact sur une seule ligne, en ligne avec le titre. */
+  body[data-page="programme"] .container { max-width: 1320px; padding: 0 2rem; }
+  #day-select.segmented .segment { flex-direction: row; gap: 0.4rem; min-height: 36px; padding: 0 1rem; }
+  #day-select .segment-date { font-size: 0.78rem; }
 }
 
 /* Impression (ex: le programme de la journée depuis le carnet) */
