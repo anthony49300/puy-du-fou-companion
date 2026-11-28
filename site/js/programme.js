@@ -298,6 +298,16 @@
     return "neutral";
   }
 
+  // Texte/teinte de la ligne de catégorie sous le nom du spectacle, et
+  // classe de teinte par défaut du bloc (avant tout état "ma journée"/
+  // "conflit"/"passé", voir hgridBlockClasses) — propres à cette grille,
+  // pas PDF.categoryLabel() (libellés génériques réutilisés ailleurs).
+  function hgridCategoryInfo(category) {
+    if (category === "spectacle_nocturne") return { label: "Nocturne", cls: "is-night", block: "hgrid-block--night" };
+    if (category === "spectacle_immersif") return { label: "Immersif · accès continu", cls: "is-immersive", block: "hgrid-block--immersive" };
+    return { label: "Spectacle", cls: "is-muted", block: "hgrid-block--neutral" };
+  }
+
   function renderDesktopGrid(slots, bounds, isToday, nowMinutes, dateStr) {
     var el = document.getElementById("hgrid");
     if (!el) return;
@@ -310,6 +320,9 @@
     var planItems = planItemsForDay(dateStr);
     var nowPct = isToday && nowMinutes != null && nowMinutes >= axisStart && nowMinutes <= axisEnd
       ? ((nowMinutes - axisStart) / span) * 100
+      : null;
+    var nowLabelText = nowPct != null
+      ? String(Math.floor(nowMinutes / 60)).padStart(2, "0") + "h" + String(nowMinutes % 60).padStart(2, "0")
       : null;
 
     var groups = [];
@@ -327,21 +340,21 @@
       '<span class="hgrid-legend-item"><span class="hgrid-legend-swatch hgrid-legend-swatch--myday"></span>Ma journée</span>' +
       '<span class="hgrid-legend-item"><span class="hgrid-legend-swatch hgrid-legend-swatch--conflict"></span>Conflit</span>' +
       "</div>";
+    // L'axe horaire EN HAUT de la grille (pas en bas, voir maquette
+    // "Programme") : premier/dernier libellé clampés pour rester entièrement
+    // visibles (hgrid-tick--first/--last), pas juste centrés sur leur tick.
     var axisRow =
       '<div class="hgrid-row hgrid-axis"><div class="hgrid-label">' + legend + '</div><div class="hgrid-track">' +
-      ticks.map(function (tk) {
-        return '<div class="hgrid-tick" style="left:' + (((tk - axisStart) / span) * 100) + '%">' + String(Math.floor(tk / 60)).padStart(2, "0") + "h</div>";
+      ticks.map(function (tk, i) {
+        var edgeCls = i === 0 ? " hgrid-tick--first" : i === ticks.length - 1 ? " hgrid-tick--last" : "";
+        return '<div class="hgrid-tick' + edgeCls + '" style="left:' + (((tk - axisStart) / span) * 100) + '%">' + String(Math.floor(tk / 60)).padStart(2, "0") + "h</div>";
       }).join("") +
-      (nowPct != null
-        ? '<div class="hgrid-now-line" style="left:' + nowPct + '%"><span class="hgrid-now-label">' +
-          PDF.escapeHtml(String(Math.floor(nowMinutes / 60)).padStart(2, "0") + "h" + String(nowMinutes % 60).padStart(2, "0")) +
-          "</span></div>"
-        : "") +
+      (nowPct != null ? '<div class="hgrid-now-line" style="left:' + nowPct + '%"></div>' : "") +
       "</div></div>";
 
-    var rows = groups.map(function (group) {
-      var catClass = group.spectacle.category === "spectacle_nocturne" ? "is-night"
-        : group.spectacle.category === "spectacle_immersif" ? "is-immersive" : "is-muted";
+    var rows = groups.map(function (group, gi) {
+      var info = hgridCategoryInfo(group.spectacle.category);
+      var isLastRow = gi === groups.length - 1;
       var blocks = group.slots.map(function (s) {
         var a = PDF.timeToMinutes(s.rep.start);
         if (a == null) return "";
@@ -349,25 +362,32 @@
         var bb = b == null ? a + 20 : b;
         var left = ((Math.max(a, axisStart) - axisStart) / span) * 100;
         var width = Math.max(1.2, ((Math.min(bb, axisEnd) - Math.max(a, axisStart)) / span) * 100);
-        var state = gridBlockState(s, planItems, isToday, nowMinutes);
+        var overlay = gridBlockState(s, planItems, isToday, nowMinutes);
+        var cls = "hgrid-block " + (overlay === "neutral" ? info.block : "hgrid-block--" + overlay);
         var label = s.spectacle.name + ", " + PDF.formatTimeFR(s.rep.start) + (s.rep.end ? "–" + PDF.formatTimeFR(s.rep.end) : "");
         return (
-          '<button type="button" class="hgrid-block hgrid-block--' + state + '" style="left:' + left + "%;width:" + width + '%" ' +
+          '<button type="button" class="' + cls + '" style="left:' + left + "%;width:" + width + '%" ' +
           'title="' + PDF.escapeHtml(label) + '" aria-label="' + PDF.escapeHtml(label) + '" ' +
           'data-slug="' + PDF.escapeHtml(s.spectacle.slug || "") + '" data-name="' + PDF.escapeHtml(s.spectacle.name) + '" ' +
           'data-category="' + PDF.escapeHtml(s.spectacle.category || "") + '" data-start="' + s.rep.start + '" data-end="' + (s.rep.end || "") + '"></button>'
         );
       }).join("");
+      // Étiquette "14h20" de la ligne "maintenant" sous la DERNIÈRE ligne
+      // seulement (jamais sur l'axe, voir maquette) : la ligne verticale,
+      // elle, traverse bien chaque ligne.
+      var nowLineHtml = nowPct != null
+        ? '<div class="hgrid-now-line' + (isLastRow ? " hgrid-now-line--labeled" : "") + '" style="left:' + nowPct + '%">' +
+          (isLastRow ? '<span class="hgrid-now-label">' + PDF.escapeHtml(nowLabelText) + "</span>" : "") +
+          "</div>"
+        : "";
       return (
         '<div class="hgrid-row"><div class="hgrid-label"><span class="hgrid-show-name">' + PDF.escapeHtml(group.spectacle.name) + "</span>" +
-        '<span class="hgrid-show-cat ' + catClass + '">' + PDF.escapeHtml(PDF.categoryLabel(group.spectacle.category)) + "</span></div>" +
-        '<div class="hgrid-track">' + blocks +
-        (nowPct != null ? '<div class="hgrid-now-line" style="left:' + nowPct + '%"></div>' : "") +
-        "</div></div>"
+        '<span class="hgrid-show-cat ' + info.cls + '">' + PDF.escapeHtml(info.label) + "</span></div>" +
+        '<div class="hgrid-track">' + blocks + nowLineHtml + "</div></div>"
       );
     }).join("");
 
-    el.innerHTML = rows + axisRow;
+    el.innerHTML = axisRow + rows;
     el.querySelectorAll(".hgrid-block").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var slug = btn.getAttribute("data-slug") || null;
@@ -445,6 +465,18 @@
     });
   }
 
+  // Prochaine séance à heure fixe toutes représentations confondues (pas
+  // seulement celles déjà dans "Ma journée") — pour le repli "Prochain
+  // spectacle" de la carte héros quand le plan du jour est vide.
+  function nextOverallSlot(allSlots, isToday, nowMinutes) {
+    var timed = allSlots.filter(function (s) { return !s.rep.is_continuous && s.rep.start; });
+    var upcoming = isToday && nowMinutes != null
+      ? timed.filter(function (s) { return PDF.timeToMinutes(s.rep.start) >= nowMinutes; })
+      : timed;
+    if (!upcoming.length) return null;
+    return upcoming.slice().sort(function (a, b) { return PDF.timeToMinutes(a.rep.start) - PDF.timeToMinutes(b.rep.start); })[0];
+  }
+
   function renderAside(dateStr, isToday, nowMinutes, allSlots) {
     var nextSlot = document.getElementById("aside-next-slot");
     var dayListSlot = document.getElementById("aside-myday-slot");
@@ -463,13 +495,53 @@
     }).sort(function (a, b) { return PDF.timeToMinutes(a.start) - PDF.timeToMinutes(b.start); });
     var next = upcoming[0];
 
-    nextSlot.innerHTML = next
-      ? '<div class="card hero-card"><div class="hero-label">Prochain dans ma journée</div><h2>' + PDF.escapeHtml(next.name) + "</h2>" +
-        '<div class="hero-meta"><span class="hero-time">' + PDF.formatTimeFR(next.start) + "</span></div></div>"
-      : '<div class="card"><p class="text-muted" style="margin:0">Rien de prévu dans votre journée pour l\'instant.</p></div>';
+    if (next) {
+      var untilMin = isToday && nowMinutes != null ? PDF.timeToMinutes(next.start) - nowMinutes : null;
+      var dur = durationMinutes(next.start, next.end);
+      var metaBits = [];
+      if (untilMin != null) metaBits.push(untilMin <= 0 ? "maintenant" : "dans " + untilMin + " min");
+      if (dur != null) metaBits.push(dur + " min");
+      nextSlot.innerHTML =
+        '<div class="card hero-card"><div class="hero-label">Prochain dans ma journée</div><h2>' + PDF.escapeHtml(next.name) + "</h2>" +
+        '<div class="hero-meta"><span class="hero-time">' + PDF.formatTimeFR(next.start) + "</span>" +
+        (metaBits.length ? '<span class="hero-duration">' + PDF.escapeHtml(metaBits.join(" · ")) + "</span>" : "") +
+        "</div></div>";
+    } else {
+      var overall = nextOverallSlot(allSlots, isToday, nowMinutes);
+      if (overall) {
+        nextSlot.innerHTML =
+          '<div class="card hero-card"><div class="hero-label">Prochain spectacle</div><h2>' + PDF.escapeHtml(overall.spectacle.name) + "</h2>" +
+          '<div class="hero-meta"><span class="hero-time">' + PDF.formatTimeFR(overall.rep.start) + '</span></div>' +
+          '<div class="hero-actions"><button type="button" class="btn btn-on-primary" id="btn-add-hero" ' +
+          'data-slug="' + PDF.escapeHtml(overall.spectacle.slug || "") + '" data-name="' + PDF.escapeHtml(overall.spectacle.name) + '" ' +
+          'data-category="' + PDF.escapeHtml(overall.spectacle.category || "") + '" data-start="' + overall.rep.start + '" ' +
+          'data-end="' + (overall.rep.end || "") + '">Ajouter à ma journée</button></div></div>';
+        var addHeroBtn = document.getElementById("btn-add-hero");
+        if (addHeroBtn) {
+          addHeroBtn.addEventListener("click", function () {
+            try {
+              PDF.addToPlan(dateStr, {
+                slug: addHeroBtn.getAttribute("data-slug") || null,
+                name: addHeroBtn.getAttribute("data-name"),
+                category: addHeroBtn.getAttribute("data-category") || null,
+                start: addHeroBtn.getAttribute("data-start"),
+                end: addHeroBtn.getAttribute("data-end") || null,
+                is_continuous: false,
+              });
+            } catch (e) { /* stockage indisponible : ignoré */ }
+            renderProgramme();
+          });
+        }
+      } else {
+        nextSlot.innerHTML = '<div class="card"><p class="text-muted" style="margin:0">Rien de prévu dans votre journée pour l\'instant.</p></div>';
+      }
+    }
 
     if (!items.length) {
-      dayListSlot.innerHTML = '<div class="card"><h3 class="mt-0">Ma journée</h3><p class="text-muted" style="margin:0">Aucun spectacle ajouté — cliquez un créneau dans la grille pour l\'ajouter.</p></div>';
+      dayListSlot.innerHTML =
+        '<div class="card"><h3 class="mt-0">Ma journée</h3><p class="text-muted" style="margin:0 0 0.75rem">Aucun spectacle pour l\'instant.</p>' +
+        '<a class="link-button" href="journee.html?date=' + encodeURIComponent(dateStr) + '&assistant=1">' + PDF.icon("wand") + "Composer automatiquement</a>" +
+        '<p class="text-muted" style="margin:0.6rem 0 0;font-size:0.82rem">Cliquez un créneau dans la grille pour l\'ajouter.</p></div>';
       return;
     }
 
@@ -485,38 +557,26 @@
       '<div class="card"><div class="flex-between"><h3 class="mt-0">Ma journée</h3>' +
       '<span class="text-muted" style="font-size:0.8rem">' + items.length + " spectacle" + (items.length > 1 ? "s" : "") +
       (fixes.length ? " · " + dayPlan.formatDureeHeuresMinutes(dayPlan.dureeTotaleMinutes(fixes)) : "") + "</span></div>" +
-      '<div class="list-card">' +
+      '<ol class="list-card">' +
       items.map(function (it) {
         var note = it.is_continuous ? null : noteByUid[it.uid];
         var rowCls = note && note.kind === "conflict" ? " is-conflict-row" : "";
         return (
-          '<div class="list-row' + rowCls + '">' +
+          '<li class="list-row' + rowCls + '">' +
           '<span class="list-row-time">' + (it.is_continuous ? "Continu" : PDF.formatTimeFR(it.start)) + "</span>" +
           '<span class="list-row-main"><span class="list-row-name">' + PDF.escapeHtml(it.name) + "</span>" +
           (note ? '<span class="list-row-meta is-' + note.kind + '">' + PDF.escapeHtml(note.text) + "</span>" : "") +
-          "</span></div>"
+          "</span></li>"
         );
       }).join("") +
-      "</div>" +
-      (hasOverlap ? '<button type="button" class="btn btn-outline" id="btn-resolve-conflict" style="margin-top:0.75rem;width:100%">Résoudre le conflit</button>' : "") +
-      '<button type="button" class="btn btn-outline" id="btn-share-aside" style="margin-top:0.6rem;width:100%">Partager</button>' +
+      "</ol>" +
+      (hasOverlap ? '<button type="button" class="btn" id="btn-resolve-conflict" style="margin-top:0.75rem;width:100%">Résoudre le conflit</button>' : "") +
+      '<a class="btn btn-outline" id="btn-open-journee" href="journee.html?date=' + encodeURIComponent(dateStr) + '" style="margin-top:0.6rem;width:100%;justify-content:center">Ouvrir Ma journée</a>' +
       "</div>";
 
     var resolveBtn = document.getElementById("btn-resolve-conflict");
     if (resolveBtn) {
       resolveBtn.addEventListener("click", function () { resolveConflict(dateStr, fixes, conflits, allSlots); });
-    }
-    var shareBtn = document.getElementById("btn-share-aside");
-    if (shareBtn) {
-      shareBtn.addEventListener("click", function () {
-        var lignes = items.map(function (it) { return (it.is_continuous ? "En continu" : PDF.formatTimeFR(it.start)) + " — " + it.name; });
-        var texte = "Ma journée au Puy du Fou :\n" + lignes.join("\n");
-        if (navigator.share) {
-          navigator.share({ title: "Ma journée au Puy du Fou", text: texte }).catch(function () { /* annulé : rien à faire */ });
-        } else if (navigator.clipboard) {
-          navigator.clipboard.writeText(texte).then(function () { asideToast("Copié dans le presse-papiers."); }, function () { asideToast("Impossible de copier."); });
-        }
-      });
     }
   }
 

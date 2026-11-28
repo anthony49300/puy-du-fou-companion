@@ -1008,7 +1008,13 @@
     window.addEventListener("resize", syncAsideStickyOffset);
 
     Promise.all([fetchCatalogue(), fetchDatesMap()])
-      .then(function () { setDate(initialDate()); })
+      .then(function () {
+        setDate(initialDate());
+        // "journee.html?date=...&assistant=1" : lien "Composer
+        // automatiquement" depuis l'aside du Programme (voir programme.js)
+        // quand le plan du jour est vide.
+        if (new URLSearchParams(location.search).get("assistant") === "1") openAssistantSheet();
+      })
       .catch(function (err) {
         PDF.renderErrorMessage($("jour-content"), "Impossible de charger le catalogue de spectacles (" + err.message + ").");
       });

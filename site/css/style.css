@@ -78,6 +78,15 @@
   --immersive: #2F6B45;
   --immersive-bg: #E3F0E6;
   --past: #E4DACB;
+  /* Blocs de la grille horaire desktop (Programme) : un couple fond/bordure
+     par catégorie, assez distinct de --past et de la piste (--surface-2)
+     dans les deux thèmes — voir .hgrid-block. */
+  --block: #E9DFCF;
+  --block-line: #C9B89C;
+  --block-immersive: #D8EBDD;
+  --block-immersive-line: #8DB89A;
+  --block-night: #DDE3F3;
+  --block-night-line: #9AA9D6;
   --focus-ring: 0 0 0 3px rgba(143, 38, 57, .45);
   /* Tokens annexes, pas dans la palette principale mais nécessaires à des
      composants existants (badge "exceptionnel", teinte douce de --primary). */
@@ -174,6 +183,12 @@
     --night-line: #2C3550;
     --immersive: #A9D8B8;
     --immersive-bg: #24342A;
+    --block: #3A3128;
+    --block-line: #5A4C3E;
+    --block-immersive: #24342A;
+    --block-immersive-line: #4E7A5E;
+    --block-night: #24304D;
+    --block-night-line: #5068A8;
     --past: #241E19;
     --focus-ring: 0 0 0 3px rgba(227, 176, 85, .55);
     --primary-soft: #2E1A20;
@@ -216,6 +231,12 @@
   --night-line: #2C3550;
   --immersive: #A9D8B8;
   --immersive-bg: #24342A;
+  --block: #3A3128;
+  --block-line: #5A4C3E;
+  --block-immersive: #24342A;
+  --block-immersive-line: #4E7A5E;
+  --block-night: #24304D;
+  --block-night-line: #5068A8;
   --past: #241E19;
   --focus-ring: 0 0 0 3px rgba(227, 176, 85, .55);
   --primary-soft: #2E1A20;
@@ -1080,10 +1101,16 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
   #programme-content, #hour-nav, #continuous-gantt-slot { display: none !important; }
 }
 
-.hgrid-wrap { overflow-x: auto; }
-.hgrid { min-width: 760px; }
-.hgrid-row { display: grid; grid-template-columns: 11rem 1fr; align-items: center; gap: 0.75rem; min-height: 2.5rem; border-bottom: 1px solid var(--line-soft); }
+/* Carte de la grille horaire desktop (voir maquette "Programme — Desktop") :
+   avant, un <div> nu sans fond/bordure propres — maintenant une vraie carte,
+   avec l'axe horaire en haut (voir renderDesktopGrid, axisRow + rows plutôt
+   que rows + axisRow) et assez de marge basse pour l'étiquette "maintenant"
+   sous la dernière ligne (voir .hgrid-now-label). */
+.hgrid-wrap { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); overflow-x: auto; }
+.hgrid { min-width: 760px; padding: 1rem 1.125rem 1.75rem; }
+.hgrid-row { display: grid; grid-template-columns: 210px 1fr; align-items: center; gap: 0.75rem; min-height: 2.5rem; border-bottom: 1px solid var(--line-soft); }
 .hgrid-row:last-child { border-bottom: none; }
+.hgrid-axis { border-bottom-color: var(--line); }
 .hgrid-label { display: flex; flex-direction: column; gap: 0.1rem; padding: 0.4rem 0; }
 .hgrid-show-name { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hgrid-show-cat { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -1105,34 +1132,53 @@ input[type="text"]:focus, select:focus { border-color: var(--accent-2); outline:
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+/* Clampe les deux libellés d'extrémité pour qu'ils restent entièrement
+   visibles (pas juste centrés sur leur tick comme les labels du milieu,
+   ce qui les couperait à moitié hors de la piste). */
+.hgrid-tick--first { transform: translateX(0); }
+.hgrid-tick--last { transform: translateX(-100%); }
 .hgrid-block {
   position: absolute;
-  top: 2px;
+  top: 3px;
   height: 16px;
-  border-radius: var(--r-sm);
+  border-radius: 4px;
   border: 1px solid var(--line);
   background: var(--surface-2);
   padding: 0;
   cursor: pointer;
 }
-.hgrid-block--neutral { background: var(--surface-2); border-color: var(--line); }
-.hgrid-block--past { background: var(--past); border-color: var(--past); }
+.hgrid-block--neutral { background: var(--block); border-color: var(--block-line); }
+.hgrid-block--immersive { background: var(--block-immersive); border-color: var(--block-immersive-line); }
+.hgrid-block--night { background: var(--block-night); border-color: var(--block-night-line); }
+.hgrid-block--past { background: var(--past); border-color: var(--line); }
 .hgrid-block--myday { background: var(--accent-fill); border-color: var(--accent-fill); }
 .hgrid-block--conflict { background: var(--danger); border-color: var(--danger); }
 .hgrid-block:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.hgrid-now-line { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--text); opacity: 0.6; }
+.hgrid-now-line { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--text); opacity: 0.85; }
+/* Étiquette "14h20" : seule la ligne marquée --labeled (la dernière ligne de
+   spectacles, voir renderDesktopGrid) la porte — jamais l'axe. */
 .hgrid-now-label {
   position: absolute;
-  bottom: -1.4rem;
+  top: 100%;
+  margin-top: 0.3rem;
   transform: translateX(-50%);
-  font-size: 0.72rem;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.7rem;
   font-weight: 600;
-  color: var(--text);
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--r-pill);
   white-space: nowrap;
 }
 
 .programme-aside .card { margin-bottom: 1rem; }
+.programme-aside ol.list-card { list-style: none; margin: 0; padding: 0; }
 .list-row.is-conflict-row { background: var(--danger-bg); margin: 0 -0.5rem; padding-left: 0.5rem; padding-right: 0.5rem; border-radius: var(--r-sm); }
+/* "Résoudre le conflit" : rempli --accent-fill (ambre), pas la teinte
+   bordeaux par défaut de .btn — distinct visuellement de "Ouvrir Ma
+   journée" (contour) juste en dessous. */
+#btn-resolve-conflict { background: var(--accent-fill); color: var(--on-accent); }
+#btn-resolve-conflict:hover { background: var(--accent-text); color: var(--on-primary); }
 
 /* ---------- "Horaires habituels" (détail d'un spectacle) ---------- */
 .schedule-section { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line-soft); }
@@ -2259,6 +2305,13 @@ table.visit-grid tfoot td { font-weight: 700; background: var(--bg-elevated); }
   #search-toggle { display: none; }
   #search-bar-wrap[hidden] { display: flex; }
   #search-bar-wrap .search-input-wrap { flex: 0 0 180px; }
+
+  /* Programme desktop : conteneur plus large que le reste du site (grille
+     horaire + aside côte à côte, voir .programme-layout) et sélecteur de
+     jour compact sur une seule ligne, en ligne avec le titre. */
+  body[data-page="programme"] .container { max-width: 1320px; padding: 0 2rem; }
+  #day-select.segmented .segment { flex-direction: row; gap: 0.4rem; min-height: 36px; padding: 0 1rem; }
+  #day-select .segment-date { font-size: 0.78rem; }
 }
 
 /* Impression (ex: le programme de la journée depuis le carnet) */
